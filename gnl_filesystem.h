@@ -33,7 +33,7 @@ namespace gnl {
             gnl::string getFileName();          // gets the file name (eg: displaypic.png)
             gnl::string getFileBasename();      // gets the file base name (eg: displaypic)
 
-            gnl::string toString();
+            gnl::string toString();             // gets the string representation of the path.
 
             bool        isFile()     { return  mIsFile;    }
             bool        isDirectory(){ return !mIsFile;    }
@@ -60,14 +60,12 @@ namespace gnl {
 
     };
 
-
-
 };
 #endif
 
 
 
-#ifdef GNL_IMPLEMENTATION
+#ifdef GNL_FILESYSTEM_IMPLIMENT
 
 gnl::Path::Path()
 {
