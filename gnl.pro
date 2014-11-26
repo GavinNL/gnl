@@ -14,3 +14,6 @@ QMAKE_CXXFLAGS = -std=c++11
 include(deployment.pri)
 qtcAddDeployment()
 
+OTHER_FILES += \
+    README.md
+

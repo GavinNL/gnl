@@ -43,8 +43,8 @@ namespace gnl {
             bool        exists();
 
             void clear(); // clears the path
-            void setDevice(const gnl::string & device);
-            void setNode(const gnl::string & device);
+            void setDevice(const gnl::string & device );
+            void setNode(  const gnl::string & device );
 
         private:
             void append(gnl::string & object);
