@@ -297,7 +297,9 @@ R"delimiter(
                 max_size:[10000,16],
                 min_size:[0,0]
             }
-        }
+        },
+
+        Ztest : [3,2,3,2,1,4,5,2]
 
     }
 
@@ -313,12 +315,12 @@ R"delimiter(
     O.parse(S);
 
 
-
+    O["HorizontalScrollBar"][12] = 132.0f;
     for(auto a : O.getValueMap() )
     {
-        std::cout << a.first << std::endl;
+        std::cout << a.first << ": " << a.second.type() << std::endl;
     }
-
+    return 0;
     gnl::json::Value T;
     T["firstname"] = "gavin";
     T["age"] = 30;
@@ -329,7 +331,7 @@ R"delimiter(
 
     for(auto a : T.getValueMap() )
     {
-        std::cout << a.first << ": " << a.second->type() << std::endl;
+        std::cout << a.first << ": " << a.second.type() << std::endl;
     }
 
     //std::cout << "(" << k << ")  next= (" << (char)S.get() << ")" << std::endl;
