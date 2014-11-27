@@ -307,21 +307,31 @@ R"delimiter(
 
 
     std::istringstream S(raw);
-    gnl::json::Object O;
+
+
+    gnl::json::Value O;
     O.parse(S);
 
-    gnl::json::Object O2;
-    O2 = O;
 
-    for(auto a : O2.getValues() )
+
+    for(auto a : O.getValueMap() )
     {
         std::cout << a.first << std::endl;
     }
 
-    for(auto a : O.getValues() )
+    gnl::json::Value T;
+    T["firstname"] = "gavin";
+    T["age"] = 30;
+    T["family"][0] = "Glenn";
+    T["family"][1] = "May";
+    T["family"][2] = "Calvin";
+
+
+    for(auto a : T.getValueMap() )
     {
-        std::cout << a.first << std::endl;
+        std::cout << a.first << ": " << a.second->type() << std::endl;
     }
+
     //std::cout << "(" << k << ")  next= (" << (char)S.get() << ")" << std::endl;
     return 0;
     {
