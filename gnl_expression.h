@@ -1,0 +1,4 @@
+#ifndef GNL_EXPRESSION_H
+#define GNL_EXPRESSION_H
+
+#endif // GNL_EXPRESSION_H

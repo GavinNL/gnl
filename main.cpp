@@ -310,12 +310,18 @@ R"delimiter(
     gnl::json::Object O;
     O.parse(S);
 
+    gnl::json::Object O2;
+    O2 = O;
+
+    for(auto a : O2.getValues() )
+    {
+        std::cout << a.first << std::endl;
+    }
 
     for(auto a : O.getValues() )
     {
         std::cout << a.first << std::endl;
     }
-
     //std::cout << "(" << k << ")  next= (" << (char)S.get() << ")" << std::endl;
     return 0;
     {

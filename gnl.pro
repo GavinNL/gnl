@@ -7,7 +7,8 @@ SOURCES += main.cpp
 
 HEADERS += gnl_json.h \
            gnl_zip.h \
-           gnl_filesystem.h
+           gnl_filesystem.h \
+    gnl_expression.h
 
 QMAKE_CXXFLAGS = -std=c++11
 

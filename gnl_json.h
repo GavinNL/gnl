@@ -39,6 +39,7 @@ gnl_json.h - v1.00 - Public domain JSON reader
 namespace gnl {
 
 namespace json {
+
 class Value;
 class Array;
 class Object;
@@ -85,6 +86,7 @@ class Value
         Value & operator=(const float       & rhs);
         Value & operator=(const bool        & rhs);
         Value & operator=(const std::string & rhs);
+        Value & operator=(const Value       & rhs);
 
         const  TYPE  & type() {return _type;};
 
@@ -135,6 +137,8 @@ class Object
 {
 public:
     inline Value & operator[](const std::string & i) { return *mValues[i];}
+
+    Object & operator=(const Object      & rhs);
 
     std::map<std::string, Value*> & getValues() { return mValues; }
 
@@ -208,7 +212,7 @@ gnl::json::Value & gnl::json::Value::operator=(const json::Value & rhs)
             _float = rhs._float; break;
         case Value::ARRAY:
             _array = new std::vector<json::Value*>();
-            for(int i=0; i<rhs._array->size();i++)
+            for(auto i=0; i < rhs._array->size(); i++)
             {
                 json::Value * V = new json::Value();
                 *V = rhs._array->at(i);
@@ -216,17 +220,13 @@ gnl::json::Value & gnl::json::Value::operator=(const json::Value & rhs)
             }
             break;
         case Value::OBJECT:
-            _object = new std::vector<json::Value*>();
-            for(int i=0; i<rhs._array->size();i++)
-            {
-                json::Value * V = new json::Value();
-                *V = rhs._array->at(i);
-                _array->push_back(V);
-            }
+            _object = new gnl::json::Object();
+            *_object = *rhs._object;
             break;
+        case Value::UNKNOWN:
+        break;
     }
 
-    _string = new std::string( rhs );
     return *this;
 }
 
@@ -414,6 +414,18 @@ std::string gnl::json::Value::parseString(std::istringstream & S)
     // std::cout << "String value Found: " << Key << "  next character (" << S.peek() << std::endl;
     return (Key);
 }
+
+
+gnl::json::Object & gnl::json::Object::operator=(const gnl::json::Object      & rhs)
+{
+    for(auto a : rhs.mValues)
+    {
+        gnl::json::Value * V = new gnl::json::Value();
+        *V = *a.second;
+        mValues[a.first] = V;
+    }
+}
+
 
 std::string gnl::json::Object::parseKey(std::istringstream & S)
 {
