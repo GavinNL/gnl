@@ -65,12 +65,14 @@ class Value
             OBJECT
         } TYPE;
 
-        Value() {
-            _type = UNKNOWN;
-        }
+        Value() : _type(UNKNOWN) {}
+        Value(const Value  & rhs);
+        Value(const std::string & rhs);
 
         ~Value();
 
+
+        void init(const Value & rhs);
         // clears the Value and sets it's type to UNKNOWN
         void clear();
 
@@ -82,15 +84,7 @@ class Value
         template <typename T>
         T to() const;
 
-        // Access the i'th element in the array. If the value is not an array, it will
-        // discard any previous data in the value and create a blank array with at least
-        // i+1 size.
-        inline Value & operator[](int i);
-
-        // Access the value with key 'i'. If the value is not an Object, it will discard
-        // any previous data and create a blank object.
-        inline Value & operator[](const std::string & i);
-
+        bool exists(const std::string & key);
         // gets the size of the Value. If bool, string or float, returns 1, if array or object, returns
         // the number of values inside the container.
         size_t size();
@@ -101,42 +95,49 @@ class Value
         Value & operator=(const std::string & rhs);
         Value & operator=(const Value       & rhs);
 
+        // Access the i'th element in the array. If the value is not an array, it will
+        // discard any previous data in the value and create a blank array with at least
+        // i+1 size.
+        Value & operator[](int i);
+
+        // Access the value with key 'i'. If the value is not an Object, it will discard
+        // any previous data and create a blank object.
+        Value & operator[](const std::string & i);
+
         // gets the type of the object.
         const  TYPE  & type() {return _type;};
 
         // gets the key/value map if the Value is a json Object. Throws exception if it is not an object.
-        const std::map<std::string, Value> & getValueMap()    { if( _type != OBJECT ) throw incorrect_type(); return *_object; };
+        const std::map<std::string, Value> & getValueMap()    { if( _type != OBJECT ) throw incorrect_type(); return _object; };
 
         // gets the vector of values if the Value object is a json Array. Throws exception if it is not an array.
-        const std::vector<Value>           & getValueVector() { if( _type != ARRAY  ) throw incorrect_type(); return *_array;  };
+        const std::vector<Value>           & getValueVector() { if( _type != ARRAY  ) throw incorrect_type(); return _array;  };
 
         // Parses JSON text.
         void parse(std::istringstream & S);
+        void parse(std::string & S);
 
     private:
-        union {
-            float                           _float;
-            bool                            _bool;
-            std::vector<Value>           * _array;
-            std::map<std::string, Value> * _object;
-            std::string                   * _string;
-        };
+        float                           _float;
+        bool                            _bool;
+        std::vector<Value>              _array;
+        std::map<std::string, Value>    _object;
+        std::string                     _string;
         TYPE _type;
 
 
-        static std::string          parseString(std::istringstream & S );
-        static bool                 parseBool(  std::istringstream & S );
-        static float                parseNumber(std::istringstream & S );
-        static std::vector<Value>* parseArray (std::istringstream & S );
-
+        static std::string                   parseString(std::istringstream & S );
+        static bool                          parseBool(  std::istringstream & S );
+        static float                         parseNumber(std::istringstream & S );
+        static std::vector<Value>            parseArray (std::istringstream & S );
         static std::string                   parseKey(std::istringstream & S);
-        static std::map<std::string, Value>* parseObject(std::istringstream & S);
+        static std::map<std::string, Value>  parseObject(std::istringstream & S);
 };
 
 template<>
 inline std::string & Value::as<std::string>()  {
     if( _type != Value::STRING) throw gnl::json::incorrect_type();
-    return *_string;
+    return _string;
 }
 
 template<>
@@ -156,33 +157,6 @@ inline Value & Value::as<gnl::json::Value>()   {
     return *this;
 }
 
-//template<>
-//inline Object & Value::as<gnl::json::Object>()   {
-//    if( _type != Value::OBJECT) throw gnl::json::incorrect_cast();
-//    return *_object;
-//}
-
-//class Object
-//{
-//public:
-
-//    ~Object();
-//    Value & operator[](const std::string & i);
-//    void clear();
-//    Object & operator=(const Object      & rhs);
-
-//    std::map<std::string, Value*> & getValues() { return mValues; }
-
-//    void parse(const std::string & input);
-//    void parse(std::istringstream &S);
-
-//    static std::string  parseKey(std::istringstream & S);
-
-//    std::map<std::string, Value*> mValues;
-//};
-
-
-
 };
 
 };
@@ -197,14 +171,68 @@ inline Value & Value::as<gnl::json::Value>()   {
 #define REMOVEWHITESPACE { char a = S.peek(); while( std::isspace(a) ) {S.get(); a = S.peek(); } }
 
 
+bool gnl::json::Value::exists(const std::string & key)
+{
+    if(_type != gnl::json::Value::OBJECT) return false;
+
+    return( (bool)( _object.count(key)>=1)  );
+}
+
+gnl::json::Value::Value(const std::string & rhs)
+{
+    std::istringstream S( rhs );
+    parse( S );
+}
+
+gnl::json::Value::Value(const gnl::json::Value       & rhs)
+{
+    if( &rhs != this) init(rhs);
+}
+
+void gnl::json::Value::init(const gnl::json::Value & rhs)
+{
+    clear();
+    switch( rhs._type )
+    {
+        case Value::BOOL:
+            _bool   = rhs._bool; break;
+
+        case Value::STRING:
+            _string = rhs._string; break;
+
+        case Value::NUMBER:
+            _float = rhs._float; break;
+
+        case Value::ARRAY:
+            _array.clear();
+            for(auto a : rhs._array)
+            {
+                _array.push_back( a );
+            }
+            break;
+
+        case Value::OBJECT:
+            _object.clear();
+            for(auto a : rhs._object)
+                _object[a.first] = a.second;
+            break;
+
+        case Value::UNKNOWN:
+            break;
+
+    }
+
+    _type   = rhs._type;
+}
+
 size_t gnl::json::Value::size()
 {
     switch( _type )
     {
         case gnl::json::Value::ARRAY:
-            return _array->size();
+            return _array.size();
         case gnl::json::Value::OBJECT:
-            return _object->size();
+            return _object.size();
         case gnl::json::Value::UNKNOWN:
             return 0;
         default:
@@ -241,49 +269,15 @@ gnl::json::Value & gnl::json::Value::operator=(const bool        & rhs)
 gnl::json::Value & gnl::json::Value::operator=(const std::string & rhs)
 {
     clear();
-    _string = new std::string( rhs );
+    _string = rhs;
     _type   = Value::STRING;
     return *this;
 }
 
 
-
 gnl::json::Value & gnl::json::Value::operator=(const json::Value & rhs)
 {
-    clear();
-    _type   = rhs._type;
-    switch( _type )
-    {
-        case Value::BOOL:
-            _bool   = rhs._bool; break;
-        case Value::STRING:
-            _string = new std::string( *rhs._string ); break;
-        case Value::NUMBER:
-            _float = rhs._float; break;
-        case Value::ARRAY:
-            _array = new std::vector<json::Value>();
-            for(auto i=0; i < rhs._array->size(); i++)
-            {
-                //json::Value * V = new json::Value();
-                //*V = rhs._array->at(i);
-                _array->push_back( rhs._array->at(i) );
-            }
-            break;
-        case Value::OBJECT:
-            _object = new std::map<std::string,gnl::json::Value>();
-            for(auto a : *rhs._object)
-            {
-                //(*_object)[a.first] = new gnl::json::Value();
-                (*_object)[a.first] = a.second;
-            }
-
-//            _object = new gnl::json::Object();
-//            *_object = *rhs._object;
-            break;
-        case Value::UNKNOWN:
-        break;
-    }
-
+    if( this != &rhs) init(rhs);
     return *this;
 }
 
@@ -291,16 +285,15 @@ void gnl::json::Value::clear()
 {
     switch( _type )
     {
-        case Value::STRING: delete(_string); break;
+        case Value::STRING:
+            _string = "";
+            break;
         case Value::OBJECT:
-            {
-               // for(auto a : *_object) delete( a.second );
-            }
-            delete(_object); break;
+            _object.clear();
+            break;
 
         case Value::ARRAY:
-            //for(auto a : *_array) delete(a);
-            delete(_array);
+            _array.clear();
             break;
         default: break;
     }
@@ -314,38 +307,43 @@ gnl::json::Value::~Value()
 }
 
 
-inline gnl::json::Value & gnl::json::Value::operator[](int i)
+gnl::json::Value & gnl::json::Value::operator[](int i)
 {
 
     if( _type != Value::ARRAY)
     {
         clear();
-        _array  = new std::vector<gnl::json::Value>();
-        _array->resize(i+1);
+        _array.resize(i+1);
         _type   = gnl::json::Value::ARRAY;
     }
 
-    return (*_array)[i];
+    return _array[i];
 }
 
-inline gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
+gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
 {
     if( _type == Value::UNKNOWN)
     {
-        _object = new std::map<std::string, gnl::json::Value>();
+        _object.clear();
         _type   = gnl::json::Value::OBJECT;
     }
 
     if( _type != Value::OBJECT) throw gnl::json::incorrect_type();
 
-    if( !_object->count(i) ) (*_object)[i] = new gnl::json::Value();
+    //if( !_object->count(i) ) (*_object)[i] = new gnl::json::Value();
 
     std::cout << "getting value: " << i << std::endl;
-    return (*_object)[i];
+    return _object[i];
 }
 
 
-void gnl::json::Value::parse(std::istringstream &S)
+void gnl::json::Value::parse(std::string &S)
+{
+    std::istringstream SS(S);
+    parse(SS);
+}
+
+void gnl::json::Value::parse(std::istringstream &S )
 {
     REMOVEWHITESPACE;
 
@@ -353,31 +351,23 @@ void gnl::json::Value::parse(std::istringstream &S)
 
     if(c=='"')
     {
-        _string = new std::string( Value::parseString(S) );
-       // std::cout << "STRING: " <<  *_string << std::endl;
+        _string =  Value::parseString(S);
         _type = Value::STRING;
     }
     else if( std::isdigit(c) || c=='-' || c=='+' || c=='.')
     {
         _float = Value::parseNumber(S);
         _type = Value::NUMBER;
-      //  std::cout << "NUMBER: " << _float << std::endl;
-      //  std::cout << "Number found: " << V->_float << std::endl;
     }
     else if( std::tolower(c) == 't' || std::tolower(c) == 'f' )
     {
-       // std::cout << "BOOL" << std::endl;
         _bool = Value::parseBool(S);
         _type = Value::BOOL;
-       // std::cout << "Bool found: " << V->_bool << std::endl;
     }
     else if( c == '{' )
     {
-       // std::cout << "OBJECT" << std::endl;
         _object = Value::parseObject(S);//new gnl::json::Object();
-        //_object->parse(S);
         _type = Value::OBJECT;
-       // std::cout << "Object Complete: " << (char)S.peek() << " values." << std::endl;
     }
     else if( c == '[' )
     {
@@ -419,7 +409,7 @@ float gnl::json::Value::parseNumber(std::istringstream &S)
 
     std::string num;
 
-    while( std::isdigit(c) || c=='-' || c=='+' || c=='.')
+    while( std::isdigit(c) || c=='-' || c=='+' || c=='.' || c=='e' || c=='E')
     {
         S.get();
         num += c;
@@ -430,12 +420,12 @@ float gnl::json::Value::parseNumber(std::istringstream &S)
 }
 
 
-std::vector<gnl::json::Value>* gnl::json::Value::parseArray(std::istringstream &S)
+std::vector<gnl::json::Value>  gnl::json::Value::parseArray(std::istringstream &S)
 {
     REMOVEWHITESPACE;
     char c = S.get();
 
-    std::vector<gnl::json::Value> * A = new std::vector<gnl::json::Value>();
+    std::vector<gnl::json::Value>  A;
 
     if( c == '[' )
     {
@@ -444,8 +434,8 @@ std::vector<gnl::json::Value>* gnl::json::Value::parseArray(std::istringstream &
             REMOVEWHITESPACE;
 
             gnl::json::Value V;
-            A->push_back(V);
-            A->at( A->size()-1 ).parse(S);
+            A.push_back(V);
+            A.at( A.size()-1 ).parse(S);
 
             REMOVEWHITESPACE;
 
@@ -458,7 +448,6 @@ std::vector<gnl::json::Value>* gnl::json::Value::parseArray(std::istringstream &
 
     }
 
-    //std::cout << "Array finished: size: " << A->size() << std::endl;
     return(A);
 }
 
@@ -477,9 +466,32 @@ std::string gnl::json::Value::parseString(std::istringstream & S)
 
     if( c== '"')
     {
+
         c = S.get();
+
         while( c != '"' )
         {
+            if( c == '\\')
+            {
+                c = S.get();
+                switch(c)
+                {
+                    case 'n':
+                        c = '\n'; break;
+                    case 't':
+                        c = '\t'; break;
+                    case 'f':
+                        c = '\f'; break;
+                    case '\\':
+                        c = '\\'; break;
+                    case '/':
+                        c = '/'; break;
+                    case 'r':
+                        c = '\r'; break;
+                    default:
+                        break;
+                }
+            }
             Key += c;
             c = S.get();
         }
@@ -489,9 +501,6 @@ std::string gnl::json::Value::parseString(std::istringstream & S)
     // std::cout << "String value Found: " << Key << "  next character (" << S.peek() << std::endl;
     return (Key);
 }
-
-
-
 
 
 std::string gnl::json::Value::parseKey(std::istringstream & S)
@@ -504,7 +513,6 @@ std::string gnl::json::Value::parseKey(std::istringstream & S)
     //'    usename   :  "gavin",  '
     //         or
     //'   "usename"  :  "gavin"   '
-
     std::string Key;
 
     if( c== '"')
@@ -529,11 +537,11 @@ std::string gnl::json::Value::parseKey(std::istringstream & S)
         }
 
     }
-    //std::cout << "Key Found: " << Key << "  next character (" << S.peek() << std::endl;
+
     return (Key);
 }
 
-std::map<std::string, gnl::json::Value>* gnl::json::Value::parseObject(std::istringstream &S)
+std::map<std::string, gnl::json::Value> gnl::json::Value::parseObject(std::istringstream &S)
 {
     REMOVEWHITESPACE;
 
@@ -543,7 +551,7 @@ std::map<std::string, gnl::json::Value>* gnl::json::Value::parseObject(std::istr
 
     //std::cout << "Start Object: " << c << std::endl;
 
-    std::map<std::string, gnl::json::Value> * vMap = new std::map<std::string, gnl::json::Value>();
+    std::map<std::string, gnl::json::Value> vMap;
 
     while(c != '}')
     {
@@ -552,17 +560,14 @@ std::map<std::string, gnl::json::Value>* gnl::json::Value::parseObject(std::istr
         REMOVEWHITESPACE;
 
         c = S.get();
+
         if(c !=':')
         {
             std::cout << "Key: " << key << std::endl;
             throw parse_error();
         }
 
-         //Value *     V   = new Value();
-         //std::cout << key << ": ";
-         //V->Value::parse(S);
-
-         (*vMap)[key].parse(S);
+         vMap[key].parse(S);
 
          REMOVEWHITESPACE;
 
@@ -576,129 +581,6 @@ std::map<std::string, gnl::json::Value>* gnl::json::Value::parseObject(std::istr
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-//void gnl::json::Object::parse(const std::string & input) {
-//  std::istringstream is( input );
-//  parse( is );
-//}
-
-
-//void gnl::json::Object::clear()
-//{
-//    for(auto a : mValues){
-//        delete a.second;
-//    }
-//    mValues.clear();
-//}
-
-
-//gnl::json::Object::~Object()
-//{
-//    clear();
-//}
-
-
-//gnl::json::Object & gnl::json::Object::operator=(const gnl::json::Object      & rhs)
-//{
-//    for(auto a : rhs.mValues)
-//    {
-//        gnl::json::Value * V = new gnl::json::Value();
-//        *V = *a.second;
-//        mValues[a.first] = V;
-//    }
-//}
-
-
-//std::string gnl::json::Object::parseKey(std::istringstream & S)
-//{
-//    REMOVEWHITESPACE;
-
-//    char c = S.get();
-
-//    // can be either:
-//    //'    usename   :  "gavin",  '
-//    //         or
-//    //'   "usename"  :  "gavin"   '
-
-//    std::string Key;
-
-//    if( c== '"')
-//    {
-//        c = S.get();
-//        while( c != '"' )
-//        {
-//            Key += c;
-//            c = S.get();
-//        }
-
-//    }
-//    else
-//    {
-//        Key += c;
-//        c    = S.peek();
-//        while( !std::isspace(c) && c !=':')
-//        {
-//            Key += c;
-//            S.get();
-//            c    = S.peek();
-//        }
-
-//    }
-//    //std::cout << "Key Found: " << Key << "  next character (" << S.peek() << std::endl;
-//    return (Key);
-//}
-
-//void gnl::json::Object::parse(std::istringstream &S)
-//{
-
-//    REMOVEWHITESPACE;
-
-//    //gnl::json::Object * O = new gnl::json::Object();
-
-//    char c = S.get();
-
-//    //std::cout << "Start Object: " << c << std::endl;
-
-//    while(c != '}')
-//    {
-//        std::string key = Object::parseKey(S);
-
-//        REMOVEWHITESPACE;
-
-//        c = S.get();
-//        if(c !=':')
-//        {
-//            std::cout << "Key: " << key << std::endl;
-//            throw parse_error();
-//        }
-
-//         Value *     V   = new Value();
-//         //std::cout << key << ": ";
-//         V->Value::parse(S);
-
-//         mValues[key] = V;
-
-
-//         REMOVEWHITESPACE;
-
-//         c = S.peek();
-//         if(c == ',' || c =='}' ) c = S.get();
-
-//    }
-
-//}
 
 #undef REMOVEWHITESPACE
 
