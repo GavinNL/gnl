@@ -94,6 +94,7 @@ class Value
         Value & operator=(const bool        & rhs);
         Value & operator=(const std::string & rhs);
         Value & operator=(const Value       & rhs);
+        Value & operator=(const char        * rhs);
 
         // Access the i'th element in the array. If the value is not an array, it will
         // discard any previous data in the value and create a blank array with at least
@@ -275,6 +276,16 @@ gnl::json::Value & gnl::json::Value::operator=(const std::string & rhs)
 }
 
 
+
+gnl::json::Value & gnl::json::Value::operator=(const char   *    rhs)
+{
+    clear();
+    _string = std::string(rhs);
+    _type   = Value::STRING;
+    return *this;
+}
+
+
 gnl::json::Value & gnl::json::Value::operator=(const json::Value & rhs)
 {
     if( this != &rhs) init(rhs);
@@ -315,8 +326,12 @@ gnl::json::Value & gnl::json::Value::operator[](int i)
         clear();
         _array.resize(i+1);
         _type   = gnl::json::Value::ARRAY;
+        return _array[i];
     }
 
+    //std::cout << "Accessing: " << i << std::endl;
+    //std::cout << "last: " << _array.size() << std::endl;
+    if( i >= _array.size() ) _array.resize(i+1);
     return _array[i];
 }
 
@@ -332,7 +347,7 @@ gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
 
     //if( !_object->count(i) ) (*_object)[i] = new gnl::json::Value();
 
-    std::cout << "getting value: " << i << std::endl;
+    //std::cout << "getting value: " << i << std::endl;
     return _object[i];
 }
 
@@ -556,7 +571,7 @@ std::map<std::string, gnl::json::Value> gnl::json::Value::parseObject(std::istri
     while(c != '}')
     {
         std::string key = Value::parseKey(S);
-
+        //std::cout << key << std::endl;
         REMOVEWHITESPACE;
 
         c = S.get();
