@@ -35,14 +35,16 @@ gnl_json.h - v1.00 - Public domain JSON reader
 #include <vector>
 #include <string>
 #include <exception>
+#include <memory>
 
 namespace gnl {
 
 namespace json {
 
 class Value;
-class Array;
-class Object;
+
+
+typedef std::shared_ptr<Value> pValue;
 
 
 class incorrect_type : public std::exception {
@@ -78,7 +80,7 @@ class Value
 
         // Interprets the Value as a specific type: bool, float, string.
         template <typename T>
-        T & as();
+        const T & as();
 
         // returns a new object of type T
         template <typename T>
@@ -109,10 +111,10 @@ class Value
         const  TYPE  & type() {return _type;};
 
         // gets the key/value map if the Value is a json Object. Throws exception if it is not an object.
-        const std::map<std::string, Value> & getValueMap()    { if( _type != OBJECT ) throw incorrect_type(); return _object; };
+        const std::map<std::string, pValue> & getValueMap()    { if( _type != OBJECT ) throw incorrect_type(); return _object; };
 
         // gets the vector of values if the Value object is a json Array. Throws exception if it is not an array.
-        const std::vector<Value>           & getValueVector() { if( _type != ARRAY  ) throw incorrect_type(); return _array;  };
+        const std::vector<pValue>           & getValueVector() { if( _type != ARRAY  ) throw incorrect_type(); return _array;  };
 
         // Parses JSON text.
         void parse(std::istringstream & S);
@@ -121,8 +123,8 @@ class Value
     private:
         float                           _float;
         bool                            _bool;
-        std::vector<Value>              _array;
-        std::map<std::string, Value>    _object;
+        std::vector<pValue>              _array;
+        std::map<std::string, pValue>    _object;
         std::string                     _string;
         TYPE _type;
 
@@ -130,31 +132,31 @@ class Value
         static std::string                   parseString(std::istringstream & S );
         static bool                          parseBool(  std::istringstream & S );
         static float                         parseNumber(std::istringstream & S );
-        static std::vector<Value>            parseArray (std::istringstream & S );
+        static std::vector<pValue>            parseArray (std::istringstream & S );
         static std::string                   parseKey(std::istringstream & S);
-        static std::map<std::string, Value>  parseObject(std::istringstream & S);
+        static std::map<std::string, pValue>  parseObject(std::istringstream & S);
 };
 
 template<>
-inline std::string & Value::as<std::string>()  {
+inline const std::string & Value::as<std::string>()  {
     if( _type != Value::STRING) throw gnl::json::incorrect_type();
     return _string;
 }
 
 template<>
-inline bool & Value::as<bool>()  {
+inline const  bool & Value::as<bool>()  {
     if( _type != Value::BOOL) throw gnl::json::incorrect_type();
     return _bool;
 }
 
 template<>
-inline float & Value::as<float>()   {
+inline const  float & Value::as<float>()   {
     if( _type != Value::NUMBER) throw gnl::json::incorrect_type();
     return _float;
 }
 
 template<>
-inline Value & Value::as<gnl::json::Value>()   {
+inline const  Value & Value::as<gnl::json::Value>()   {
     return *this;
 }
 
@@ -192,7 +194,7 @@ gnl::json::Value::Value(const gnl::json::Value       & rhs)
 
 void gnl::json::Value::init(const gnl::json::Value & rhs)
 {
-    clear();
+
     switch( rhs._type )
     {
         case Value::BOOL:
@@ -208,14 +210,16 @@ void gnl::json::Value::init(const gnl::json::Value & rhs)
             _array.clear();
             for(auto a : rhs._array)
             {
-                _array.push_back( a );
+                _array.push_back( std::make_shared<Value>( *a ) );
             }
             break;
 
         case Value::OBJECT:
             _object.clear();
             for(auto a : rhs._object)
-                _object[a.first] = a.second;
+            {
+                _object[a.first] = std::make_shared<Value>(*a.second);
+            }
             break;
 
         case Value::UNKNOWN:
@@ -324,15 +328,13 @@ gnl::json::Value & gnl::json::Value::operator[](int i)
     if( _type != Value::ARRAY)
     {
         clear();
-        _array.resize(i+1);
         _type   = gnl::json::Value::ARRAY;
-        return _array[i];
     }
 
-    //std::cout << "Accessing: " << i << std::endl;
-    //std::cout << "last: " << _array.size() << std::endl;
-    if( i >= _array.size() ) _array.resize(i+1);
-    return _array[i];
+
+    while( (int)_array.size() < i+1) _array.push_back( std::make_shared<Value>() );
+
+    return *_array[i];
 }
 
 gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
@@ -345,10 +347,10 @@ gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
 
     if( _type != Value::OBJECT) throw gnl::json::incorrect_type();
 
-    //if( !_object->count(i) ) (*_object)[i] = new gnl::json::Value();
+    if( _object.count(i)==0 ) _object[i] = std::make_shared<Value>();
 
     //std::cout << "getting value: " << i << std::endl;
-    return _object[i];
+    return *_object[i];
 }
 
 
@@ -435,12 +437,12 @@ float gnl::json::Value::parseNumber(std::istringstream &S)
 }
 
 
-std::vector<gnl::json::Value>  gnl::json::Value::parseArray(std::istringstream &S)
+std::vector<gnl::json::pValue>  gnl::json::Value::parseArray(std::istringstream &S)
 {
     REMOVEWHITESPACE;
     char c = S.get();
 
-    std::vector<gnl::json::Value>  A;
+    std::vector<gnl::json::pValue>  A;
 
     if( c == '[' )
     {
@@ -448,9 +450,9 @@ std::vector<gnl::json::Value>  gnl::json::Value::parseArray(std::istringstream &
         {
             REMOVEWHITESPACE;
 
-            gnl::json::Value V;
-            A.push_back(V);
-            A.at( A.size()-1 ).parse(S);
+            gnl::json::pValue V = std::make_shared<Value>();
+            V->parse(S);
+            A.push_back( V );
 
             REMOVEWHITESPACE;
 
@@ -556,7 +558,7 @@ std::string gnl::json::Value::parseKey(std::istringstream & S)
     return (Key);
 }
 
-std::map<std::string, gnl::json::Value> gnl::json::Value::parseObject(std::istringstream &S)
+std::map<std::string, gnl::json::pValue> gnl::json::Value::parseObject(std::istringstream &S)
 {
     REMOVEWHITESPACE;
 
@@ -566,12 +568,12 @@ std::map<std::string, gnl::json::Value> gnl::json::Value::parseObject(std::istri
 
     //std::cout << "Start Object: " << c << std::endl;
 
-    std::map<std::string, gnl::json::Value> vMap;
+    std::map<std::string, gnl::json::pValue> vMap;
 
     while(c != '}')
     {
         std::string key = Value::parseKey(S);
-        //std::cout << key << std::endl;
+
         REMOVEWHITESPACE;
 
         c = S.get();
@@ -582,7 +584,8 @@ std::map<std::string, gnl::json::Value> gnl::json::Value::parseObject(std::istri
             throw parse_error();
         }
 
-         vMap[key].parse(S);
+         vMap[key] = std::make_shared<Value>();
+         vMap[key]->parse(S);
 
          REMOVEWHITESPACE;
 

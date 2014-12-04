@@ -81,18 +81,21 @@ R"del(
     O["Students"][2]["grade"]  = 4;
 
     // Loop through values in the aray.
-    for(auto S : O["Students"].getValueVector() )
+    std::cout << "Students size:" << O["Students"].size() << std::endl;
+    for(auto a : O["Students"].getValueVector() )
     {
+        gnl::json::Value & S = *a;
         std::cout << "name: " << S["name"].as<std::string>()  << std::endl;
         std::cout << "grade:" << S["grade"].as<float>()  << std::endl;
         std::cout << "age  :" << S["age"  ].as<float>()  << std::endl;
     }
 
-
-    for(auto S : O.getValueMap() )
+    std::cout << O.type() << std::endl;
+    for(auto a : O.getValueMap() )
     {
-        std::cout << "Object: " << S.first << std::endl;
-        std::cout <<    "size: " << S.second.size()  << std::endl;
+         gnl::json::Value & S = *a.second;
+        std::cout << "Object: "  << a.first << std::endl;
+        std::cout <<    "size: " << S.size()  << std::endl;
     }
 
     return 0;
