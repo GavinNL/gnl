@@ -48,9 +48,18 @@ typedef std::shared_ptr<Value> pValue;
 
 
 class incorrect_type : public std::exception {
+public:
+    const char * what () const throw ()
+    {
+      return "Attempted to cast json Value \"as\" an incorrect type";
+    }
 };
 
 class parse_error : public std::exception {
+    const char * what () const throw ()
+    {
+      return "Error parsing the json string.";
+    }
 };
 
 class Value
@@ -58,7 +67,8 @@ class Value
 
     public:
 
-        typedef enum {
+        typedef enum
+        {
             UNKNOWN,
             BOOL,
             NUMBER,
@@ -80,7 +90,7 @@ class Value
 
         // Interprets the Value as a specific type: bool, float, string.
         template <typename T>
-        const T & as();
+        const T & as() const;
 
         // returns a new object of type T
         template <typename T>
@@ -107,6 +117,10 @@ class Value
         // any previous data and create a blank object.
         Value & operator[](const std::string & i);
 
+        // get's a reference to the array index or a object name. Will throw an exception if they do not exist.
+        Value & get(const std::string & i) const;
+        Value & get(              int & i) const;
+
         // gets the type of the object.
         const  TYPE  & type() {return _type;};
 
@@ -118,13 +132,15 @@ class Value
 
         // Parses JSON text.
         void parse(std::istringstream & S);
-        void parse(std::string & S);
+        void parse(const std::string & S);
 
+        uint                            _order;  // the order in the Object. In case the order of
+                                                 // values in an object matter.
     private:
         float                           _float;
         bool                            _bool;
-        std::vector<pValue>              _array;
-        std::map<std::string, pValue>    _object;
+        std::vector<pValue>             _array;
+        std::map<std::string, pValue>   _object;
         std::string                     _string;
         TYPE _type;
 
@@ -132,33 +148,54 @@ class Value
         static std::string                   parseString(std::istringstream & S );
         static bool                          parseBool(  std::istringstream & S );
         static float                         parseNumber(std::istringstream & S );
-        static std::vector<pValue>            parseArray (std::istringstream & S );
+        static std::vector<pValue>           parseArray (std::istringstream & S );
         static std::string                   parseKey(std::istringstream & S);
-        static std::map<std::string, pValue>  parseObject(std::istringstream & S);
+        static std::map<std::string, pValue> parseObject(std::istringstream & S);
 };
 
 template<>
-inline const std::string & Value::as<std::string>()  {
+inline const std::string & Value::as<std::string>()  const {
     if( _type != Value::STRING) throw gnl::json::incorrect_type();
     return _string;
 }
 
 template<>
-inline const  bool & Value::as<bool>()  {
+inline const  bool & Value::as<bool>()  const {
     if( _type != Value::BOOL) throw gnl::json::incorrect_type();
     return _bool;
 }
 
 template<>
-inline const  float & Value::as<float>()   {
+inline const  float & Value::as<float>()  const  {
     if( _type != Value::NUMBER) throw gnl::json::incorrect_type();
     return _float;
 }
 
 template<>
-inline const  Value & Value::as<gnl::json::Value>()   {
+inline const  Value & Value::as<gnl::json::Value>()  const  {
     return *this;
 }
+
+
+
+template<>
+inline std::string Value::to<std::string>()  const {
+    if( _type != Value::STRING) throw gnl::json::incorrect_type();
+    return _string;
+}
+
+template<>
+inline  bool  Value::to<bool>()  const {
+    if( _type != Value::BOOL) throw gnl::json::incorrect_type();
+    return _bool;
+}
+
+template<>
+inline  float  Value::to<float>()  const  {
+    if( _type != Value::NUMBER) throw gnl::json::incorrect_type();
+    return _float;
+}
+
 
 };
 
@@ -353,8 +390,20 @@ gnl::json::Value & gnl::json::Value::operator[](const std::string & i)
     return *_object[i];
 }
 
+gnl::json::Value & gnl::json::Value::get(const std::string & i) const
+{
+    if( _type != Value::OBJECT) throw gnl::json::incorrect_type();
 
-void gnl::json::Value::parse(std::string &S)
+    return *_object.at(i);
+}
+
+gnl::json::Value & gnl::json::Value::get(              int & i) const
+{
+    return *_array.at(i);
+}
+
+
+void gnl::json::Value::parse(const std::string &S)
 {
     std::istringstream SS(S);
     parse(SS);
@@ -452,6 +501,10 @@ std::vector<gnl::json::pValue>  gnl::json::Value::parseArray(std::istringstream 
 
             gnl::json::pValue V = std::make_shared<Value>();
             V->parse(S);
+            if( V->type() == STRING)
+            {
+                std::cout << V->as<std::string>() << std::endl;
+            }
             A.push_back( V );
 
             REMOVEWHITESPACE;
@@ -569,7 +622,7 @@ std::map<std::string, gnl::json::pValue> gnl::json::Value::parseObject(std::istr
     //std::cout << "Start Object: " << c << std::endl;
 
     std::map<std::string, gnl::json::pValue> vMap;
-
+    int count = 0;
     while(c != '}')
     {
         std::string key = Value::parseKey(S);
@@ -586,6 +639,8 @@ std::map<std::string, gnl::json::pValue> gnl::json::Value::parseObject(std::istr
 
          vMap[key] = std::make_shared<Value>();
          vMap[key]->parse(S);
+         vMap[key]->_order = count;
+         count++;
 
          REMOVEWHITESPACE;
 
