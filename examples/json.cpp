@@ -1,35 +1,32 @@
 #include <iostream>
-#include "gnl_filesystem.h"
 
-
-
-#define GNL_JSON_IMPLEMENT
-#include "gnl_json.h"
+#include <gnl/gnl_json.h>
 
 
 using namespace std;
 
 
-int main2();  // see main2.cpp for definition.
-
 int main()
 {
     std::string raw =
-R"del(
-    {
-        number : -2.66e12,
-        string : "hello",
-        array  : [3,1,3,5],
-        object : {
-                    num : 32
-                 }
-    }
-)del";
+                        R"del(
+                            {
+                                array2 : [1,2,3,4,5,6,7,8,9],
+                                number : -2.66e12,
+                                string : "hello",
+                                array  : [3,1,3,5],
+                                object : {
+                                            num : 32
+                                         }
+                            }
+                        )del";
 
+    gnl::json::Value O;
 
-    gnl::json::Value O(raw);
-
-    std::cout << " String: " << O["string"].as<string>() << std::endl;
+    O.parse(raw);
+    std::cout << O << std::endl;
+    //std::cout << " String: " << O["string"].to<string>() << std::endl;
+    return 0;
     std::cout << " Number: " << O["number"].as<float>()  << std::endl;
     std::cout << " Array: [" << O["array"][0].as<float>() << ", "
                              << O["array"][1].as<float>() << ", "
@@ -89,7 +86,7 @@ R"del(
     std::cout << "Students size:" << O["Students"].size() << std::endl;
     for(auto a : O["Students"].getValueVector() )
     {
-        gnl::json::Value & S = *a;
+        gnl::json::Value & S = a;
         std::cout << "name: " << S["name"].as<std::string>()  << std::endl;
         std::cout << "grade:" << S["grade"].as<float>()  << std::endl;
         std::cout << "age  :" << S["age"  ].as<float>()  << std::endl;
@@ -98,56 +95,16 @@ R"del(
     std::cout << O.type() << std::endl;
     for(auto a : O.getValueMap() )
     {
-         gnl::json::Value & S = *a.second;
+         gnl::json::Value & S = a.second;
         std::cout << "Object: "  << a.first << std::endl;
         std::cout <<    "size: " << S.size()  << std::endl;
     }
 
-    //==========================================
-    // Call main2() which uses
-    //==========================================
-    main2();
-    //==========================================
 
-    return 0;
-    {
-        gnl::Path P("c:\\home\\commander\\test.png");
-        std::cout << "FileName : " << P.getFileName()          << std::endl;
-        std::cout << "BaseName : " << P.getFileBasename()      << std::endl;
-        std::cout << "Extension: " << P.getFileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.getParent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
-    }
-    {
-        gnl::Path P("/home/commander/test.png");
-        std::cout << "FileName : " << P.getFileName()          << std::endl;
-        std::cout << "BaseName : " << P.getFileBasename()      << std::endl;
-        std::cout << "Extension: " << P.getFileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.getParent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
-    }
-    {
-        gnl::Path P("home/commander/test.png");
-        std::cout << "FileName : " << P.getFileName()          << std::endl;
-        std::cout << "BaseName : " << P.getFileBasename()      << std::endl;
-        std::cout << "Extension: " << P.getFileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.getParent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
-    }
 
-    return 0;
 
 
     //
     //
 }
 
-#define GNL_IMPLEMENTATION
-#include "gnl_filesystem.h"
-#undef GNL_IMPLEMENT

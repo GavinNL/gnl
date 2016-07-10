@@ -1,5 +1,5 @@
-#ifndef GNL_EXPRESSION_H
-#define GNL_EXPRESSION_H
+#ifndef GNL_EXPRESSION_H__
+#define GNL_EXPRESSION_H__
 
 // Code for evaluating mathematical expressions written in string form.
 

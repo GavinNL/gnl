@@ -6,33 +6,45 @@
 #include <vector>
 #include <iostream>
 
-namespace gnl
+
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+
+namespace GNL_NAMESPACE
 {
 
     struct Path
     {
         public:
+            enum class Style
+            {
+                UNIX,
+                WINDOWS
+            };
+
             Path(const std::string & path = "")
             {
-                if( path == "" ) return;
 
-                auto last = path.find_last_of("/\\");
+                dirs = Tokenize(path, "/\\");
 
-                dirs = split( path, '/');
 
-                isfolder = dirs[ dirs.size()-1 ] == "";
-                if(!isfolder)
+                if( path[ path.size()-1] == '/' || path[ path.size()-1] == '\\')
                 {
+                    isfolder = true;
+                } else {
+                    isfolder = false;
                     filename = dirs[ dirs.size()-1];
+                    dirs.pop_back();
                 }
-                dirs.pop_back();
 
-
-
-                relative = dirs[0]!="";
-                if(!relative)
+                if(path[0] == '/')
                 {
-                    dirs.erase( dirs.begin(), dirs.begin()+1);
+                    relative = false;
+                }
+                if( path[0] == '.')
+                {
+                    relative = true;
                 }
 
             }
@@ -43,38 +55,47 @@ namespace gnl
             }
 
 
-            std::string ToString() const
+            std::string ToString( Style s=Style::UNIX ) const
             {
-                return BasePath() + filename;
-            }
+                std::string out;
 
-            std::string BasePath() const
-            {
-                std::string path;
-                if(IsAbsolute())
-                {
-                    path += "/";
-                }
+                if(IsAbsolute() ) out += (s==Style::WINDOWS? '\\' : '/');
                 for(auto & d : dirs)
                 {
-                    path += d ;
-                    path += "/";
+                    out += d +  (s==Style::WINDOWS? '\\' : '/');
                 }
-                return path;
+                return out + filename;
             }
 
-            std::vector<std::string> split(const std::string &text, char sep) {
-              std::vector<std::string> tokens;
-              std::size_t start = 0, end = 0;
-              while ((end = text.find(sep, start)) != std::string::npos) {
-                tokens.push_back(text.substr(start, end - start));
-                start = end + 1;
-              }
-              tokens.push_back(text.substr(start));
-              return tokens;
+            Path ParentPath() const
+            {
+                Path base = *this;
+
+                base.filename="";
+
+                base.dirs.pop_back();
+
+                return base;
+
             }
 
-            void Report()
+            Path BasePath() const
+            {
+                Path base = *this;
+
+                if( base.IsFile() )
+                {
+                    base.isfolder = true;
+                    base.filename = "";
+                }
+
+                return base;
+            }
+
+
+
+
+            void Report() const
             {
                 std::cout << "-----------------------------------" << std::endl;
                 std::cout << "Is Folder: "   << isfolder << std::endl;
@@ -96,14 +117,107 @@ namespace gnl
             bool IsFile()     const { return !isfolder; }
             bool IsAbsolute() const { return !relative; }
 
+            std::string FileName() const { return filename; }
+
+            std::string FileBaseName() const
+            {
+              //  std::cout << filename << std::endl;
+
+                auto end = filename.find_last_of('.');
+
+                return filename.substr( 0, end);
+
+            }
+
+            std::string FileExtension() const
+            {
+               // std::cout << filename << std::endl;
+
+                auto end = filename.find_last_of('.');
+
+                return filename.substr( end+1, filename.size()-end);
+            }
+
+
+            Path & operator+=(const Path & P)
+            {
+                if( !IsFile() )
+                {
+                    if( !P.IsAbsolute() )
+                    {
+                        for(auto & d : P.dirs )
+                        {
+                            if( d == "..")
+                            {
+                                dirs.pop_back();
+                            } else {
+                                dirs.push_back( d );
+                            }
+                        }
+                        filename = P.filename;
+                        isfolder = P.isfolder;
+                    } else {
+                        throw std::runtime_error("Second Path operand must not be an absolute path");
+                    }
+                }
+                else {
+                    throw std::runtime_error("First Path operand must not be a file");
+                }
+
+                return *this;
+            }
+
     private:
             bool                       isfolder;   // does this point to a folder or a file?
             bool                       relative;
+
             std::vector<std::string>   dirs;
             std::string                filename;
+            std::string                device;
+
+
+            std::vector<std::string> Tokenize(const std::string& str,
+
+                                  const std::string& delimiters = " ")
+            {
+                std::vector<std::string> tokens;
+
+                auto lastPos = str.find_first_not_of(delimiters, 0);
+
+                auto pos     = str.find_first_of(delimiters, lastPos);
+
+                while (std::string::npos != pos || std::string::npos != lastPos)
+                {
+                    // Found a token, add it to the vector.
+                    tokens.push_back(str.substr(lastPos, pos - lastPos));
+                    // Skip delimiters.  Note the "not_of"
+                    lastPos = str.find_first_not_of(delimiters, pos);
+                    // Find next "non-delimiter"
+                    pos = str.find_first_of(delimiters, lastPos);
+                }
+
+                return tokens;
+            }
     };
 
+
+
+    Path operator+(const Path & P1, const Path & P2)
+    {
+        Path P = P1;
+        P += P2;
+        return P;
+    }
+
 }
+
+inline std::ostream & operator<<(std::ostream &os, const GNL_NAMESPACE::Path & p)
+{
+    os <<  p.ToString();
+    return os;
+}
+
+#undef GNL_NAMESPACE
 
 #endif
 

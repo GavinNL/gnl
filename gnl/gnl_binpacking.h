@@ -1,9 +1,13 @@
-#ifndef GNL_BINPACKING_H
-#define GNL_BINPACKING_H
+#ifndef __GNL_BINPACKING_H__
+#define __GNL_BINPACKING_H__
 
 #include <memory>
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+
+namespace GNL_NAMESPACE
 {
 
 
