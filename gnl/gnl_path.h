@@ -47,6 +47,13 @@ namespace GNL_NAMESPACE
                     relative = true;
                 }
 
+                if( std::isalpha(path[0]) && path[1] == ':' && (path[2] == '/' || path[2] == '\\') )
+                {
+                    device   = path[0];
+                    relative = false;
+                    dirs.erase( dirs.begin(), dirs.begin()+1);
+                }
+
             }
 
             Path(const Path & P) : isfolder(P.isfolder), relative(P.relative), dirs(P.dirs), filename(P.filename)
@@ -59,7 +66,20 @@ namespace GNL_NAMESPACE
             {
                 std::string out;
 
-                if(IsAbsolute() ) out += (s==Style::WINDOWS? '\\' : '/');
+
+                if(IsAbsolute() )
+                {
+                    if( device.length() )
+                    {
+                        out += device + ":" + (s==Style::WINDOWS? '\\' : '/');
+                    }
+                    else
+                    {
+                        out += (s==Style::WINDOWS? '\\' : '/');
+                    }
+                }
+
+
                 for(auto & d : dirs)
                 {
                     out += d +  (s==Style::WINDOWS? '\\' : '/');
@@ -118,6 +138,7 @@ namespace GNL_NAMESPACE
             bool IsAbsolute() const { return !relative; }
 
             std::string FileName() const { return filename; }
+            std::string Device() const  {return device; }
 
             std::string FileBaseName() const
             {

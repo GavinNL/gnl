@@ -18,8 +18,12 @@
 #define NOEXCEPT
 #endif
 
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
 
-namespace gnl
+
+namespace GNL_NAMESPACE
 {
 /**
  * @brief The Periodic class

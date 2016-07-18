@@ -1,27 +1,16 @@
 /*
-gnl_json.h - v1.00 - Public domain JSON reader
-
-   A single file dropin library for handling JSON style structures inspired by the STB library
-   https://github.com/nothings/stb
+   gnl_json.h - v1.00 - Public domain JSON reader
 
    This library is in the public domain and can be used as one sees fit but cannot
    hold the author responsible for any damages that may occur as a result of using
    this code.
 
 
-   To use, define GNL_JSON_IMPLEMENT before including the header file to compile the
-   implementation. Include the header without defining GNL_JSON_IMPLEMENT to simple
-   include the function and class definitions.
+   Example:  main.cpp
 
-      #define GNL_JSON_IMPLEMENT
-      #include "gnl_json.h"
+   json::Object myJSON;
 
-
-    Example:  main.cpp
-
-    json::Object myJSON;
-
-    myJSON.parse( S );
+   myJSON.parse( S );
 
 
  */
@@ -78,50 +67,6 @@ class parse_error : public std::exception {
     }
 };
 
-
-//==========================================
-/*static std::string B64Encode(const std::string &in) {
-
-    std::string out;
-
-    int val=0, valb=-6;
-    for (unsigned char c : in) {
-        val = (val<<8) + c;
-        valb += 8;
-        while (valb>=0) {
-            out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[(val>>valb)&0x3F]);
-            valb-=6;
-        }
-    }
-    if (valb>-6) out.push_back("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[((val<<8)>>(valb+8))&0x3F]);
-    while (out.size()%4) out.push_back('=');
-    return out;
-}
-
-static std::string B64Decode(const std::string &in) {
-
-    std::string out;
-    static bool init=false;
-    static std::vector<int> T(256,-1);
-    if(!init)
-    {
-        init = true;
-        for (int i=0; i<64; i++) T["ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"[i]] = i;
-    }
-
-    int val=0, valb=-8;
-    for (unsigned char c : in) {
-        if (T[c] == -1) break;
-        val = (val<<6) + T[c];
-        valb += 6;
-        if (valb>=0) {
-            out.push_back(char((val>>valb)&0xFF));
-            valb-=8;
-        }
-    }
-    return out;
-}
-*/
 class Value
 {
 
@@ -1350,7 +1295,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json
 {
     switch( p._type )
     {
-        case GNL_NAMESPACE::json::Value::UNKNOWN:   return os << "UNKNOWN";
+        case GNL_NAMESPACE::json::Value::UNKNOWN:   return os << "false";
         case GNL_NAMESPACE::json::Value::NUMBER:    return os << p._Values._float;
         case GNL_NAMESPACE::json::Value::STRING:    return os << '"' << *p._Values._string << '"' ;
         case GNL_NAMESPACE::json::Value::ARRAY:

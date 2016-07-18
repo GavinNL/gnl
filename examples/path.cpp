@@ -10,14 +10,24 @@ int main()
 {
 
 
-        gnl::Path P("c:\\home\\commander\\test.png");
+        gnl::Path P("c:\\home\\comm  ander\\test.png");
+
         assert(P.FileName()      == "test.png");
         assert(P.FileBaseName()  == "test");
         assert(P.FileExtension() == "png");
-
+        assert(P.Device() == "c");
 
         gnl::Path A("/home/gavin/Code/C++/");
-        std::cout << (A+gnl::Path("../../hello.txt"))  << std::endl;
+
+        assert(  A.IsFolder() );
+        assert(  A.IsFolder() );
+        assert(  A.IsAbsolute() );
+
+        A +=  gnl::Path("../../hello.txt");
+
+        assert( A.ToString(gnl::Path::Style::UNIX) == "/home/gavin/hello.txt" );
+        std::cout << P.ToString(gnl::Path::Style::WINDOWS) << std::endl;
+        std::cout << P.ToString(gnl::Path::Style::UNIX) << std::endl;
 
 
         /*

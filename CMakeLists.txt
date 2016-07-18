@@ -1,7 +1,6 @@
 project(gnl)
 cmake_minimum_required(VERSION 2.8)
 aux_source_directory(. SRC_LIST)
-#add_executable(${PROJECT_NAME} ${SRC_LIST})
 
 
 FILE(GLOB_RECURSE HeaderFiles    "./gnl/*.h")
@@ -16,5 +15,7 @@ ADD_DEFINITIONS(
     -std=c++11
 )
 
-add_executable(json   examples/json.cpp)
-add_executable(path   examples/path.cpp)
+add_executable(json       examples/json.cpp)
+add_executable(path       examples/path.cpp)
+add_executable(periodic   examples/periodic.cpp)
+target_link_libraries (periodic pthread)

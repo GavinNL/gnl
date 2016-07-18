@@ -3,8 +3,8 @@
 
 
 
-#define GNL_JSON_IMPLEMENT
-#include "gnl_json.h"
+//#define GNL_JSON_IMPLEMENT
+//#include "gnl_json.h"
 
 
 using namespace std;
