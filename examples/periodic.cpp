@@ -25,22 +25,28 @@ struct Add
 
 int main( )
 {
-    if(0)
+    if(1)
     {
         {
-            std::cout << "Testing Spawner mode:" << std::endl;
+            std::cout << "*****Testing Spawner mode:" << std::endl;
             std::cout << "  " << std::endl;
 
-            std::cout << " Spawning a new thread every second for 50 spawns" << std::endl;
-            auto T = Periodic::Start_Spawner_Delayed<int>( std::bind( &process , 3 ) , 1000000, 50 );
+            std::cout << "***** Spawning a new thread every second for 50 spawns" << std::endl;
+            auto T = Periodic::Start_Spawner_Delayed<int>( std::bind( &process , 3 ) , 1000000, 250 );
 
-            std::cout << " Sleep for 10 seconds... Only 10 threads will be spawned" << std::endl;
+            std::cout << "*****Sleep for 10 seconds... Only 10 threads will be spawned" << std::endl;
             std::this_thread::sleep_for( std::chrono::seconds(10) );
 
-            std::cout << "Exiting scope. Attempting to Destruct the Periodic." << std::endl;
-            std::cout << "No more threads will be spawned. Wait till current threads finish" << std::endl;
+            std::cout << "*****Setting spawn interval to 100ms" << std::endl;
+            T->SetInterval( std::chrono::milliseconds(100) );
+
+            std::cout << "*****Sleeping for another 10 seconds" << std::endl;
+            std::this_thread::sleep_for( std::chrono::seconds(10) );
+
+            std::cout << "*****Exiting scope. Attempting to Destruct the Periodic." << std::endl;
+            std::cout << "*****No more threads will be spawned. Wait till current threads finish" << std::endl;
         }
-        std::cout << "** Scope exited. All threads finished ** " << std::endl;
+        std::cout << "*****Scope exited. All threads finished ** " << std::endl;
 
     }
 

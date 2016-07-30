@@ -57,6 +57,19 @@ public:
         };
     }
 
+
+    template<typename duration_type>
+    void SetInterval( duration_type duration)
+    {
+        __interval = duration;
+    }
+
+
+    void SetNumberOfCalls(std::uint64_t number)
+    {
+        __count = number;
+    }
+
     /**
      * @brief Stop
      *
@@ -64,7 +77,7 @@ public:
      */
     void Stop()
     {
-        // __is_running.store( false, std::memory_order_release );
+        __count = 0;
         if( __isrunning )
         {
             __quit_flag.store(  true, std::memory_order_release );
@@ -85,11 +98,6 @@ public:
             //std::cout << "Waiting " << std::endl;
             __runfuture.get();
         }
-        //if( __runthread.joinable() )
-        //{
-        //   // std::cout << "Waiting for __runthread to finish" << std::endl;
-        //    __runthread.join();
-        //}
     }
 
     /**
@@ -100,18 +108,7 @@ public:
      */
     bool Is_Running() const NOEXCEPT
     {
-        //auto joinable  = __runthread.joinable();
-        //auto isrunning =__is_running.load(std::memory_order_acquire);
         return __isrunning;
-        //auto future_ready = (__runfuture.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready);
-        //
-        //return future_ready;
-        //auto isrunning    = __is_running.load(std::memory_order_acquire);
-
-        // std::cout << "isready: "  << future_ready << std::endl;
-        // std::cout << "isrunning:" << isrunning << std::endl;
-
-        //  return (  isrunning && future_ready);
     }
 
 
@@ -198,6 +195,25 @@ public:
     }
 
 
+    static std::shared_ptr< Periodic > New( std::uint64_t microseconds , std::uint64_t count = std::numeric_limits<std::uint64_t>::max() )
+    {
+        std::shared_ptr< Periodic > P( new Periodic( std::chrono::microseconds(microseconds), true, count, true) );
+    }
+
+
+    template<class F, class... Args>
+    static std::shared_ptr<Periodic> Start_Test(F&& f, Args&&... args)
+    {
+
+        using return_type = typename std::result_of<F(Args...)>::type;
+
+        auto fun = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+
+        fun();
+
+        return nullptr;
+
+    }
 
 
     template<typename Rettype>
@@ -308,8 +324,11 @@ private:
     bool                         __spawner_mode = false;
     int                          __runningthreads = 0;
     std::chrono::microseconds    __interval = std::chrono::microseconds(1000000);
+
     std::future<bool>            __runfuture;
+
     std::uint64_t                __count = 10;
+
     bool                         __start_delayed = false;
 
     bool                         __isrunning = false;

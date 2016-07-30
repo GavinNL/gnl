@@ -18,4 +18,7 @@ ADD_DEFINITIONS(
 add_executable(json       examples/json.cpp)
 add_executable(path       examples/path.cpp)
 add_executable(periodic   examples/periodic.cpp)
+add_executable(socket     examples/socket.cpp)
+
 target_link_libraries (periodic pthread)
+target_link_libraries (socket pthread)
