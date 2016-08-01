@@ -1,2 +1,3 @@
 build*
 *.pro.*
+CMakeLists.txt.user
