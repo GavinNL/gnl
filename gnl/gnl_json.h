@@ -223,7 +223,8 @@ class Value
                     break;
                 default: break;
             }
-            _type = Value::UNKNOWN;
+            _Values._bool = false;
+            _type = Value::BOOL;
             //std::cout << "Finished clearing\n";
         }
 
@@ -300,10 +301,9 @@ class Value
 
         Value & operator=(const Value       & rhs)
         {
-            if( this == &rhs) return *this;
+            if( this == &rhs ) return *this;
 
-
-            Init(rhs._type);
+            if( _type != rhs._type) Init( rhs._type );
 
             switch( rhs._type )
             {
@@ -766,7 +766,7 @@ class Value
         }
         void erase(const std::string & i)
         {
-            if(_type==OBJECT)
+            if(_type == OBJECT)
             {
                 _Values._object->erase(i);
             }
@@ -783,16 +783,16 @@ class Value
         template<TYPE type=UNKNOWN>
         bool has(const std::string & i) const
         {
-            if( _type != OBJECT) return 0;
+            if( _type != OBJECT) return false;
 
             auto f = _Values._object->find(i);
-            if( f == _Values._object->end() ) return 0;
+            if( f == _Values._object->end() ) return false;
 
-            if( type==UNKNOWN) return 1;
+            if( type==UNKNOWN) return true;
 
-            if( f->second.type() == type ) return 1;
+            if( f->second.type() == type ) return true;
 
-            return 1;
+            return true;
         }
 
         // gets the type of the object.
