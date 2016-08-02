@@ -33,6 +33,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <initializer_list>
+#include <type_traits>
 
 namespace GNL_NAMESPACE
 {
@@ -82,44 +83,43 @@ class Value
             OBJECT
         } TYPE;
 
-        Value() : _type(UNKNOWN)
+        Value() : _type(BOOL)
         {
-            Init(UNKNOWN);
-         //   std::cout << "New constructor\n"    ;
+            Init(BOOL);
         }
 
-        Value( Value::TYPE T) : _type(UNKNOWN)
+        Value( Value::TYPE T) : _type(BOOL)
         {
             Init(T);
         }
 
-        Value(const Value  & rhs) : _type(UNKNOWN)
+        Value(const Value  & rhs) : _type(BOOL)
         {
             *this = rhs;
         }
 
-        Value(const std::string & rhs) : _type(UNKNOWN)
+        Value(const std::string & rhs) : _type(BOOL)
         {
           //  std::cout << "init as string" << std::endl;
             Init(STRING);
             *_Values._string = rhs;
         }
 
-        Value(const char * rhs) : _type(UNKNOWN)
+        Value(const char * rhs) : _type(BOOL)
         {
           //  std::cout << "init as char*" << std::endl;
             Init(STRING);
             *_Values._string = std::string(rhs);
         }
 
-        Value(const bool & f) : _type(UNKNOWN)
+        Value(const bool & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
             Init(BOOL);
             _Values._bool = f;
         }
 
-        Value(const float & f) : _type(UNKNOWN)
+        Value(const float & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
             Init(NUMBER);
@@ -144,7 +144,6 @@ class Value
 
         Value & operator=(Value && T)
         {
-           // std::cout << "Value:: Move operator\n";
             clear();
 
             switch( T._type )
@@ -159,15 +158,15 @@ class Value
                     _Values._array  = T._Values._array; break;
                 OBJECT:
                     _Values._object = T._Values._object; break;
-                UNKNOWN:
-                    break;
+//                UNKNOWN:
+//                    break;
                 default:
                     break;
             }
 
             _type = T._type;
 
-            T._type = UNKNOWN;
+         //   T._type = UNKNOWN;
             T._Values._string = 0;
             T._Values._array  = 0;
             T._Values._object = 0;
@@ -207,7 +206,7 @@ class Value
             }
         }
 
-        // clears the Value and sets it's type to UNKNOWN
+        // clears the Value and sets it's type to BOOL
         void clear()
         {
             switch( _type )
@@ -290,7 +289,7 @@ class Value
         {
             switch(_type)
             {
-                case UNKNOWN: return "UNKNOWN";
+                //case UNKNOWN: return "UNKNOWN";
                 case NUMBER:  return "NUMBER";
                 case ARRAY:   return "ARRAY";
                 case OBJECT:  return "OBJECT";
@@ -318,7 +317,7 @@ class Value
                 case OBJECT:
                     *_Values._object = *rhs._Values._object;
                     break;
-                case UNKNOWN:
+             //   case UNKNOWN:
                 default:
                     break;
             }
@@ -385,9 +384,50 @@ class Value
             return *this;
         }
 
+
+        //==========================================================================
+        //        Generic Operators
+        //==========================================================================
+        template<TYPE t, typename op_type>
+        bool op_equals( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()==right;
+        }
+        template<TYPE t, typename op_type>
+        bool op_nequals( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()!=right;
+        }
+        template<TYPE t, typename op_type>
+        bool op_less( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()<right;
+        }
+        template<TYPE t, typename op_type>
+        bool op_less_qual( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()<=right;
+        }
+        template<TYPE t, typename op_type>
+        bool op_grtr( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()>right;
+        }
+        template<TYPE t, typename op_type>
+        bool op_grtr_equal( const op_type & right )
+        {
+            if( t != type() ) return false;
+            return this->as<t>()>=right;
+        }
         //==========================================================================
         //        == operator
         //==========================================================================
+
         bool operator==(const bool & right)
         {
             if( _type == BOOL) return _Values._bool==right;
@@ -437,6 +477,9 @@ class Value
 
             return false;
         }
+
+
+
 
         //==========================================================================
         //        != operator
@@ -490,6 +533,7 @@ class Value
 
             return false;
         }
+
 
         //==========================================================================
         //        < operator
@@ -600,6 +644,7 @@ class Value
         //==========================================================================
         //        >= operator
         //==========================================================================
+
         bool operator>=(const bool & right)
         {
             if( _type == BOOL) return _Values._bool>=right;
@@ -764,6 +809,7 @@ class Value
 
             return DefaultValue;
         }
+
         void erase(const std::string & i)
         {
             if(_type == OBJECT)
@@ -781,7 +827,7 @@ class Value
         }
 
         template<TYPE type=UNKNOWN>
-        bool has(const std::string & i) const
+        bool has(const std::string & i, TYPE type=UNKNOWN) const
         {
             if( _type != OBJECT) return false;
 
@@ -799,10 +845,10 @@ class Value
         const  TYPE  & type() const {return _type;}
 
         // gets the key/value map if the Value is a json Object. Throws exception if it is not an object.
-        const std::map<std::string, Value> & getValueMap()  const  { if( _type != OBJECT ) throw incorrect_type(); return *_Values._object; }
+        const std::map<std::string, Value> & getValueMap()  const  { if( _type != OBJECT ) throw std::runtime_error("JSON value is not an OBJECT"); return *_Values._object; }
 
         // gets the vector of values if the Value object is a json Array. Throws exception if it is not an array.
-        const std::vector<Value>           & getValueVector() const { if( _type != ARRAY  ) throw incorrect_type(); return *_Values._array;  }
+        const std::vector<Value>           & getValueVector() const { if( _type != ARRAY  ) throw std::runtime_error("JSON value is not an ARRAY"); return *_Values._array;  }
 
         // Parses JSON text.
         void parse(std::istringstream & S);

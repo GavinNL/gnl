@@ -27,6 +27,13 @@ inline Value::operator vec3()  const
 }
 }
 
+
+template<typename T>
+bool Casting(T  J)
+{
+    std::cout << J << std::endl;
+}
+
 int main()
 {
     std::string raw_noquote =
@@ -90,8 +97,31 @@ int main()
     assert(V.x==1);
     assert(V.y==2);
     assert(V.z==3);
+
+    assert(V.z!=4);
+
+    O["three"]    = 3.0f;
+    assert( O["three"] < 4.0f);
+    assert( O["three"] > 2.0f);
+    O["foo"]    = "foo";
+
+    assert( O["foo"] > "bar" );
+
+    O["bool"]   = true;
+    O["float"]  = 3.15f;
+    O["string"] = "string";
+
+    assert( O["bool"]   != false);
+    assert( O["float"]  != 4.15f);
+    assert( O["string"] != "ssdtring");
+
+    Casting<bool>( O["bool"] ) ;
+    Casting<float>( O["float"] ) ;
+    Casting<int>( O["float"] ) ;
+    Casting<std::string>( O["string"] ) ;
+
     std::cout << O << std::endl;
-    //std::cout << " String: " << O["string"].to<string>() << std::endl;
+
     return 0;
 
 }
