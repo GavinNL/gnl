@@ -14,18 +14,18 @@ struct vec3
 
 namespace gnl
 {
-namespace json
-{
+
 template<>
-inline Value::operator vec3()  const
+inline JSON::operator vec3()  const
 {
-    if( type() == Value::ARRAY)
+    if( type() == JSON::ARRAY)
         return { this->get(0), this->get(1), this->get(2) };
 
     return {0,0,0};
 }
+
 }
-}
+
 
 
 template<typename T>
@@ -62,16 +62,16 @@ int main()
                                          }
                             }
                         )del";
-    gnl::json::Value O;
+    gnl::JSON O;
 
     //O.parse(raw);
 
-    O = "String";      assert( O.type() == gnl::json::Value::STRING);
-    O = 3.2f;          assert( O.type() == gnl::json::Value::NUMBER);
-    O = true;          assert( O.type() == gnl::json::Value::BOOL);
+    O = "String";      assert( O.type() == gnl::JSON::STRING);
+    O = 3.2f;          assert( O.type() == gnl::JSON::NUMBER);
+    O = true;          assert( O.type() == gnl::JSON::BOOL);
 
-    O = {3.4f,"5.5f"}; assert( O.type() == gnl::json::Value::ARRAY);
-   // O["sub"] = 32.3f;  assert( O.type() == gnl::json::Value::OBJECT);
+    O = {3.4f,"5.5f"}; assert( O.type() == gnl::JSON::ARRAY);
+   // O["sub"] = 32.3f;  assert( O.type() == gnl::JSON::OBJECT);
 
     O.parse(raw_noquote);
 
