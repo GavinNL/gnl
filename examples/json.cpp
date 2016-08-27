@@ -32,6 +32,7 @@ template<typename T>
 bool Casting(T  J)
 {
     std::cout << J << std::endl;
+    return true;
 }
 
 int main()

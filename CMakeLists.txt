@@ -13,6 +13,9 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 
 ADD_DEFINITIONS(
     -std=c++11
+    -Wall
+    -Werror
+    -Wfatal-errors
 )
 
 add_executable(json       examples/json.cpp)

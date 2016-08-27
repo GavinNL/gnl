@@ -252,13 +252,14 @@ class Socket
         #ifdef _MSC_VER
         WSADATA wsda;
         #endif
+        SocketFD           sock;
+
         bool               blocking;
         bool               Valid;
 
         struct sockaddr_in addr;
         struct sockaddr_in fromAddr;
 
-        SocketFD           sock;
         SocketState        __state = SocketState::Disconnected;
 
         fd_set  __scks;

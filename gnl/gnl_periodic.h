@@ -198,6 +198,7 @@ public:
     static std::shared_ptr< Periodic > New( std::uint64_t microseconds , std::uint64_t count = std::numeric_limits<std::uint64_t>::max() )
     {
         std::shared_ptr< Periodic > P( new Periodic( std::chrono::microseconds(microseconds), true, count, true) );
+        return P;
     }
 
 
@@ -205,7 +206,7 @@ public:
     static std::shared_ptr<Periodic> Start_Test(F&& f, Args&&... args)
     {
 
-        using return_type = typename std::result_of<F(Args...)>::type;
+        //using return_type = typename std::result_of<F(Args...)>::type;
 
         auto fun = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
 
@@ -274,7 +275,7 @@ public:
         }
 
        // std::cout << "Loop exited.  Size: " << thread_map.size() << std::endl;
-        for(int i=0 ; i < thread_map.size() ; i++)
+        for(size_t i=0 ; i < thread_map.size() ; i++)
         {
             thread_map[i].get();
             this->__runningthreads--;
@@ -321,19 +322,19 @@ private:
 
 private:
 
+    std::atomic<bool>            __quit_flag;
     bool                         __spawner_mode = false;
+    std::uint64_t                __count = 10;
     int                          __runningthreads = 0;
     std::chrono::microseconds    __interval = std::chrono::microseconds(1000000);
 
     std::future<bool>            __runfuture;
 
-    std::uint64_t                __count = 10;
 
     bool                         __start_delayed = false;
 
     bool                         __isrunning = false;
 
-    std::atomic<bool>            __quit_flag;
 
 
 };
