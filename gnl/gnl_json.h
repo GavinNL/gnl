@@ -141,15 +141,15 @@ class JSON
 
             switch( T._type )
             {
-                BOOL:
+                case BOOL:
                     _JSONs._bool   = T._JSONs._bool; break;
-                NUMBER:
+                case NUMBER:
                     _JSONs._float  = T._JSONs._float; break;
-                STRING:
+                case STRING:
                     _JSONs._string = T._JSONs._string; break;
-                ARRAY:
+                case ARRAY:
                     _JSONs._array  = T._JSONs._array; break;
-                OBJECT:
+                case OBJECT:
                     _JSONs._object = T._JSONs._object; break;
 //                UNKNOWN:
 //                    break;
@@ -282,10 +282,11 @@ class JSON
         {
             switch(_type)
             {
-                //case UNKNOWN: return "UNKNOWN";
+                case UNKNOWN: return "UNKNOWN";
                 case NUMBER:  return "NUMBER";
                 case ARRAY:   return "ARRAY";
                 case OBJECT:  return "OBJECT";
+                case STRING:  return "STRING";
                 case BOOL:    return "BOOL";
             }
             return "unknown";
@@ -464,6 +465,8 @@ class JSON
                     case STRING: return *_JSONs._string == *right._JSONs._string;
                     case NUMBER: return _JSONs._float   ==  right._JSONs._float;
                     case BOOL:   return _JSONs._bool    ==  right._JSONs._bool;
+                    default:
+                        return false;
                 }
             }
 
@@ -520,6 +523,8 @@ class JSON
                     case STRING: return *_JSONs._string != *right._JSONs._string;
                     case NUMBER: return  _JSONs._float  !=  right._JSONs._float;
                     case BOOL:   return  _JSONs._bool   !=  right._JSONs._bool;
+                    default:
+                        return false;
                 }
             }
 
@@ -574,6 +579,8 @@ class JSON
                     case STRING: return *_JSONs._string < *right._JSONs._string;
                     case NUMBER: return _JSONs._float   <  right._JSONs._float;
                     case BOOL:   return _JSONs._bool    <  right._JSONs._bool;
+                    default:
+                        return false;
                 }
             }
 
@@ -627,6 +634,8 @@ class JSON
                     case STRING: return *_JSONs._string > *right._JSONs._string;
                     case NUMBER: return _JSONs._float   >  right._JSONs._float;
                     case BOOL:   return _JSONs._bool    >  right._JSONs._bool;
+                default:
+                    return false;
                 }
             }
 
@@ -681,6 +690,8 @@ class JSON
                     case STRING: return *_JSONs._string >= *right._JSONs._string;
                     case NUMBER: return _JSONs._float   >=  right._JSONs._float;
                     case BOOL:   return _JSONs._bool    >=  right._JSONs._bool;
+                default:
+                    return false;
                 }
             }
 
@@ -737,6 +748,8 @@ class JSON
                     case STRING: return *_JSONs._string <= *right._JSONs._string;
                     case NUMBER: return _JSONs._float   <=  right._JSONs._float;
                     case BOOL:   return _JSONs._bool    <=  right._JSONs._bool;
+                default:
+                    return false;
                 }
             }
 
@@ -889,9 +902,9 @@ class JSON
         static std::string                   parseString(std::istringstream & S );
         static bool                          parseBool(  std::istringstream & S );
         static float                         parseNumber(std::istringstream & S );
-        static std::vector<JSON>            parseArray (std::istringstream & S );
+        static std::vector<JSON>             parseArray (std::istringstream & S );
         static std::string                   parseKey(   std::istringstream & S );
-        static std::map<std::string, JSON>  parseObject(std::istringstream & S );
+        static std::map<std::string, JSON>   parseObject(std::istringstream & S );
 };
 
 
@@ -1034,7 +1047,7 @@ inline JSON & JSON::operator[](int i)
 
     }
 
-    if( _JSONs._array->size() <= i ) _JSONs._array->resize(i+1);
+    if( (int)_JSONs._array->size() <= i ) _JSONs._array->resize(i+1);
 
 
     return (*_JSONs._array)[i];
@@ -1351,7 +1364,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::JSON
                 os << a;
 				}
 				s++;
-                if( s < p.size() ) os << ",";
+                if( s < (int)p.size() ) os << ",";
             }
             return os << "]";
         }
@@ -1361,7 +1374,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::JSON
 
             for(auto & a : *p._JSONs._object)
 			{
-				if( a.first.size() > maxsize ) maxsize = a.first.size();
+                if( (int)a.first.size() > maxsize ) maxsize = a.first.size();
 			}
 
             os << std::endl << spaces << "{" << std::endl;
@@ -1372,7 +1385,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::JSON
                 os << spaces << '"' << a.first << '"' <<  std::string( maxsize-a.first.size(), ' ') << " : " ;
                 __FormatOutput(os, a.second, spaces);
 				s++;
-				if( s < p.size() ) os << ",";
+                if( s < (int)p.size() ) os << ",";
 				os << std::endl;
             }
 			spaces.resize( spaces.size()-1 );

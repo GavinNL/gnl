@@ -50,77 +50,69 @@ int main()
                         )del";
 
 
-    std::string raw_quote =
-                        R"del(
-                            {
-                                "array2" : [1,2,3,4,5,6,7,8,9],
-                                "number" : 3.14,
-                                "string" : "hello",
-                                "array"  : [3,1,3,5],
-                                "object" : {
-                                            num : 32
-                                         }
-                            }
-                        )del";
-    gnl::JSON O;
+    gnl::JSON json;
 
-    //O.parse(raw);
 
-    O = "String";      assert( O.type() == gnl::JSON::STRING);
-    O = 3.2f;          assert( O.type() == gnl::JSON::NUMBER);
-    O = true;          assert( O.type() == gnl::JSON::BOOL);
 
-    O = {3.4f,"5.5f"}; assert( O.type() == gnl::JSON::ARRAY);
+    json.parse(raw_noquote);
+
+
+    json = "String";      assert( json.type() == gnl::JSON::STRING);
+    json = 3.2f;          assert( json.type() == gnl::JSON::NUMBER);
+    json = true;          assert( json.type() == gnl::JSON::BOOL  );
+    json = {3.4f,"5.5f"}; assert( json.type() == gnl::JSON::ARRAY );
    // O["sub"] = 32.3f;  assert( O.type() == gnl::JSON::OBJECT);
 
-    O.parse(raw_noquote);
 
-    assert( O["array2"][0] == 1 );
-    assert( O["array2"][1] == 2 );
-    assert( O["array2"][2] == 3 );
-    assert( O["array2"][3] == 4 );
-    assert( O["array2"][4] == 5 );
-    assert( O["array2"][5] == 6 );
-    assert( O["array2"][6] == 7 );
-    assert( O["array2"][7] == 8 );
-    assert( O["array2"][8] == 9 );
+    assert( json["array2"][0] == 1 );
+    assert( json["array2"][1] == 2 );
+    assert( json["array2"][2] == 3 );
+    assert( json["array2"][3] == 4 );
+    assert( json["array2"][4] == 5 );
+    assert( json["array2"][5] == 6 );
+    assert( json["array2"][6] == 7 );
+    assert( json["array2"][7] == 8 );
+    assert( json["array2"][8] == 9 );
 
-    int x = O["number"];
+    int x = json["number"];
     assert(  x == 3 );
-    std::string s = O["string"];
+    std::string s = json["string"];
     assert( s == "hello" );
 
 
     vec3 V;
-    V = O["array2"];
+    V = json["array2"];
 
     assert(V.x==1);
     assert(V.y==2);
     assert(V.z==3);
 
+
     assert(V.z!=4);
 
-    O["three"]    = 3.0f;
-    assert( O["three"] < 4.0f);
-    assert( O["three"] > 2.0f);
-    O["foo"]    = "foo";
 
-    assert( O["foo"] > "bar" );
+    json["three"]    = 3.0f;
+    assert( json["three"] < 4.0f);
+    assert( json["three"] > 2.0f);
+    json["foo"]    = "foo";
 
-    O["bool"]   = true;
-    O["float"]  = 3.15f;
-    O["string"] = "string";
+    assert( json["foo"] > "bar" );
 
-    assert( O["bool"]   != false);
-    assert( O["float"]  != 4.15f);
-    assert( O["string"] != "ssdtring");
+    json["bool"]   =  true;
+    json["float"]  =  3.15f;
+    json["string"] = "string";
 
-    Casting<bool>( O["bool"] ) ;
-    Casting<float>( O["float"] ) ;
-    Casting<int>( O["float"] ) ;
-    Casting<std::string>( O["string"] ) ;
+    assert( json["bool"]   != false);
+    assert( json["float"]  != 4.15f);
+    assert( json["string"] != "ssdtring");
 
-    std::cout << O << std::endl;
+    Casting<bool>(  json["bool"]  ) ;
+    Casting<float>( json["float"] ) ;
+    Casting<int>(   json["float"] ) ;
+
+    Casting<std::string>( json["string"] ) ;
+
+    std::cout << json << std::endl;
 
     return 0;
 
