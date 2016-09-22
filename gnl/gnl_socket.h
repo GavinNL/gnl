@@ -229,7 +229,7 @@ class Socket
          *
          * @return the number of bytes read, or 0 if the client disconnected
          */
-        int  Receive(const void* buffer,    int size, int spos = 0);
+        int  Receive( void * buffer,    int size, int spos = 0);
 
         /**
          * @brief SendRaw
@@ -241,8 +241,8 @@ class Socket
 
 
 
-        int  SendUDP(const void* buffer,    int size, sockaddr_in* to  );
-        int  ReceiveUDP(const void* buffer, int size, sockaddr_in* from);
+        int  SendUDP(   const void * buffer,    int size, sockaddr_in* to  );
+        int  ReceiveUDP(      void * buffer,    int size, sockaddr_in* from);
 
 
         long Address();
@@ -533,7 +533,7 @@ inline bool Socket::IsError()
 	return true;
 }
 
-inline int Socket::ReceiveUDP(const void* buffer, int size, sockaddr_in* from)
+inline int Socket::ReceiveUDP(void *buffer, int size, sockaddr_in* from)
 {
 #ifdef _MSC_VER
 	int client_length = (int)sizeof(struct sockaddr_in);
@@ -544,7 +544,7 @@ inline int Socket::ReceiveUDP(const void* buffer, int size, sockaddr_in* from)
 }
 
 
-inline int Socket::Receive( const void* buffer, int size, int spos )
+inline int Socket::Receive(  void * buffer, int size, int spos )
 {
     auto t = recv( sock, (char*)buffer + spos, size, MSG_WAITALL );
 
@@ -557,14 +557,14 @@ inline int Socket::Receive( const void* buffer, int size, int spos )
     return t;
 }
 
-inline int Socket::SendUDP( const void* buffer, int size, sockaddr_in* to )
+inline int Socket::SendUDP( const void * buffer, int size, sockaddr_in* to )
 {
-    return sendto( sock, (char*)buffer, size, 0, (struct sockaddr *)&to, sizeof(struct sockaddr_in) );
+    return sendto( sock, buffer, size, 0, (struct sockaddr *)&to, sizeof(struct sockaddr_in) );
 }
 
 inline int Socket::SendRaw(const void* data, int dataSize)
 {
-    return send(sock, (char*)data, dataSize, 0);
+    return send(sock, data, dataSize, 0);
 }
 
 }

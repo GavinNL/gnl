@@ -13,10 +13,33 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 
 ADD_DEFINITIONS(
     -std=c++11
-    -Wall
-    -Werror
+    -Wfloat-equal
+#    -Wundef
+    -Werror=shadow
+    -Wpointer-arith
+    -Wcast-align
+    -Wstrict-prototypes
+    -Wstrict-overflow=5
+    -Wwrite-strings
+#    -Waggregate-return
+    -Wcast-qual
+    -Werror=switch-default
+#    -Wswitch-enum
+#    -Wconversion
+    -Wunreachable-code
+   # -Werror
+    #-Werror=unused-function
+    -Werror=return-type
+    -Werror=cast-qual
+    -Werror=pedantic
+    -pedantic-errors
+  #  -Wfatal-errors
+
     -Wfatal-errors
 )
+
+
+add_executable(json_test       tests/json_test.cpp)
 
 add_executable(json       examples/json.cpp)
 add_executable(path       examples/path.cpp)

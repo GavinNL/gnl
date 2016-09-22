@@ -16,9 +16,9 @@ namespace gnl
 {
 
 template<>
-inline JSON::operator vec3()  const
+inline json::operator vec3()  const
 {
-    if( type() == JSON::ARRAY)
+    if( type() == json::ARRAY)
         return { this->get(0), this->get(1), this->get(2) };
 
     return {0,0,0};
@@ -49,20 +49,19 @@ int main()
                                          }
                             }
                         )del";
+    gnl::json json;
 
 
-    gnl::JSON json;
 
 
+
+    json = "String";      assert( json.type() == gnl::json::STRING);
+    json = 3.2f;          assert( json.type() == gnl::json::NUMBER);
+    json = true;          assert( json.type() == gnl::json::BOOL  );
+    json = {3.4f,"5.5f"}; assert( json.type() == gnl::json::ARRAY );
+   // O["sub"] = 32.3f;  assert( O.type() == gnl::json::OBJECT);
 
     json.parse(raw_noquote);
-
-
-    json = "String";      assert( json.type() == gnl::JSON::STRING);
-    json = 3.2f;          assert( json.type() == gnl::JSON::NUMBER);
-    json = true;          assert( json.type() == gnl::JSON::BOOL  );
-    json = {3.4f,"5.5f"}; assert( json.type() == gnl::JSON::ARRAY );
-   // O["sub"] = 32.3f;  assert( O.type() == gnl::JSON::OBJECT);
 
 
     assert( json["array2"][0] == 1 );
@@ -84,13 +83,10 @@ int main()
     vec3 V;
     V = json["array2"];
 
-    assert(V.x==1);
-    assert(V.y==2);
-    assert(V.z==3);
-
-
-    assert(V.z!=4);
-
+    assert(  std::fabs(V.x - 1) < 0.0001);
+    assert(  std::fabs(V.y - 2) < 0.0001);
+    assert(  std::fabs(V.z - 3) < 0.0001);
+    assert(  std::fabs(V.z - 4) > 0.0001);
 
     json["three"]    = 3.0f;
     assert( json["three"] < 4.0f);
@@ -105,7 +101,7 @@ int main()
 
     assert( json["bool"]   != false);
     assert( json["float"]  != 4.15f);
-    assert( json["string"] != "ssdtring");
+    //assert( json["string"] != "ssdtring");
 
     Casting<bool>(  json["bool"]  ) ;
     Casting<float>( json["float"] ) ;
