@@ -38,9 +38,6 @@ TEST_CASE( "Path Tests" )
 
     REQUIRE( absolute+relative  == "/home/folder/home/folder/" );
 
-    //relative2.Report();
-    //auto p = absolute+relative2;
-    //p.Report();
-    //std::cout << (absolute+relative2) << std::endl;
-    REQUIRE( absolute+relative2 == "/home/folder/home/folder/" );
+
+    REQUIRE( absolute+relative2 == "/home/folder/home/folder/" );  // failing
 }

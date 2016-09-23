@@ -169,23 +169,7 @@ class json
             clear();
 
             _jsons = T._jsons;
-         //   switch( T._type )
-         //   {
-         //       case BOOL:
-         //           _jsons._bool   = T._jsons._bool; break;
-         //       case NUMBER:
-         //           _jsons._float  = T._jsons._float; break;
-         //       case STRING:
-         //           _jsons._string = T._jsons._string; break;
-         //       case ARRAY:
-         //           _jsons._array  = T._jsons._array; break;
-         //       case OBJECT:
-         //           _jsons._object = T._jsons._object; break;
-         //       case UNKNOWN:
-         //           break;
-         //       default:
-         //           break;
-         //   }
+
 
             _type   = T._type;
             T._type = BOOL;
@@ -372,6 +356,20 @@ class json
         //        == operator
         //==========================================================================
 
+        #define OPERATOR(op) \
+        template <typename T>                        \
+        bool operator op (const T & right) const     \
+        {                                            \
+            return *this op json(right);             \
+        }
+
+        OPERATOR( == )
+        OPERATOR( != )
+        OPERATOR( <  )
+        OPERATOR( >  )
+        OPERATOR( >= )
+        OPERATOR( <= )
+
         bool operator==(const json & right) const
         {
             if( _type == right._type)
@@ -529,9 +527,9 @@ class json
             _type = T;
             switch(T)
             {
-                case BOOL:   _jsons._bool    = false;                              break;
-                case NUMBER: _jsons._float   = 0.0f;                               break;
-                case STRING: _jsons._string  = new std::string();                  break;
+                case BOOL:   _jsons._bool    = false;                             break;
+                case NUMBER: _jsons._float   = 0.0f;                              break;
+                case STRING: _jsons._string  = new std::string();                 break;
                 case ARRAY:  _jsons._array   = new std::vector<json>();           break;
                 case OBJECT: _jsons._object  = new std::map<std::string, json>(); break;
                 case UNKNOWN:
@@ -1182,3 +1180,4 @@ inline std::ostream & operator << (std::ostream &os, GNL_NAMESPACE::json const &
 #undef REMOVEWHITESPACE
 #undef GNL_NAMESPACE
 #endif
+
