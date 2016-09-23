@@ -1,5 +1,3 @@
-
-
 #ifndef GNL_PERIODIC_H
 #define GNL_PERIODIC_H
 
@@ -31,7 +29,8 @@ class Periodic
         template<class F, class... Args>
         /**
          * @brief Start
-         * @param interval - interval between calls. Can use any std::duration type
+         * @param interval - interval between calls. Can use any std::duration type which can be converted
+         *                   into microseconds
          * @param count    - number of times to call the function in total
          *
          * @param f        - arugments to the function
@@ -137,7 +136,7 @@ inline void Periodic::Start(  std::chrono::microseconds interval, std::uint64_t 
 
             if( std::cv_status::no_timeout == this->__condition.wait_for( Lock, wait_time ) )
             {
-                std::cout << "Wait didn't time out, Attempting to exit" << std::endl;
+                //std::cout << "Wait didn't time out, Attempting to exit" << std::endl;
             }
 
             wait_time = this->__interval;

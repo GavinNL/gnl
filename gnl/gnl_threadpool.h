@@ -22,7 +22,7 @@ class ThreadPool
 
 
         template<class F, class... Args>
-        std::future<typename std::result_of<F(Args...)>::type> enqueue(F&& f, Args&&... args);
+        std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
 
         ~ThreadPool();
@@ -34,7 +34,7 @@ class ThreadPool
         std::queue< std::function<void()> > tasks;
 
         // synchronization
-        std::mutex queue_mutex;
+        std::mutex              queue_mutex;
         std::condition_variable condition;
 
         bool stop;
@@ -56,8 +56,9 @@ inline ThreadPool::ThreadPool(size_t threads)
 
                     {
                         std::unique_lock<std::mutex> lock(this->queue_mutex);
-                        this->condition.wait(lock,
-                            [this]{ return this->stop || !this->tasks.empty(); });
+
+                        this->condition.wait(lock, [this]{ return this->stop || !this->tasks.empty(); });
+
                         if(this->stop && this->tasks.empty())
                             return;
                         task = std::move(this->tasks.front());
@@ -73,8 +74,10 @@ inline ThreadPool::ThreadPool(size_t threads)
 
 // add new work item to the pool
 template<class F, class... Args>
-std::future<typename std::result_of<F(Args...)>::type> ThreadPool::enqueue(F&& f, Args&&... args)
+#define RETURN_TYPE typename std::result_of<F(Args...)>::type
+std::future< RETURN_TYPE > ThreadPool::push(F&& f, Args&&... args)
 {
+#undef RETURN_TYPE
     using return_type = typename std::result_of<F(Args...)>::type;
 
     auto task = std::make_shared< std::packaged_task<return_type()> >

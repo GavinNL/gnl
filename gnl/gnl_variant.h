@@ -1,7 +1,9 @@
+// In progress, no testing done yet
+
 #ifndef GNL_VARIANT_H
 #define GNL_VARIANT_H
 
-//#include "meta.h"
+
 #include <type_traits>
 #include <iostream>
 
@@ -102,104 +104,6 @@ struct type_size<T,Head,Tail...>
 
 };
 
-
-#if 0
-template<int I, typename... Ts>
-struct data_destroyer
-{
-    void operator()(int index, void * data)
-    {
-
-    }
-};
-
-// Base step
-template<typename T, typename... Ts>
-struct data_destroyer<0, T, Ts...>
-{
-    void operator()(int index, void * data)
-    {
-        if( index == 0)
-        {
-           // using T = typename nth_type_of<0, Ts...>::type;
-
-            static_cast< T*>(data)->~T();
-
-           // std::cout << "Index " << 0 << " destroyed" << std::endl;
-        }
-       // std::cout << "Current Index: " << index << " ?= 0" <<std::endl;
-    }
-};
-
-// Induction step
-template<int I, typename... Ts>
-struct data_destroyer<I,  Ts...>
-{
-    //static const int value = std::is_same < T, typename nth_type_of<I, Ts...>::type >::value ? I : pth_type_of<I-1,T, Ts...>::value;
-
-    void operator()(int index, void * data)
-    {
-       // std::cout << "Current Index: " << index << " ?= " << I <<std::endl;
-        if( index == I)
-        {
-            using T = typename nth_type_of<I, Ts...>::type;
-
-            static_cast< T*> (data)->~T();
-         //   std::cout << "Index " << I << " destroyed" << std::endl;
-        }
-        else
-        {
-            data_destroyer<I-1,Ts...> D;
-            D(index,data);
-        }
-    }
-};
-
-
-template<typename ...Ts>
-class Variant;
-
-
-template<int I, typename... Ts>
-struct print_as;
-
-// Base step
-template< typename... Ts>
-struct print_as<0, Ts...>
-{
-    void operator()(int index ,std::ostream& stream , const Variant<Ts...> & V ) const
-    {
-        if( index == 0)
-        {
-            using T = typename nth_type_of<0, Ts...>::type;
-            stream << V.as<T>();
-        }
-    }
-};
-
-// Induction step
-template<int I, typename... Ts>
-struct print_as<I,  Ts...>
-{
-    //static const int value = std::is_same < T, typename nth_type_of<I, Ts...>::type >::value ? I : pth_type_of<I-1,T, Ts...>::value;
-
-    void operator()(int index , std::ostream& stream , const  Variant<Ts...> & V) const
-    {
-
-        if( index == I)
-        {
-            using T = typename nth_type_of<I, Ts...>::type;
-            stream << V.as<T>();
-        }
-        else
-        {
-            print_as<I-1,Ts...> D;
-            D(index, stream, V);
-        }
-    }
-};
-
-#else
 
 template<int I, typename... Ts>
 struct data_destroyer;

@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef META_H
-#define META_H
+#ifndef GNL_META_H
+#define GNL_META_H
 
 #include<type_traits>
 
@@ -105,6 +105,7 @@ struct type_size<T,Head>
 {
     static const int max   = sizeof(T)>sizeof(Head) ? sizeof(T) : sizeof(Head);
     static const int min   = sizeof(T)<sizeof(Head) ? sizeof(T) : sizeof(Head);
+    static const int sum   = sizeof(T) + sizeof(Head);
 };
 
 template<typename T, typename Head, typename ...Tail>
@@ -112,6 +113,7 @@ struct type_size<T,Head,Tail...>
 {
     static const int max = sizeof(T) > type_size<Head,Tail...>::max ? sizeof(T) : type_size<Head,Tail...>::max;
     static const int min = sizeof(T) < type_size<Head,Tail...>::min ? sizeof(T) : type_size<Head,Tail...>::min;
+    static const int sum = sizeof(T) + type_size<Head,Tail...>::sum;
 
 };
 

@@ -1,33 +1,31 @@
 #ifndef GNL_PATH_H
 #define GNL_PATH_H
 
-
 #include <string>
 #include <vector>
 #include <iostream>
 
 
-#ifndef GNL_NAMESPACE
-    #define GNL_NAMESPACE gnl
-#endif
-
-namespace GNL_NAMESPACE
+namespace gnl
 {
-
-    struct Path
+    class Path
     {
         public:
-            enum class Style
+            enum Style
             {
-                UNIX,
-                WINDOWS
+                UNIX_STYLE,
+                WINDOWS_STYLE
             };
+
+            Path(const char * path) : Path( std::string(path) )
+            {
+
+            }
 
             Path(const std::string & path = "")
             {
 
                 dirs = Tokenize(path, "/\\");
-
 
                 if( path[ path.size()-1] == '/' || path[ path.size()-1] == '\\')
                 {
@@ -42,7 +40,7 @@ namespace GNL_NAMESPACE
                 {
                     relative = false;
                 }
-                if( path[0] == '.')
+                if( path[0] != '/')
                 {
                     relative = true;
                 }
@@ -62,7 +60,7 @@ namespace GNL_NAMESPACE
             }
 
 
-            std::string ToString( Style s=Style::UNIX ) const
+            std::string ToString( Style s = UNIX_STYLE ) const
             {
                 std::string out;
 
@@ -71,21 +69,28 @@ namespace GNL_NAMESPACE
                 {
                     if( device.length() )
                     {
-                        out += device + ":" + (s==Style::WINDOWS? '\\' : '/');
+                        out += device + ":" + (s==WINDOWS_STYLE? '\\' : '/');
                     }
                     else
                     {
-                        out += (s==Style::WINDOWS? '\\' : '/');
+                        out += (s==Style::WINDOWS_STYLE? '\\' : '/');
                     }
                 }
 
 
                 for(auto & d : dirs)
                 {
-                    out += d +  (s==Style::WINDOWS? '\\' : '/');
+                    out += d +  (s==Style::WINDOWS_STYLE? '\\' : '/');
                 }
                 return out + filename;
             }
+
+            inline operator std::string()  const
+            {
+                return ToString();
+            }
+
+
 
             Path ParentPath() const
             {
@@ -188,13 +193,23 @@ namespace GNL_NAMESPACE
                 return *this;
             }
 
-    private:
+            bool operator == ( const Path & P)
+            {
+                return
+                        isfolder == P.isfolder &&
+                        relative == P.relative &&
+                        device   == P.device &&
+                        std::equal( dirs.begin(), dirs.end(), P.dirs.begin() );
+            }
+
+
+        private:
             bool                       isfolder;   // does this point to a folder or a file?
             bool                       relative;
 
-            std::vector<std::string>   dirs;
-            std::string                filename;
             std::string                device;
+            std::string                filename;
+            std::vector<std::string>   dirs;
 
 
             std::vector<std::string> Tokenize(const std::string& str,
@@ -232,13 +247,13 @@ namespace GNL_NAMESPACE
 
 }
 
-inline std::ostream & operator<<(std::ostream &os, const GNL_NAMESPACE::Path & p)
+inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
 {
     os <<  p.ToString();
     return os;
 }
 
-#undef GNL_NAMESPACE
+
 
 #endif
 

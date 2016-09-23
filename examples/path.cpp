@@ -25,9 +25,9 @@ int main()
 
         A +=  gnl::Path("../../hello.txt");
 
-        assert( A.ToString(gnl::Path::Style::UNIX) == "/home/gavin/hello.txt" );
-        std::cout << P.ToString(gnl::Path::Style::WINDOWS) << std::endl;
-        std::cout << P.ToString(gnl::Path::Style::UNIX) << std::endl;
+        assert( A.ToString(gnl::Path::UNIX_STYLE) == "/home/gavin/hello.txt" );
+        std::cout << P.ToString(gnl::Path::WINDOWS_STYLE) << std::endl;
+        std::cout << P.ToString(gnl::Path::UNIX_STYLE) << std::endl;
 
 
         /*
