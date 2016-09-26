@@ -4,10 +4,10 @@
 using namespace std;
 using namespace gnl;
 
-int process(int x )
+void process(int x )
 {
     std::cout << "Function Called: " << x << std::endl;
-    return 0;
+    //return 0;
 }
 
 int main( )

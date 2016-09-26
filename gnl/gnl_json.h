@@ -36,6 +36,8 @@
 #include <type_traits>
 #include <limits>
 #include <cmath>
+#include <cstdint>
+#include <cctype>
 
 namespace GNL_NAMESPACE
 {
@@ -594,16 +596,16 @@ class json
         }
 
 
-        bool has(const std::string & i, TYPE type=UNKNOWN) const
+        bool has(const std::string & i, TYPE type_=UNKNOWN) const
         {
             if( _type != OBJECT) return false;
 
             auto f = _jsons._object->find(i);
             if( f == _jsons._object->end() ) return false;
 
-            if( type==UNKNOWN) return true;
+            if( type_ == UNKNOWN) return true;
 
-            if( f->second.type() == type ) return true;
+            if( f->second.type() == type_ ) return true;
 
             return true;
         }
@@ -639,13 +641,25 @@ class json
 
         }
 
+
+#ifdef _MSC_VER
+        //operator int()  const    { if(_type == json::NUMBER) return (int)_jsons._float;  return 0; }
+        //operator float()  const  { if(_type == json::NUMBER) return _jsons._float;  return 0.0f;}
+        //operator std::string() const   { if(_type == json::STRING) return *_jsons._string;  return "";}
+        //operator bool() const  { if(_type == json::BOOL) return _jsons._bool;  return 0;}
+
+        template<class T>
+        operator T() const
+        {
+            return to<T>();
+        }
+#else
         template <class T>
         operator T() const;
+#endif
 
-        //operator float()  { return to<float>(); }
 
-
-        uint                            _order;  // the order in the Object. In case the order of
+        std::uint32_t                         _order;  // the order in the Object. In case the order of
                                                  // jsons in an object matter.
     public:
         union
@@ -670,7 +684,7 @@ class json
         static std::map<std::string, json>   parseObject(std::istringstream & S );
 };
 
-
+#ifndef _MSC_VER
 template<>
 inline json::operator int()  const    { if(_type == json::NUMBER) return (int)_jsons._float;  return 0; }
 
@@ -682,7 +696,7 @@ inline json::operator std::string() const   { if(_type == json::STRING) return *
 
 template<>
 inline json::operator bool() const  { if(_type == json::BOOL) return _jsons._bool;  return 0;}
-
+#endif
 
 
 
@@ -728,7 +742,11 @@ inline  float  json::to<float>()  const  {
     return _jsons._float;
 }
 
-
+template<>
+inline  int  json::to<int>()  const  {
+    if( _type != json::NUMBER) return 0;
+    return static_cast<int>(_jsons._float);
+}
 
 
 

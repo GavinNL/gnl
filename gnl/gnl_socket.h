@@ -22,12 +22,12 @@
 #else
     #include <cstring>
     #include <netinet/in.h>
+    #include <sys/time.h>
+    #include <sys/types.h>
     #include <sys/select.h>
     #include <unistd.h>
     #include <arpa/inet.h>
     #include <netdb.h>
-    #include <sys/time.h>
-    #include <sys/types.h>
     #include <pthread.h>
 #endif
 
@@ -263,6 +263,7 @@ class Socket
         SocketState        __state = SocketState::Disconnected;
 
         fd_set  __scks;
+       // FD_SET  __scks;
         timeval __times;
 
         //unsigned int totaldata;
@@ -431,9 +432,9 @@ inline bool Socket::Accept( Socket* socket )
     int length   = sizeof(socket->addr);
 	socket->sock = ::accept(sock, (struct sockaddr*) &socket->addr, (socklen_t*)&length);
 
-    if( fcntl(socket->sock, F_GETFL) & O_NONBLOCK) {
-        std::cout << " socket is non-blocking " << std::endl;
-    }
+    // if( fcntl(socket->sock, F_GETFL) & O_NONBLOCK) {
+    //     std::cout << " socket is non-blocking " << std::endl;
+    // }
 
 	if (socket->sock == SOCKET_ERROR)
     {
@@ -559,12 +560,16 @@ inline int Socket::Receive(  void * buffer, int size, int spos )
 
 inline int Socket::SendUDP( const void * buffer, int size, sockaddr_in* to )
 {
+#ifdef _MSC_VER
+    return sendto( sock, static_cast<const char*>(buffer), size, 0, (struct sockaddr *)&to, sizeof(struct sockaddr_in) );
+#else
     return sendto( sock, buffer, size, 0, (struct sockaddr *)&to, sizeof(struct sockaddr_in) );
+#endif
 }
 
 inline int Socket::SendRaw(const void* data, int dataSize)
 {
-    return send(sock, data, dataSize, 0);
+    return send(sock, static_cast<const char*>(data), dataSize, 0);
 }
 
 }

@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
-
+#include <cctype>
+#include <stdexcept>
 #ifndef _MSC_VER
     #include <dirent.h>
 //    #include <stdio.h>
@@ -32,7 +32,7 @@ namespace gnl
              * @brief Path
              * Construct a blank path
              */
-            Path() { }
+            Path() : Path(std::string()) { }
 
             /**
              * @brief Path
@@ -50,7 +50,7 @@ namespace gnl
              *
              * Construct a path from a std::string
              */
-            Path(const std::string & path = "")
+            Path(const std::string & path)
             {
 
                 dirs = Tokenize(path, "/\\");
@@ -289,8 +289,21 @@ namespace gnl
                         device   == P.device &&
                         std::equal( dirs.begin(), dirs.end(), P.dirs.begin() );
             }
+            bool operator != ( const Path & P)
+            {
+                return !(*this == P);
+            }
 
+            #define OPERATOR(op)                      \
+            bool operator op (const Path & P)         \
+            {                                         \
+                return ToString() op P.ToString();    \
+            }
 
+            OPERATOR(<)
+            OPERATOR(>)
+            OPERATOR(<=)
+            OPERATOR(>=)
             /**
              * @brief GetDirectoryList
              * @param P
@@ -335,6 +348,7 @@ namespace gnl
 #else
                 using namespace std;
 
+               // struct dirent *dir;
                 string search_path = BasePath().ToString(UNIX_STYLE) + "*.*";
 
                 //std::cout << "Searching: " << search_path << std::endl;
@@ -346,11 +360,15 @@ namespace gnl
                     do {
                         // read all (real) files in current folder
                         // , delete '!' read other 2 default folder . and ..
-                        if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ) {
-                            std::cout << "(File)";
-                            files.push_back( P + Path(std::string(dir->d_name)  ) );
-                        } else {
-                            files.push_back( P + Path(std::string(dir->d_name)+std::string("/") ) );
+//                        std::cout << std::string(fd.cFileName) << std::endl;
+                        if( std::string(fd.cFileName) != std::string("..") && std::string(fd.cFileName) != std::string("."))
+                        {
+                            if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
+                            {
+                                    files.push_back( BasePath() + Path(fd.cFileName) );
+                            } else {
+                                files.push_back( BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
+                            }
                         }
                         //std::cout << fd.cFileName << std::endl;
                         //names.push_back(fd.cFileName);

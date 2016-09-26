@@ -8,7 +8,7 @@ using namespace std;
 
 int main()
 {
-    gnl::Path P1("/home/gavin/");
+    gnl::Path P1("C:\\Users\\c11237\\HOME\\CodeTests\\");
 
     auto D = P1.GetFileList();
 
