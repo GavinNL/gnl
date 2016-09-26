@@ -20,6 +20,25 @@ namespace gnl
  * @brief The Periodic class
  *
  *  Calls a function at regular intervals.
+ *
+ * example:
+ *
+ * int process(int x )
+ * {
+ *     static int i=0;
+ *     int j = i++;
+ *     std::cout << "Function Called: " << x << std::endl;
+ *     return 0;
+ * }
+ *
+ * int  main()
+ * {
+ *      gnl::Periodic P;
+ *      P.Interval( 1.0 ).Start( process, 10);  // call the process function with the argument 10, once every seconds
+ *      std::this_thread::sleep_for( std::chrono::seconds(10));
+ *      return 0;
+ * }
+ *
  */
 class Periodic
 {
@@ -37,7 +56,7 @@ class Periodic
          * @param args     - arugments to the function
          *
          */
-        void Start(  std::chrono::microseconds interval, std::uint64_t count, F&& f, Args&&... args);
+        Periodic& Start(  F&& f, Args&&... args);
 
 
         ~Periodic();
@@ -47,7 +66,7 @@ class Periodic
          * @param count - the total amount of times to call the function. Can be set
          *                while the Periodic is active.
          */
-        void SetCount( std::uint64_t count);
+        Periodic& Count( std::uint64_t count);
 
         /**
          * @brief Stop
@@ -60,7 +79,19 @@ class Periodic
          * @brief SetInterval
          * @param interval - the interval between function calls
          */
-        void SetInterval(const std::chrono::microseconds & interval );
+        Periodic& Interval(const std::chrono::microseconds & interval );
+
+
+        /**
+         * @brief SetInterval
+         * @param seconds - number of seconds between function calls
+         * @return
+         */
+        Periodic& Interval(const double & seconds )
+        {
+            Interval( std::chrono::microseconds( static_cast<std::uint64_t>(seconds*1e6) ) );
+            return *this;
+        }
 
     private:
 
@@ -86,10 +117,11 @@ inline Periodic::~Periodic()
     }
 }
 
-inline void Periodic::SetCount( std::uint64_t count)
+inline Periodic& Periodic::Count( std::uint64_t count)
 {
     std::lock_guard<std::mutex> L(__data_mutex);
     __count = count;
+    return *this;
 }
 
 inline void Periodic::Stop()
@@ -99,15 +131,16 @@ inline void Periodic::Stop()
 }
 
 
-inline void Periodic::SetInterval(const std::chrono::microseconds & interval )
+inline Periodic & Periodic::Interval(const std::chrono::microseconds & interval )
 {
     __interval = interval;
+    return *this;
 }
 
 
 
 template<class F, class... Args>
-inline void Periodic::Start(  std::chrono::microseconds interval, std::uint64_t count, F&& f, Args&&... args)
+inline Periodic& Periodic::Start(F&& f, Args&&... args)
 {
     using return_type = typename std::result_of< F(Args...) >::type;
 
@@ -117,8 +150,7 @@ inline void Periodic::Start(  std::chrono::microseconds interval, std::uint64_t 
         __timerfuture.get();
     }
 
-    this->__interval = interval;
-    this->__count    = count;
+
     this->__stop     = false;
 
     std::function< void() > fun = std::bind( std::forward<F>(f), std::forward<Args>(args)... );
@@ -159,6 +191,8 @@ inline void Periodic::Start(  std::chrono::microseconds interval, std::uint64_t 
     __timerfuture = std::async( std::launch::async,
                               Main_Loop
                               );
+
+    return *this;
 
 }
 

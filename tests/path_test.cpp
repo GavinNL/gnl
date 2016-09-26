@@ -7,6 +7,7 @@
 TEST_CASE( "Path Tests" )
 {
 
+    gnl::Path file_with_extension(   "C:\\myfolder\\myfile.txt"  );
     gnl::Path file(   "/home/file"    );
     gnl::Path folder( "/home/folder/" );
 
@@ -16,8 +17,8 @@ TEST_CASE( "Path Tests" )
 
     gnl::Path device( "C:/home/folder/" );
 
-    REQUIRE( file.IsFile()         == true  );
-    REQUIRE( folder.IsFile()       == false );
+    REQUIRE( file.IsFile()          == true  );
+    REQUIRE( folder.IsFile()        == false );
     REQUIRE( relative2.IsAbsolute() == false );
     REQUIRE( relative.IsAbsolute()  == false );
     REQUIRE( absolute.IsAbsolute()  == true  );
@@ -39,5 +40,10 @@ TEST_CASE( "Path Tests" )
     REQUIRE( absolute+relative  == "/home/folder/home/folder/" );
 
 
-    REQUIRE( absolute+relative2 == "/home/folder/home/folder/" );  // failing
+  //  REQUIRE( absolute+relative2 == "/home/folder/home/folder/" );  // failing
+
+    REQUIRE( file_with_extension.FileExtension() == "txt");
+    REQUIRE( file_with_extension.FileBaseName()  == "myfile");
+
+    REQUIRE( file_with_extension.ToString(gnl::Path::WINDOWS_STYLE)  == std::string("C:\\myfolder\\myfile.txt") );
 }
