@@ -8,9 +8,7 @@ int process(int x )
 {
     static int i=0;
     int j = i++;
-    std::cout << "Process started: " << j << std::endl;
-    std::this_thread::sleep_for( std::chrono::seconds( rand() % 2 + 3) );
-    std::cout << "Process ended: " << j  << std::endl;
+    std::cout << "Function Called: " << x << std::endl;
     return 0;
 }
 
@@ -25,6 +23,11 @@ struct Add
 
 int main( )
 {
+
+    gnl::Periodic P;
+
+    P.Start( std::chrono::seconds(2), 4, process, 3);
+    std::this_thread::sleep_for( std::chrono::seconds(10 ) );
     //if(1)
     //{
     //    {

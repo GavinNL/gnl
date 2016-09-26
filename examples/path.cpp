@@ -9,6 +9,16 @@ using namespace std;
 int main()
 {
 
+        gnl::Path P1("/home/gavin/");
+
+        auto D = P1.GetFileList();
+
+        for(auto & d : D)
+        {
+            std::cout << d << std::endl;
+        }
+        return 0;
+
 
         gnl::Path P("c:\\home\\comm  ander\\test.png");
 
@@ -30,38 +40,7 @@ int main()
         std::cout << P.ToString(gnl::Path::UNIX_STYLE) << std::endl;
 
 
-        /*
-        P.Report();
-        std::cout << "FileName : " << P.FileName()          << std::endl;
-        std::cout << "BaseName : " << P.FileBaseName()      << std::endl;
-        std::cout << "Extension: " << P.FileExtension()      << std::endl;
-        std::cout << "Extension: " << P.FileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.Parent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
 
-    {
-        gnl::Path P("/home/commander/test");
-        std::cout << "FileName : " << P.FileName()          << std::endl;
-        //std::cout << "BaseName : " << P.FileBasename()      << std::endl;
-        //std::cout << "Extension: " << P.FileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.Parent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
-    }
-    if(0){
-        gnl::Path P("home/commander/test.png");
-        std::cout << "FileName : " << P.FileName()          << std::endl;
-        std::cout << "BaseName : " << P.FileBasename()      << std::endl;
-        std::cout << "Extension: " << P.FileExtension()     << std::endl;
-        std::cout << "Parent   : " << P.Parent().toString() << std::endl;
-        std::cout << "Full Path: " << P.toString()             << std::endl;
-        std::cout << "Absolute : " << P.isAbsolute()           << std::endl;
-        cout << "==========" << endl;
-    }
-*/
     return 0;
 
 

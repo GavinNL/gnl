@@ -6,8 +6,19 @@
 #include <iostream>
 
 
+#ifndef _MSC_VER
+    #include <dirent.h>
+//    #include <stdio.h>
+#else
+    #include<windows.h>
+#endif
+
 namespace gnl
 {
+    class Path;
+
+    Path operator+(const Path & P1, const Path & P2);
+
     class Path
     {
         public:
@@ -17,11 +28,28 @@ namespace gnl
                 WINDOWS_STYLE
             };
 
+            /**
+             * @brief Path
+             * Construct a blank path
+             */
+            Path() { }
+
+            /**
+             * @brief Path
+             * @param path
+             * Construct a path from a raw string
+             */
             Path(const char * path) : Path( std::string(path) )
             {
 
             }
 
+            /**
+             * @brief Path
+             * @param path - path name as a string.
+             *
+             * Construct a path from a std::string
+             */
             Path(const std::string & path = "")
             {
 
@@ -60,6 +88,12 @@ namespace gnl
             }
 
 
+            /**
+             * @brief ToString
+             * @param s - the string style for teh path (forward slashes to separate directories on UNIX)
+             * @return A string representation of the path
+             *
+             */
             std::string ToString( Style s = UNIX_STYLE ) const
             {
                 std::string out;
@@ -85,13 +119,23 @@ namespace gnl
                 return out + filename;
             }
 
+
+            /**
+             * @brief operator std::string
+             * Casting operator to string.
+             */
             inline operator std::string()  const
             {
                 return ToString();
             }
 
 
-
+            /**
+             * @brief ParentPath
+             * @return The parent folder of the current directory. If the path is a file, it will give the
+             * parent directry of the base path
+             *
+             */
             Path ParentPath() const
             {
                 Path base = *this;
@@ -104,6 +148,10 @@ namespace gnl
 
             }
 
+            /**
+             * @brief BasePath
+             * @return The base path of the file. If the path is a folder, it will return the path to the same folder
+             */
             Path BasePath() const
             {
                 Path base = *this;
@@ -138,23 +186,58 @@ namespace gnl
 
             }
 
+
+            /**
+             * @brief IsFolder
+             * @return True if the path represents a folder.
+             */
             bool IsFolder()   const { return isfolder;  }
+
+            /**
+             * @brief IsFile
+             * @return True if the path represents a file
+             */
             bool IsFile()     const { return !isfolder; }
+
+            /**
+             * @brief IsAbsolute
+             * @return true if the path is an abolute path
+             */
             bool IsAbsolute() const { return !relative; }
 
-            std::string FileName() const { return filename; }
-            std::string Device() const  {return device; }
+            /**
+             * @brief IsRelative
+             * @return True if teh path is a relative path
+             */
+            bool IsRelative() const { return relative;  }
 
+            /**
+             * @brief FileName
+             * @return Returns the filename as a string path.
+             */
+            std::string FileName() const { return filename; }
+
+            /**
+             * @brief Device
+             * @return Returns the device of the path (windows only), the device is the drive letter, eg C:
+             */
+            std::string Device()   const { return device;   }
+
+            /**
+             * @brief FileBaseName
+             * @return Returns the file's basename, the basepath is the name of the file, without the extension
+             */
             std::string FileBaseName() const
             {
-              //  std::cout << filename << std::endl;
-
                 auto end = filename.find_last_of('.');
 
                 return filename.substr( 0, end);
-
             }
 
+            /**
+             * @brief FileExtension
+             * @return The file's extention. The extension is the characters after the last . in the file name
+             */
             std::string FileExtension() const
             {
                // std::cout << filename << std::endl;
@@ -165,6 +248,11 @@ namespace gnl
             }
 
 
+            /**
+             * @brief operator +=
+             * @param P - relative path to add to the current path
+             * @return
+             */
             Path & operator+=(const Path & P)
             {
                 if( !IsFile() )
@@ -202,6 +290,77 @@ namespace gnl
                         std::equal( dirs.begin(), dirs.end(), P.dirs.begin() );
             }
 
+
+            /**
+             * @brief GetDirectoryList
+             * @param P
+             * @return
+             *
+             * Returns a vector of files in a path
+             */
+            std::vector<Path> GetFileList()
+            {
+                std::vector<Path> files;
+
+#ifndef _MSC_VER
+
+                DIR           *d;
+                struct dirent *dir;
+
+                d   = opendir(  BasePath().ToString(UNIX_STYLE).c_str() );
+
+                if( d )
+                {
+                    while ( (dir = readdir(d)) != NULL)
+                    {
+                        //printf("%s\n", dir->d_name);
+
+                       // std::cout << std::string(dir->d_name) << std::endl;
+
+                        if (dir->d_type != DT_DIR)
+                        {
+                            //std::cout << "(File)";
+                            files.push_back( BasePath() + Path(std::string(dir->d_name) ) );
+                        } else {
+                            files.push_back( BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
+                        }
+
+                        //std::cout << "File found: " << dir->d_name << "    Flags: " << dir->d_ino       << std::endl;
+                    }
+
+                    closedir(d);
+                }
+
+              return files;
+#else
+                using namespace std;
+
+                string search_path = BasePath().ToString(UNIX_STYLE) + "*.*";
+
+                //std::cout << "Searching: " << search_path << std::endl;
+
+                WIN32_FIND_DATA fd;
+                HANDLE hFind = ::FindFirstFile( search_path.c_str(), &fd);
+
+                if(hFind != INVALID_HANDLE_VALUE) {
+                    do {
+                        // read all (real) files in current folder
+                        // , delete '!' read other 2 default folder . and ..
+                        if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ) {
+                            std::cout << "(File)";
+                            files.push_back( P + Path(std::string(dir->d_name)  ) );
+                        } else {
+                            files.push_back( P + Path(std::string(dir->d_name)+std::string("/") ) );
+                        }
+                        //std::cout << fd.cFileName << std::endl;
+                        //names.push_back(fd.cFileName);
+                    }while(::FindNextFile(hFind, &fd));
+                    ::FindClose(hFind);
+                }
+                return files;
+
+#endif
+            }
 
         private:
             bool                       isfolder;   // does this point to a folder or a file?
