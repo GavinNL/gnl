@@ -8,17 +8,18 @@
 namespace gnl
 {
 
-template<typename T>
+template<typename FloatType=float>
 struct LinearTween
 {
-    T operator()(const T & start, const T & end, float t) const
+    FloatType operator()(FloatType t) const
     {
-        return start*( 1.0f - t ) + end*t;
+        return t;
     }
 };
 
 
-template<typename T>
+
+template<typename T, typename floatType=float>
 /**
  * @brief The Animate class
  *
@@ -44,7 +45,7 @@ class Animate
 {
     public:
         using timepoint    = std::chrono::time_point<std::chrono::high_resolution_clock>;
-        using tween_func   = std::function<T(const T&,const T&, float)>;
+        using tween_func   = std::function< floatType(floatType)>;
 
         struct queue_elem
         {
@@ -109,8 +110,10 @@ class Animate
 
                     queue_elem & F = *cit;
 
-                    float        t = std::chrono::duration<float>(now - F.start_time).count() / std::chrono::duration<float>(F.end_time - F.start_time).count();
-                    return F.tween( F.start_value, F.end_value, t);
+                    floatType  t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
+
+                    t = F.tween(t);
+                    return F.end_value*t + F.start_value*( 1 - t ); //F.tween( F.start_value, F.end_value, t);
                 }
             }
             return current_start;
@@ -124,11 +127,12 @@ class Animate
             {
                 queue_elem & F = *it;
 
-                float        t = std::chrono::duration<float>(now - F.start_time).count() / std::chrono::duration<float>(F.end_time - F.start_time).count();
+                floatType        t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
 
                 if( t < 1.0 )
                 {
-                    return F.tween( F.start_value, F.end_value, t);
+                    t = F.tween(t);
+                    return F.end_value*t + F.start_value*( 1 - t ); //F.tween( F.start_value, F.end_value, t);
                 }
                 else
                 {
@@ -149,12 +153,12 @@ class Animate
             return current_start;
         }
 
-        void To(T end_value, const tween_func & Tween=LinearTween<T>(), float duration_in_seconds = 1.0f )
+        void To(T end_value, floatType duration_in_seconds, const tween_func & Tween=LinearTween<floatType>() )
         {
-            To(end_value, Tween, std::chrono::microseconds( (long long)(duration_in_seconds*1e6) ) );
+            To(end_value, std::chrono::microseconds( (long long)(duration_in_seconds*1e6) ), Tween  );
         }
 
-        void To(T end_value, const tween_func & Tween=LinearTween<T>(), std::chrono::microseconds duration = std::chrono::microseconds(1e6) )
+        void To(T end_value, std::chrono::microseconds duration, const tween_func & Tween=LinearTween<floatType>()   )
         {
             if( tweens )
             {
@@ -188,6 +192,7 @@ class Animate
            return get();
         }
 
+        protected:
         T                                   current_start; // current value.
         std::vector< queue_elem >           *tweens = nullptr;
         typename std::vector< queue_elem >::iterator it;

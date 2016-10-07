@@ -1,23 +1,16 @@
 #include <iostream>
 #include <gnl/gnl_path.h>
 #include <assert.h>
+#include <thread>
 
+#include <gnl/gnl_interp.h>
+#include <gnl/gnl_animate.h>
 
 using namespace std;
 
 
 int main()
 {
-    gnl::Path P1("C:\\Users\\c11237\\HOME\\CodeTests\\");
-
-    auto D = P1.GetFileList();
-
-    for(auto & d : D)
-    {
-        std::cout << d << std::endl;
-    }
-    return 0;
-
 
     gnl::Path P("c:\\home\\comm  ander\\test.png");
 
