@@ -1,3 +1,14 @@
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+
 #ifndef GNL_PATH_H
 #define GNL_PATH_H
 
@@ -6,6 +17,8 @@
 #include <iostream>
 #include <cctype>
 #include <stdexcept>
+#include <cstdlib>
+
 #ifndef _MSC_VER
     #include <dirent.h>
 //    #include <stdio.h>
@@ -97,7 +110,6 @@ namespace gnl
             std::string ToString( Style s = UNIX_STYLE ) const
             {
                 std::string out;
-
 
                 if(IsAbsolute() )
                 {
@@ -380,6 +392,34 @@ namespace gnl
 #endif
             }
 
+         /**
+         * @brief Home
+         * @return  The home path of the current user
+         */
+        static Path Home()
+        {
+#ifdef _WIN32
+            auto * p = std::getenv("USERPROFILE");
+#else
+            auto * p = std::getenv("HOME");
+#endif
+            return Path( std::string(p) + "/");
+        }
+
+        /**
+         * @brief Temp
+         * @return A path used for temporary files.
+         */
+        static Path Temp()
+        {
+#ifdef _WIN32
+            auto * p = std::getenv("TMP");
+            return Path( std::string(p) + "/");
+#else
+            return Path( "/tmp/");
+#endif
+        }
+
         private:
             bool                       isfolder;   // does this point to a folder or a file?
             bool                       relative;
@@ -412,7 +452,6 @@ namespace gnl
                 return tokens;
             }
     };
-
 
 
     Path operator+(const Path & P1, const Path & P2)

@@ -1,22 +1,24 @@
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+
 #ifndef GNL_ANIMATE
 #define GNL_ANIMATE
 
 #include <functional>
 #include <chrono>
 #include <vector>
+#include <cmath>
 
 namespace gnl
 {
-
-template<typename FloatType=float>
-struct LinearTween
-{
-    FloatType operator()(FloatType t) const
-    {
-        return t;
-    }
-};
-
 
 
 template<typename T, typename floatType=float>
@@ -32,7 +34,7 @@ template<typename T, typename floatType=float>
  *
  * eg:
  * Animate<float> V = 1.0f;
- * V.To(10.0f, LinearTween<float>(), 1.0f);
+ * V.To(10.0f, 1.0f, Animate<float>::LinearTween() );
  *
  * float f  = V; // f = 1.0
  * std::this_thread::sleep_for( std::chrono::milliseconds(900) );
@@ -47,6 +49,72 @@ class Animate
         using timepoint    = std::chrono::time_point<std::chrono::high_resolution_clock>;
         using tween_func   = std::function< floatType(floatType)>;
 
+        // no easing, no acceleration
+        struct linear{ floatType operator()(floatType t) { return t; }};
+        // accelerating from zero velocity
+        struct easeInQuad{ floatType operator()(floatType t) { return t*t; }};
+        // decelerating to zero velocity
+        struct easeOutQuad{ floatType operator()(floatType t) { return t*(2-t); }};
+        // acceleration until halfway, then deceleration
+        struct easeInOutQuad{ floatType operator()(floatType t) { return t<.5 ? 2*t*t : -1+(4-2*t)*t; }};
+        // accelerating from zero velocity
+        struct easeInCubic{ floatType operator()(floatType t) { return t*t*t; }};
+        // decelerating to zero velocity
+        struct easeOutCubic{ floatType operator()(floatType t) { return (--t)*t*t+1; }};
+        // acceleration until halfway, then deceleration
+        struct easeInOutCubic{ floatType operator()(floatType t) { return t<.5 ? 4*t*t*t : (t-1)*(2*t-2)*(2*t-2)+1; }};
+        // accelerating from zero velocity
+        struct easeInQuart{ floatType operator()(floatType t) { return t*t*t*t; }};
+        // decelerating to zero velocity
+        struct easeOutQuart{ floatType operator()(floatType t) { return 1-(--t)*t*t*t; }};
+        // acceleration until halfway, then deceleration
+        struct easeInOutQuart{ floatType operator()(floatType t) { return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t; }};
+        // accelerating from zero velocity
+        struct easeInQuint{ floatType operator()(floatType t) { return t*t*t*t*t; }};
+        // decelerating to zero velocity
+        struct easeOutQuint{ floatType operator()(floatType t) { return 1+(--t)*t*t*t*t; }};
+        // acceleration until halfway, then deceleration
+        struct easeInOutQuint{ floatType operator()(floatType t) { return t<.5 ? 16*t*t*t*t*t : 1+16*(--t)*t*t*t*t; }};
+
+        struct easeBackEase{ floatType operator()(floatType t) { return t*t*t-t*std::sin(t*static_cast<floatType>(3.141592653589)); }};
+
+
+        struct easeOutBounce {
+
+            floatType operator () ( floatType t) {
+                if (t < static_cast<floatType>(1/2.75)) {
+                    return ( static_cast<floatType>(7.5625)*t*t);
+                } else if (t < (2/2.75)) {
+                    return (static_cast<floatType>(7.5625)*(t-=static_cast<floatType>(1.5/2.75))*t + static_cast<floatType>(.75));
+                } else if (t < static_cast<floatType>(2.5/2.75)) {
+                    return (static_cast<floatType>(7.5625)*(t-=static_cast<floatType>(2.25/2.75))*t + static_cast<floatType>(.9375));
+                } else {
+                    return (static_cast<floatType>(7.5625)*(t-=static_cast<floatType>(2.625/2.75))*t + static_cast<floatType>(.984375));
+                }
+            }
+        };
+
+        struct easeInBounce {
+
+            floatType operator () ( floatType t )
+            {
+                static easeOutBounce E;
+                return 1 - E(1-t);
+            }
+        };
+
+
+        struct easeInOutBounce {
+            floatType operator() (floatType t)
+            {
+                static easeOutBounce E;
+                if (t < 0.5) return E(t*2) * 0.5;//jQuery.easing.easeInBounce (x, t*2, 0, c, d) * .5 + b;
+                return E(t*2-1) * 0.5 + 0.5;
+                        //jQuery.easing.easeOutBounce (x, t*2-d, 0, c, d) * .5 + c*.5 + b;
+            }
+        };
+
+
         struct queue_elem
         {
             timepoint    start_time;
@@ -56,7 +124,7 @@ class Animate
             tween_func   tween;
         };
 
-        Animate()
+        Animate() : current_start( static_cast<T>(0) )
         {
 
         }
@@ -92,7 +160,11 @@ class Animate
             return *this;
         }
 
-        T get() const
+        /**
+         * @brief Stable - Used to determine if the animation is active or not
+         * @return true if the animation is over
+         */
+        bool Stable() const
         {
             auto now = std::chrono::system_clock::now();
 
@@ -100,25 +172,89 @@ class Animate
             {
                 if( tweens->back().end_time < now )
                 {
-                    return tweens->back().end_value;
+                    return true;
                 }
                 else
                 {
-                    auto cit = it; // make temp iterator
-
-                    while( cit->end_time < now) cit++;
-
-                    queue_elem & F = *cit;
-
-                    floatType  t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
-
-                    t = F.tween(t);
-                    return F.end_value*t + F.start_value*( 1 - t ); //F.tween( F.start_value, F.end_value, t);
+                   return false;
                 }
             }
-            return current_start;
+            return true;
         }
 
+        template<typename AA=void>
+        T get() const
+        {
+           // static_assert(false, "get() changes the structure of Animate, Use Animate::ConstSampler(const Animate&) to animate a constant Animate");
+        }
+
+        /**
+         * @brief The ConstSampler struct
+         * A wrapper around a const Animate, used to extract animated values from a const Animate.
+         */
+        struct ConstSampler
+        {
+            ConstSampler( const Animate & A)
+            {
+                if(A.tweens )
+                {
+                    i   = A.it;
+                    end = A.tweens->end();
+
+                    value = std::prev(end)->end_value;// end->end_value;
+                } else {
+                    value = A.current_start;
+                    end = i;
+                }
+            }
+
+            T get()
+            {
+                auto now = std::chrono::system_clock::now();
+                if( i != end )
+                {
+                    const queue_elem & F = *i;
+
+                    floatType t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
+
+                    if( t < 1.0 )
+                    {
+                        t = F.tween(t);
+                        return F.end_value*t + F.start_value*( 1 - t ); //F.tween( F.start_value, F.end_value, t);
+                    }
+                    else
+                    {
+
+                        ++i;
+                        if( i == end )
+                        {
+                            return value;
+                        }
+                        return get();
+
+                    }
+                }
+
+                return value;
+            }
+
+            bool Stable() const
+            {
+                return i==end;
+            }
+
+            T value;
+            typename std::vector< queue_elem >::const_iterator i;
+            typename std::vector< queue_elem >::const_iterator end;
+        };
+
+        /**
+         * @brief get - gets the current value of
+         * @return A new value in the frame
+         *
+         * This function changes the internal structure and therefore it is non-const.
+         * See Animate::ConstSampler for dealing with const Animates.
+         */
         T get()
         {
             auto now = std::chrono::system_clock::now();
@@ -127,7 +263,7 @@ class Animate
             {
                 queue_elem & F = *it;
 
-                floatType        t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
+                floatType t = std::chrono::duration<floatType>(now - F.start_time).count() / std::chrono::duration<floatType>(F.end_time - F.start_time).count();
 
                 if( t < 1.0 )
                 {
@@ -153,12 +289,24 @@ class Animate
             return current_start;
         }
 
-        void To(T end_value, floatType duration_in_seconds, const tween_func & Tween=LinearTween<floatType>() )
+        /**
+         * @brief To - Animates the value to a new value
+         * @param end_value - the final value of to animate to
+         * @param duration_in_seconds - time in seconds to transition
+         * @param Tween - one of the tweening functions used to animate the value
+         */
+        void To(T end_value, floatType duration_in_seconds, const tween_func & Tween=linear() )
         {
             To(end_value, std::chrono::microseconds( (long long)(duration_in_seconds*1e6) ), Tween  );
         }
 
-        void To(T end_value, std::chrono::microseconds duration, const tween_func & Tween=LinearTween<floatType>()   )
+        /**
+         * @brief To - Animates the value to a new value
+         * @param end_value - the final value of to animate to
+         * @param duration - time in microseconds, or use any other std::chrono::duration type
+         * @param Tween - one of the tweening functions used to animate the value
+         */
+        void To(T end_value, std::chrono::microseconds duration, const tween_func & Tween=linear()   )
         {
             if( tweens )
             {
@@ -181,21 +329,20 @@ class Animate
 
         }
 
-
-        operator T() const
-        {
-           return get();
-        }
-
+        /**
+         * @brief operator T
+         *
+         * Used to convert the Animate into it's base type
+         */
         operator T()
         {
            return get();
         }
 
         protected:
-        T                                   current_start; // current value.
-        std::vector< queue_elem >           *tweens = nullptr;
-        typename std::vector< queue_elem >::iterator it;
+            T                                   current_start; // current value.
+            std::vector< queue_elem >           *tweens = nullptr;
+            typename std::vector< queue_elem >::iterator it;
 
 };
 

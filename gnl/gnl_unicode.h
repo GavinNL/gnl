@@ -4,25 +4,12 @@
 
 #include <string>
 #include <locale>
-//#include <codecvt>
 
 namespace gnl
 {
     namespace Unicode
     {
-//        std::string static UTF8(const std::u32string & Unicode)
-//        {
-//            static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> utf32conv;
-//            return std::string( utf32conv.to_bytes(Unicode) );
-//        }
-//
-//        std::u32string UTF32(const std::string & Unicode)
-//        {
-//            static std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t> utf32conv;
-//            return utf32conv.from_bytes(Unicode);
-//        }
-
-        int sequence_length(char32_t lead_it)
+        static int sequence_length(char32_t lead_it)
         {
             uint8_t lead = 0xff & lead_it; //utf8::internal::mask8(*lead_it);
             if (lead < 0x80)

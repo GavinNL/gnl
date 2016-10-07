@@ -1,19 +1,13 @@
 /*
-   gnl_json.h - v1.00 - Public domain json reader
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 
-   This library is in the public domain and can be used as one sees fit but cannot
-   hold the author responsible for any damages that may occur as a result of using
-   this code.
-
-
-   Example:  main.cpp
-
-   Object myjson;
-
-   myjson.parse( S );
-
-
- */
 
 
 #ifndef GNL_JSON_H
@@ -133,14 +127,14 @@ class json
         {
            // std::cout << "init as float*" << std::endl;
             Init(NUMBER);
-            _jsons._float = f;
+            _jsons._float = static_cast<float>(f);
         }
 
         json(const double & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
             Init(NUMBER);
-            _jsons._float = f;
+            _jsons._float = static_cast<float>(f);
         }
 
         json(const float & f) : _type(BOOL)
@@ -382,10 +376,10 @@ class json
                     case NUMBER: return fabs(_jsons._float-right._jsons._float)<1e-7;
                     case BOOL:   return _jsons._bool    ==  right._jsons._bool;
                     case ARRAY:
-                    return _jsons._array->size() == right._jsons._array->size()
-                        && std::equal(_jsons._array->begin(), _jsons._array->end(),
-                                      right._jsons._array->begin());
-                        return true;
+                        return _jsons._array->size() == right._jsons._array->size()
+                            && std::equal(_jsons._array->begin(), _jsons._array->end(),
+                                          right._jsons._array->begin());
+
                     case UNKNOWN:
                     case OBJECT:
                     return _jsons._object->size() == right._jsons._object->size()
@@ -413,11 +407,11 @@ class json
                     case NUMBER: return  fabs(_jsons._float - right._jsons._float) > 1e-7;
                     case BOOL  : return  _jsons._bool   !=  right._jsons._bool;
                     case ARRAY :
-                    return _jsons._array->size() != right._jsons._array->size()
-                        || !std::equal(_jsons._array->begin(), _jsons._array->end(),
-                                      right._jsons._array->begin());
+                        return _jsons._array->size() != right._jsons._array->size()
+                            || !std::equal(_jsons._array->begin(), _jsons._array->end(),
+                                          right._jsons._array->begin());
 
-                    return false;
+
                     case OBJECT:
                     case UNKNOWN:
                     default:
@@ -1185,7 +1179,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json
             return os<<"false";
     }
 
-    return os;
+
 }
 
 inline std::ostream & operator << (std::ostream &os, GNL_NAMESPACE::json const & p)

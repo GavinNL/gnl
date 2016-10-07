@@ -1,8 +1,17 @@
-#ifndef __GNL_BINPACKING_H__
-#define __GNL_BINPACKING_H__
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#ifndef GNL_BINPACKING_H
+#define GNL_BINPACKING_H
 
 #include <memory>
-
 
 
 namespace gnl
@@ -11,7 +20,6 @@ namespace gnl
 template<typename T>
 class Bin
 {
-
 
 public:
     struct Rectangle
@@ -31,7 +39,7 @@ public:
     } ;
 
 
-    Bin() : left(0), right(0)
+    Bin()
     {
     }
 
@@ -48,14 +56,14 @@ public:
 
     Bin(T W, T H)
     {
-        x = 0;
-        y = 0;
+        x = static_cast<T>(0);
+        y = static_cast<T>(0);
         w = W;
         h = H;
 
     }
 
-    Bin(T X, T Y, T W, T H) : left(0), right(0) , x(X), y(Y), w(W), h(H)
+    Bin(T X, T Y, T W, T H) : x(X), y(Y), w(W), h(H)
     { }
 
     ~Bin()
@@ -68,26 +76,27 @@ public:
     {
         left.reset();
         right.reset();
-        //if(left)  delete left;
-        //if(right) delete right;
     }
 
     void resize(T W, T H)
     {
         clear();
-        x = 0;
-        y = 0;
+        x = static_cast<T>(0);
+        y = static_cast<T>(0);
         w = W;
         h = H;
 
     }
 
-    Rectangle insert(T W, T H, T padding)
+    Rectangle insert(T W, T H, T padding=static_cast<T>(0))
     {
         Rectangle R;
         R.valid = false;
 
-        if( W+2*padding > w || H+2*padding > h ) return R;
+        W += 2*padding;
+        H += 2*padding;
+        // failed
+        if( W > w || H > h ) return R;
 
         if(left)
         {
@@ -99,13 +108,17 @@ public:
 
         } else {
 
-            if( W+padding <= w && H+padding<= h)
+            if( W <= w && H<= h)
             {
                 // it fits!
-                left .reset( new Bin( x+W, y   , w-W,  H  , padding) );
-                right.reset( new Bin( x  ,y+H ,  w  , h-H,  padding)  );
-                // std::cout << "It fits! (" << W << "," << H << ") -->(" << w << "," << h << ")\n";
-                R = {x,y,W,H,true};
+                 left.reset( new Bin( x+W, y   ,  w-W,  H )  );
+                right.reset( new Bin( x  , y+H ,  w  ,  h-H)  );
+
+                R.x = x+padding;
+                R.y = y+padding;
+                R.w = W-2*padding;
+                R.h = H-2*padding;
+                R.valid = true;
                 return( R );
             }
         }
@@ -121,10 +134,10 @@ protected:
     std::unique_ptr<Bin> left;
     std::unique_ptr<Bin> right;
 
-    float x;
-    float y;
-    float w;
-    float h;
+    T x;
+    T y;
+    T w;
+    T h;
 
 };
 

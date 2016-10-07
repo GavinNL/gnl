@@ -1,3 +1,14 @@
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+
 #ifndef GNL_PERIODIC_H
 #define GNL_PERIODIC_H
 
@@ -97,7 +108,7 @@ class Periodic
 
         bool                      __stop         = false;
         std::chrono::microseconds __interval     = std::chrono::microseconds(1000000);
-        std::uint64_t             __count        = 0xFFFFFFFFFFFFFFFF;
+        std::uint64_t             __count        = std::numeric_limits<std::uint64_t>::max();
 
         std::future<bool>         __timerfuture;
         std::mutex                __data_mutex;

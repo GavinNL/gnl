@@ -25,12 +25,18 @@ TEST_CASE( "Testing Compile Time functions" )
     static_assert( !type_in<char,  int, float, double>::value , "failed");
 
 
-    using first_type = typename first_type_of<char,  int, float, double>::type;
-    using zero       = typename nth_type_of<0, char,  int, float, double>::type;
-    using first      = typename nth_type_of<1, char,  int, float, double>::type;
-    using second     = typename nth_type_of<2, char,  int, float, double>::type;
-    using third      = typename nth_type_of<3, char,  int, float, double>::type;
-    using last_type  = typename last_type_of<char,  int, float, double>::type;
+    #ifdef _WIN32
+        #define TYPENAME
+    #else
+        #define TYPENAME typename
+    #endif
+
+    using first_type = TYPENAME first_type_of<char,  int, float, double>::type;
+    using zero       = TYPENAME nth_type_of<0, char,  int, float, double>::type;
+    using first      = TYPENAME nth_type_of<1, char,  int, float, double>::type;
+    using second     = TYPENAME nth_type_of<2, char,  int, float, double>::type;
+    using third      = TYPENAME nth_type_of<3, char,  int, float, double>::type;
+    using last_type  = TYPENAME last_type_of<char,  int, float, double>::type;
 
     static_assert(  std::is_same<zero,   char>::value , "failed");
     static_assert(  std::is_same<first,  int>::value , "failed");

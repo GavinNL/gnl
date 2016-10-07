@@ -1,7 +1,18 @@
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+
 #ifndef GNL_INTERPOLATION_H
 #define GNL_INTERPOLATION_H
 
-
+#include <cassert>
 #include <vector>
 
 namespace gnl
@@ -131,8 +142,6 @@ struct LinerSpline
     FloatingType invT = 1.0f;
     int          i    = 0;
 
-    //std::vector<_T>             points;
-    //std::vector<FloatingType>   times;
 
     std::vector< std::pair<FloatingType,_T> >   nodes;
 
@@ -155,7 +164,7 @@ struct CubicSpline
 
     CubicSpline(const std::vector<float> & pT, const std::vector<_T> & p) : points(p), times(pT)
     {
-        assert( pT.size() > 3);
+       // assert( pT.size() > 3);
 
         //for(auto P : p) points.push_back(P);
         //for(auto T : t) times.push_back(T);
@@ -217,8 +226,8 @@ struct CubicSpline
     float invT = 1.0f;
     int   i    = 0;
 
-    const std::vector<_T>          & points;
-    const std::vector<float>       & times;
+    std::vector<_T>           points;
+    std::vector<float>        times;
 
     CubicHermiteInterpolant<_T>    interp;
 };
