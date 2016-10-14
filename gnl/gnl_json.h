@@ -1,27 +1,21 @@
 /*
-   gnl_json.h - v1.00 - Public domain JSON reader
-
-   This library is in the public domain and can be used as one sees fit but cannot
-   hold the author responsible for any damages that may occur as a result of using
-   this code.
-
-
-   Example:  main.cpp
-
-   json::Object myJSON;
-
-   myJSON.parse( S );
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
 
 
- */
 
+#ifndef GNL_JSON_H
+#define GNL_JSON_H
 
-#ifndef GNL_JSON_H__
-#define GNL_JSON_H__
-
- #ifndef GNL_NAMESPACE
- #define GNL_NAMESPACE gnl
- #endif
+#ifndef GNL_NAMESPACE
+#define GNL_NAMESPACE gnl
+#endif
 
 #include <iostream>
 #include <sstream>
@@ -33,30 +27,29 @@
 #include <fstream>
 #include <cstdlib>
 #include <initializer_list>
+#include <type_traits>
+#include <limits>
+#include <cmath>
+#include <cstdint>
+#include <cctype>
 
 namespace GNL_NAMESPACE
 {
-	namespace json {
-		class Value;
-	}
+    class json;
 }
-inline std::ostream & operator<<(std::ostream &os, const GNL_NAMESPACE::json::Value& p);
+
+std::ostream & operator<<(std::ostream & os, GNL_NAMESPACE::json const & p);
 
 namespace GNL_NAMESPACE {
 
-namespace json {
-
-class Value;
-
-
-typedef std::shared_ptr<Value> pValue;
+class json;
 
 
 class incorrect_type : public std::exception {
 public:
     const char * what () const throw ()
     {
-      return "Attempted to cast json Value \"as\" an incorrect type";
+      return "Attempted to cast json json \"as\" an incorrect type";
     }
 };
 
@@ -67,8 +60,20 @@ class parse_error : public std::exception {
     }
 };
 
-class Value
+class json
 {
+    private:
+    template<class T>
+    typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
+        almost_equal(T x, T y, int ulp)
+    {
+        // the machine epsilon has to be scaled to the magnitude of the values used
+        // and multiplied by the desired precision in ULPs (units in the last place)
+        return std::abs(x-y) < std::numeric_limits<T>::epsilon() * std::abs(x+y) * ulp
+        // unless the result is subnormal
+               || std::abs(x-y) < std::numeric_limits<T>::min();
+    }
+
 
     public:
 
@@ -82,59 +87,72 @@ class Value
             OBJECT
         } TYPE;
 
-        Value() : _type(UNKNOWN)
+        json() : _type(BOOL)
         {
-            Init(UNKNOWN);
-         //   std::cout << "New constructor\n"    ;
+            Init(BOOL);
         }
 
-        Value( Value::TYPE T) : _type(UNKNOWN)
+        json( json::TYPE T) : _type(BOOL)
         {
             Init(T);
         }
 
-        Value(const Value  & rhs) : _type(UNKNOWN)
+        json(const json  & rhs) : _type(BOOL)
         {
             *this = rhs;
         }
 
-        Value(const std::string & rhs) : _type(UNKNOWN)
+        json(const std::string & rhs) : _type(BOOL)
         {
           //  std::cout << "init as string" << std::endl;
             Init(STRING);
-            *_Values._string = rhs;
+            *_jsons._string = rhs;
         }
 
-        Value(const char * rhs) : _type(UNKNOWN)
+        json(const char * rhs) : _type(BOOL)
         {
           //  std::cout << "init as char*" << std::endl;
             Init(STRING);
-            *_Values._string = std::string(rhs);
+            *_jsons._string = std::string(rhs);
         }
 
-        Value(const bool & f) : _type(UNKNOWN)
+        json(const bool & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
             Init(BOOL);
-            _Values._bool = f;
+            _jsons._bool = f;
         }
 
-        Value(const float & f) : _type(UNKNOWN)
+        json(const int & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
             Init(NUMBER);
-            _Values._float = f;
+            _jsons._float = static_cast<float>(f);
         }
 
-        Value( const std::initializer_list<json::Value> & l)
+        json(const double & f) : _type(BOOL)
         {
-            std::cout << "Initializer list: Jvalue" << std::endl;
+           // std::cout << "init as float*" << std::endl;
+            Init(NUMBER);
+            _jsons._float = static_cast<float>(f);
+        }
+
+        json(const float & f) : _type(BOOL)
+        {
+           // std::cout << "init as float*" << std::endl;
+            Init(NUMBER);
+            _jsons._float = f;
+        }
+
+        json( const std::initializer_list<json> & l)
+        {
+           // std::cout << "Initializer list: Jjson" << std::endl;
             clear();
             Init(ARRAY);
             int i=0;
             for(auto a : l)
             {
-                std::cout << a << std::endl;
+                //std::cout << a << std::endl;
                 (*this)[i] = a;
                 i++;
             }
@@ -142,61 +160,44 @@ class Value
         }
 
 
-        Value & operator=(Value && T)
+        json & operator=(json && T)
         {
-           // std::cout << "Value:: Move operator\n";
             clear();
 
-            switch( T._type )
-            {
-                BOOL:
-                    _Values._bool   = T._Values._bool; break;
-                NUMBER:
-                    _Values._float  = T._Values._float; break;
-                STRING:
-                    _Values._string = T._Values._string; break;
-                ARRAY:
-                    _Values._array  = T._Values._array; break;
-                OBJECT:
-                    _Values._object = T._Values._object; break;
-                UNKNOWN:
-                    break;
-                default:
-                    break;
-            }
+            _jsons = T._jsons;
 
-            _type = T._type;
 
-            T._type = UNKNOWN;
-            T._Values._string = 0;
-            T._Values._array  = 0;
-            T._Values._object = 0;
+            _type   = T._type;
+            T._type = BOOL;
+            T._jsons._string = 0;
+            T._jsons._array  = 0;
+            T._jsons._object = 0;
 
             return *this;
         }
 
-        Value(Value && T)
+        json(json && T)
         {
             //std::cout << "Move constructor\n";
             *this = std::move( T );
         }
 
-        ~Value()
+        ~json()
         {
             clear();
         }
 
 
 
-        void init(const Value & rhs);
+        void init(const json & rhs);
 
 
-        void merge( const Value & rhs )
+        void merge( const json & rhs )
         {
 
-            if( _type == Value::OBJECT && rhs._type == Value::OBJECT)
+            if( _type == json::OBJECT && rhs._type == json::OBJECT)
             {
-                for( auto & a : rhs.getValueMap() )
+                for( auto & a : rhs.getjsonMap() )
                 {
                     (*this)[a.first].merge( a.second);
                 }
@@ -207,28 +208,33 @@ class Value
             }
         }
 
-        // clears the Value and sets it's type to UNKNOWN
+        // clears the json and sets it's type to BOOL
         void clear()
         {
             switch( _type )
             {
-                case Value::STRING:
-                    if(_Values._string) delete _Values._string;
+                case json::STRING:
+                    if(_jsons._string) delete _jsons._string;
                     break;
-                case Value::OBJECT:
-                    if(_Values._object) delete _Values._object;
+                case json::OBJECT:
+                    if(_jsons._object) delete _jsons._object;
                     break;
-                case Value::ARRAY:
-                    if(_Values._array) delete _Values._array;
+                case json::ARRAY:
+                    if(_jsons._array)  delete _jsons._array;
                     break;
-                default: break;
+                case json::UNKNOWN:
+                case json::BOOL:
+                case json::NUMBER:
+                default:
+                    break;
             }
-            _type = Value::UNKNOWN;
+            _jsons._bool = false;
+            _type = json::BOOL;
             //std::cout << "Finished clearing\n";
         }
 
 
-        // Interprets the Value as a specific type: bool, float, string.
+        // Interprets the json as a specific type: bool, float, string.
         template <typename T>
         const T & as() const;
 
@@ -237,86 +243,87 @@ class Value
         T to() const;
 
         bool exists(const std::string & key) const;
-        // gets the size of the Value. If bool, string or float, returns 1, if array or object, returns
-        // the number of values inside the container.
+        // gets the size of the json. If bool, string or float, returns 1, if array or object, returns
+        // the number of jsons inside the container.
         size_t size() const;
 
-        Value & operator=(const float       & rhs)
+        json & operator=(const float       & rhs)
         {
-            Init(Value::NUMBER);
+            Init(json::NUMBER);
 
-            _type = Value::NUMBER;
-            _Values._float = rhs;
+            _type = json::NUMBER;
+            _jsons._float = rhs;
 
             return *this;
         }
 
-        Value & operator=(const int         & rhs)
+        json & operator=(const int         & rhs)
         {
-            Init(Value::NUMBER);
+            Init(json::NUMBER);
 
-            _Values._float = (float)rhs;
+            _jsons._float = (float)rhs;
 
             return *this;
         }
 
-        Value & operator=(const bool        & rhs)
+        json & operator=(const bool        & rhs)
         {
-            Init(Value::BOOL);
-            _Values._bool = rhs;
+            Init(json::BOOL);
+            _jsons._bool = rhs;
             return *this;
         }
 
-        Value & operator=(const std::string & rhs)
+        json & operator=(const std::string & rhs)
         {
-            Init(Value::STRING);
-            *_Values._string = rhs;
+            Init(json::STRING);
+            *_jsons._string = rhs;
             return *this;
         }
 
 
-        Value & operator=(const char   *    rhs)
+        json & operator=(const char   *    rhs)
         {
-            Init(Value::STRING);
-            *_Values._string = std::string(rhs);
+            Init(json::STRING);
+            *_jsons._string = std::string(rhs);
             return *this;
         }
 
         template<typename T>
-        Value & operator=(const T & rhs);
+        json & operator=(const T & rhs);
 
         std::string strType() const
         {
             switch(_type)
             {
+                default:
                 case UNKNOWN: return "UNKNOWN";
                 case NUMBER:  return "NUMBER";
                 case ARRAY:   return "ARRAY";
                 case OBJECT:  return "OBJECT";
+                case STRING:  return "STRING";
                 case BOOL:    return "BOOL";
             }
-            return "unknown";
+
         }
 
-        Value & operator=(const Value       & rhs)
+        json & operator=(const json       & rhs)
         {
-            if( this == &rhs) return *this;
+            if( this == &rhs ) return *this;
 
-
-            Init(rhs._type);
+            if( _type != rhs._type) Init( rhs._type );
 
             switch( rhs._type )
             {
                 case BOOL:
-                    _Values._bool = rhs._Values._bool; break;
+                    _jsons._bool = rhs._jsons._bool; break;
                 case NUMBER:
-                    _Values._float = rhs._Values._float; break;
+                    _jsons._float = rhs._jsons._float; break;
                 case STRING:
-                    *_Values._string = *rhs._Values._string; break;
+                    *_jsons._string = *rhs._jsons._string; break;
                 case ARRAY:
-                    *_Values._array = *rhs._Values._array; break;
+                    *_jsons._array = *rhs._jsons._array; break;
                 case OBJECT:
-                    *_Values._object = *rhs._Values._object;
+                    *_jsons._object = *rhs._jsons._object;
                     break;
                 case UNKNOWN:
                 default:
@@ -327,56 +334,12 @@ class Value
             return *this;
         }
 
-
-        Value & operator=(std::initializer_list<std::string> l)
-        {
-            clear();
-
-            int i = 0;
-
-            for(auto a : l)
-            {
-                (*this)[i] = a;
-                i++;
-            }
-
-            return *this;
-        }
-
-        Value & operator=( std::initializer_list<float> l)
+        json & operator=( const std::initializer_list<json> & l)
         {
             clear();
 
             int i=0;
-            for(auto a : l)
-            {
-                (*this)[i] = a;
-                i++;
-            }
-
-            return *this;
-        }
-
-        Value & operator=( std::initializer_list<int> l)
-        {
-            clear();
-
-            int i=0;
-            for(auto a : l)
-            {
-                (*this)[i] = a;
-                i++;
-            }
-
-            return *this;
-        }
-
-        Value & operator=( std::initializer_list<json::Value> l)
-        {
-            clear();
-
-            int i=0;
-            for(auto a : l)
+            for(auto & a : l)
             {
                 (*this)[i] = a;
                 i++;
@@ -388,156 +351,95 @@ class Value
         //==========================================================================
         //        == operator
         //==========================================================================
-        bool operator==(const bool & right)
-        {
-            if( _type == BOOL) return _Values._bool==right;
 
-            return false;
+        #define OPERATOR(op) \
+        template <typename T>                        \
+        bool operator op (const T & right) const     \
+        {                                            \
+            return *this op json(right);             \
         }
 
-        bool operator==(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float==right;
+        OPERATOR( == )
+        OPERATOR( != )
+        OPERATOR( <  )
+        OPERATOR( >  )
+        OPERATOR( >= )
+        OPERATOR( <= )
 
-            return false;
-        }
-
-        bool operator==(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float==right;
-
-            return false;
-        }
-
-        bool operator==(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string==right;
-
-            return false;
-        }
-
-        bool operator==(const char * right)
-        {
-            if( _type == STRING) return *_Values._string==std::string(right);
-
-            return false;
-        }
-
-        bool operator==(const json::Value & right)
+        bool operator==(const json & right) const
         {
             if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string == *right._Values._string;
-                    case NUMBER: return _Values._float   ==  right._Values._float;
-                    case BOOL:   return _Values._bool    ==  right._Values._bool;
+                    case STRING: return *_jsons._string == *right._jsons._string;
+                    case NUMBER: return fabs(_jsons._float-right._jsons._float)<1e-7;
+                    case BOOL:   return _jsons._bool    ==  right._jsons._bool;
+                    case ARRAY:
+                        return _jsons._array->size() == right._jsons._array->size()
+                            && std::equal(_jsons._array->begin(), _jsons._array->end(),
+                                          right._jsons._array->begin());
+
+                    case UNKNOWN:
+                    case OBJECT:
+                    return _jsons._object->size() == right._jsons._object->size()
+                        && std::equal(_jsons._object->begin(), _jsons._object->end(),
+                                      right._jsons._object->begin());
+                    default:
+                        return false;
                 }
             }
 
             return false;
         }
+
 
         //==========================================================================
         //        != operator
         //==========================================================================
-        bool operator!=(const bool & right)
+        bool operator != (const json & right) const
         {
-            if( _type == BOOL) return _Values._bool!=right;
-
-            return false;
-        }
-
-        bool operator!=(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float!=right;
-
-            return false;
-        }
-
-        bool operator!=(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float!=right;
-
-            return false;
-        }
-
-        bool operator!=(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string!=right;
-
-            return false;
-        }
-
-        bool operator!=(const char * right)
-        {
-            if( _type == STRING) return *_Values._string!=std::string(right);
-
-            return false;
-        }
-
-        bool operator!=(const json::Value & right)
-        {
-            if( _type != right._type)
+            if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string != *right._Values._string;
-                    case NUMBER: return  _Values._float  !=  right._Values._float;
-                    case BOOL:   return  _Values._bool   !=  right._Values._bool;
+                    case STRING: return *_jsons._string != *right._jsons._string;
+                    case NUMBER: return  fabs(_jsons._float - right._jsons._float) > 1e-7;
+                    case BOOL  : return  _jsons._bool   !=  right._jsons._bool;
+                    case ARRAY :
+                        return _jsons._array->size() != right._jsons._array->size()
+                            || !std::equal(_jsons._array->begin(), _jsons._array->end(),
+                                          right._jsons._array->begin());
+
+
+                    case OBJECT:
+                    case UNKNOWN:
+                    default:
+                        return false;
                 }
             }
 
-            return false;
+            return true;
         }
 
         //==========================================================================
         //        < operator
         //==========================================================================
-        bool operator<(const bool & right)
-        {
-            if( _type == BOOL) return _Values._bool<right;
 
-            return false;
-        }
-
-        bool operator<(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float<right;
-
-            return false;
-        }
-
-        bool operator<(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float<right;
-
-            return false;
-        }
-
-        bool operator<(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string<right;
-
-            return false;
-        }
-
-        bool operator<(const char * right)
-        {
-            if( _type == STRING) return *_Values._string<std::string(right);
-
-            return false;
-        }
-
-        bool operator<(const json::Value & right)
+        bool operator<(const json & right) const
         {
             if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string < *right._Values._string;
-                    case NUMBER: return _Values._float   <  right._Values._float;
-                    case BOOL:   return _Values._bool    <  right._Values._bool;
+                    case STRING: return *_jsons._string < *right._jsons._string;
+                    case NUMBER: return _jsons._float   <  right._jsons._float;
+                    case BOOL:   return _jsons._bool    <  right._jsons._bool;
+                    case ARRAY:
+                    case OBJECT:
+                    case UNKNOWN:
+                    default:
+                        return false;
                 }
             }
 
@@ -547,50 +449,21 @@ class Value
         //==========================================================================
         //        > operator
         //==========================================================================
-        bool operator>(const bool & right)
-        {
-            if( _type == BOOL) return _Values._bool>right;
 
-            return false;
-        }
-
-        bool operator>(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float>right;
-
-            return false;
-        }
-
-        bool operator>(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float>right;
-
-            return false;
-        }
-
-        bool operator>(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string>right;
-
-            return false;
-        }
-
-        bool operator>(const char * right)
-        {
-            if( _type == STRING) return *_Values._string>std::string(right);
-
-            return false;
-        }
-
-        bool operator>(const json::Value & right)
+        bool operator>(const json & right) const
         {
             if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string > *right._Values._string;
-                    case NUMBER: return _Values._float   >  right._Values._float;
-                    case BOOL:   return _Values._bool    >  right._Values._bool;
+                    case STRING: return *_jsons._string > *right._jsons._string;
+                    case NUMBER: return _jsons._float   >  right._jsons._float;
+                    case BOOL:   return _jsons._bool    >  right._jsons._bool;
+                case ARRAY:
+                case OBJECT:
+                case UNKNOWN:
+                default:
+                    return false;
                 }
             }
 
@@ -600,50 +473,20 @@ class Value
         //==========================================================================
         //        >= operator
         //==========================================================================
-        bool operator>=(const bool & right)
-        {
-            if( _type == BOOL) return _Values._bool>=right;
-
-            return false;
-        }
-
-        bool operator>=(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float>=right;
-
-            return false;
-        }
-
-        bool operator>=(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float>=right;
-
-            return false;
-        }
-
-        bool operator>=(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string>=right;
-
-            return false;
-        }
-
-        bool operator>=(const char * right)
-        {
-            if( _type == STRING) return *_Values._string>=std::string(right);
-
-            return false;
-        }
-
-        bool operator>=(const json::Value & right)
+        bool operator>=(const json & right) const
         {
             if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string >= *right._Values._string;
-                    case NUMBER: return _Values._float   >=  right._Values._float;
-                    case BOOL:   return _Values._bool    >=  right._Values._bool;
+                    case STRING: return *_jsons._string >= *right._jsons._string;
+                    case NUMBER: return _jsons._float   >=  right._jsons._float;
+                    case BOOL:   return _jsons._bool    >=  right._jsons._bool;
+                case ARRAY:
+                case OBJECT:
+                case UNKNOWN:
+                default:
+                    return false;
                 }
             }
 
@@ -653,61 +496,25 @@ class Value
         //==========================================================================
         //        <= operator
         //==========================================================================
-		
-
-        bool operator<=(const bool & right)
-        {
-			
-            if( _type == BOOL) return _Values._bool<=right;
-
-            return false;
-        }
-
-        bool operator<=(const float & right)
-        {
-            if( _type == NUMBER) return _Values._float<=right;
-
-            return false;
-        }
-
-        bool operator<=(const int & right)
-        {
-            if( _type == NUMBER) return _Values._float<=right;
-
-            return false;
-        }
-
-        bool operator<=(const std::string & right)
-        {
-            if( _type == STRING) return *_Values._string<=right;
-
-            return false;
-        }
-
-        bool operator<=(const char * right)
-        {
-            if( _type == STRING) return *_Values._string<=std::string(right);
-
-            return false;
-        }
-
-
-        bool operator<=(const json::Value & right)
+        bool operator<=(const json & right) const
         {
             if( _type == right._type)
             {
                 switch( _type )
                 {
-                    case STRING: return *_Values._string <= *right._Values._string;
-                    case NUMBER: return _Values._float   <=  right._Values._float;
-                    case BOOL:   return _Values._bool    <=  right._Values._bool;
+                    case STRING: return *_jsons._string <= *right._jsons._string;
+                    case NUMBER: return _jsons._float   <=  right._jsons._float;
+                    case BOOL:   return _jsons._bool    <=  right._jsons._bool;
+                case ARRAY:
+                case OBJECT:
+                case UNKNOWN:
+                default:
+                    return false;
                 }
             }
 
             return false;
         }
-
-
 
 
         void Init( TYPE T)
@@ -716,97 +523,99 @@ class Value
             _type = T;
             switch(T)
             {
-                case BOOL:   _Values._bool    = false;                              break;
-                case NUMBER: _Values._float   = 0.0f;                               break;
-                case STRING: _Values._string  = new std::string();                  break;
-                case ARRAY:  _Values._array   = new std::vector<Value>();           break;
-                case OBJECT: _Values._object  = new std::map<std::string, Value>(); break;
+                case BOOL:   _jsons._bool    = false;                             break;
+                case NUMBER: _jsons._float   = 0.0f;                              break;
+                case STRING: _jsons._string  = new std::string();                 break;
+                case ARRAY:  _jsons._array   = new std::vector<json>();           break;
+                case OBJECT: _jsons._object  = new std::map<std::string, json>(); break;
+                case UNKNOWN:
                 default:
                     _type = UNKNOWN;
                     break;
             }
         }
 
-		
-        // Access the i'th element in the array. If the value is not an array, it will
-        // discard any previous data in the value and create a blank array with at least
-        // i+1 size.
-        Value & operator[](int i);
 
-        // Access the value with key 'i'. If the value is not an Object, it will discard
+        // Access the i'th element in the array. If the json is not an array, it will
+        // discard any previous data in the json and create a blank array with at least
+        // i+1 size.
+        json & operator[](int i);
+
+        // Access the json with key 'i'. If the json is not an Object, it will discard
         // any previous data and create a blank object.
-        Value & operator[](const std::string & i);
-        Value & operator[](const char i[]);
+        json & operator[](const std::string & i);
+        json & operator[](const char i[]);
 
         // get's a reference to the array index or a object name. Will throw an exception if they do not exist.
-        const Value & get(const char * i) const;
-        const Value & get(const std::string & i) const;
-        const Value & get(              int   i) const;
+        const json & get(const char * i) const;
+        const json & get(const std::string & i) const;
+        const json & get(              int   i) const;
 
         template<class T>
-        T get(const std::string & i, const T & DefaultValue) const
+        T get(const std::string & i, const T & Defaultjson) const
         {
-            if( _type != Value::OBJECT) return DefaultValue;//throw json::incorrect_type();
+            if( _type != json::OBJECT) return Defaultjson;//throw incorrect_type();
 
-            auto f = _Values._object->find(i);
-            if( f == _Values._object->end() ) return DefaultValue;
+            auto f = _jsons._object->find(i);
+            if( f == _jsons._object->end() ) return Defaultjson;
 
             return f->second.to<T>();
         }
 
         template<class T>
-        T get(const int i, const T & DefaultValue) const
+        T get(const int i, const T & Defaultjson) const
         {
-            if( _type != Value::ARRAY) return DefaultValue;//throw json::incorrect_type();
+            if( _type != json::ARRAY) return Defaultjson;//throw incorrect_type();
 
-			if( i < size() )
-				return _Values._array->at(i).to<T>();
+            if( i < size() )
+                return _jsons._array->at(i).to<T>();
 
-            return DefaultValue;
+            return Defaultjson;
         }
+
         void erase(const std::string & i)
         {
-            if(_type==OBJECT)
+            if(_type == OBJECT)
             {
-                _Values._object->erase(i);
+                _jsons._object->erase(i);
             }
         }
 
-        void erase(              int   i)
+        void erase( int i)
         {
             if(_type==ARRAY)
             {
-                _Values._array->erase(std::begin(*_Values._array) + i );
+                _jsons._array->erase(std::begin(*_jsons._array) + i );
             }
         }
 
-        template<TYPE type=UNKNOWN>
-        bool has(const std::string & i) const
+
+        bool has(const std::string & i, TYPE type_=UNKNOWN) const
         {
-            if( _type != OBJECT) return 0;
+            if( _type != OBJECT) return false;
 
-            auto f = _Values._object->find(i);
-            if( f == _Values._object->end() ) return 0;
+            auto f = _jsons._object->find(i);
+            if( f == _jsons._object->end() ) return false;
 
-            if( type==UNKNOWN) return 1;
+            if( type_ == UNKNOWN) return true;
 
-            if( f->second.type() == type ) return 1;
+            if( f->second.type() == type_ ) return true;
 
-            return 1;
+            return true;
         }
 
         // gets the type of the object.
         const  TYPE  & type() const {return _type;}
 
-        // gets the key/value map if the Value is a json Object. Throws exception if it is not an object.
-        const std::map<std::string, Value> & getValueMap()  const  { if( _type != OBJECT ) throw incorrect_type(); return *_Values._object; }
+        // gets the key/json map if the json is a json Object. Throws exception if it is not an object.
+        const std::map<std::string, json> & getjsonMap()  const  { if( _type != OBJECT ) throw std::runtime_error("json is not an OBJECT"); return *_jsons._object; }
 
-        // gets the vector of values if the Value object is a json Array. Throws exception if it is not an array.
-        const std::vector<Value>           & getValueVector() const { if( _type != ARRAY  ) throw incorrect_type(); return *_Values._array;  }
+        // gets the vector of jsons if the json object is a json Array. Throws exception if it is not an array.
+        const std::vector<json>           & getjsonVector() const { if( _type != ARRAY  ) throw std::runtime_error("json is not an ARRAY"); return *_jsons._array;  }
 
-        // Parses JSON text.
+        // Parses json text.
         void parse(std::istringstream & S);
-        void parse(const std::string & S);
+        void parse(const std::string  & S);
         bool parseFromPath(const std::string & path)
         {
 
@@ -820,30 +629,42 @@ class Value
 
             std::string str((std::istreambuf_iterator<char>(t)),
                              std::istreambuf_iterator<char>());
-            parse(str);
+            parse( str );
 
             return true;
 
         }
 
+
+#ifdef _MSC_VER
+        //operator int()  const    { if(_type == json::NUMBER) return (int)_jsons._float;  return 0; }
+        //operator float()  const  { if(_type == json::NUMBER) return _jsons._float;  return 0.0f;}
+        //operator std::string() const   { if(_type == json::STRING) return *_jsons._string;  return "";}
+        //operator bool() const  { if(_type == json::BOOL) return _jsons._bool;  return 0;}
+
+        template<class T>
+        operator T() const
+        {
+            return to<T>();
+        }
+#else
         template <class T>
         operator T() const;
+#endif
 
-        //operator float()  { return to<float>(); }
 
-
-        uint                            _order;  // the order in the Object. In case the order of
-                                                 // values in an object matter.
+        std::uint32_t                         _order;  // the order in the Object. In case the order of
+                                                 // jsons in an object matter.
     public:
         union
         {
             float                            _float;
             bool                             _bool;
-			unsigned long					 _long;
-            std::vector<Value>              *_array;
-            std::map<std::string, Value>    *_object;
+            unsigned long					 _long;
+            std::vector<json>               *_array;
+            std::map<std::string, json>     *_object;
             std::string                     *_string;
-        }  _Values;
+        }  _jsons;
 
 
         TYPE _type;
@@ -852,64 +673,73 @@ class Value
         static std::string                   parseString(std::istringstream & S );
         static bool                          parseBool(  std::istringstream & S );
         static float                         parseNumber(std::istringstream & S );
-        static std::vector<Value>            parseArray (std::istringstream & S );
+        static std::vector<json>             parseArray (std::istringstream & S );
         static std::string                   parseKey(   std::istringstream & S );
-        static std::map<std::string, Value>  parseObject(std::istringstream & S );
+        static std::map<std::string, json>   parseObject(std::istringstream & S );
 };
 
+#ifndef _MSC_VER
+template<>
+inline json::operator int()  const    { if(_type == json::NUMBER) return (int)_jsons._float;  return 0; }
 
 template<>
-inline Value::operator int()  const    { if(_type == Value::NUMBER) return (int)_Values._float;  return 0; }
+inline json::operator float()  const  { if(_type == json::NUMBER) return _jsons._float;  return 0.0f;}
 
 template<>
-inline Value::operator float()  const  { if(_type == Value::NUMBER) return _Values._float;  return 0.0f;}
+inline json::operator std::string() const   { if(_type == json::STRING) return *_jsons._string;  return "";}
 
 template<>
-inline Value::operator std::string() const   { if(_type == Value::STRING) return *_Values._string;  return "";}
+inline json::operator bool() const  { if(_type == json::BOOL) return _jsons._bool;  return 0;}
+#endif
+
+
 
 template<>
-inline Value::operator bool() const  { if(_type == Value::BOOL) return _Values._bool;  return 0;}
-
-template<>
-inline const std::string & Value::as<std::string>()  const {
-    if( _type != Value::STRING) throw json::incorrect_type();
-    return *_Values._string;
+inline const std::string & json::as<std::string>()  const {
+    if( _type != json::STRING) throw incorrect_type();
+    return *_jsons._string;
 }
 
 template<>
-inline const  bool & Value::as<bool>()  const {
-    if( _type != Value::BOOL) throw json::incorrect_type();
-    return _Values._bool;
+inline const  bool & json::as<bool>()  const {
+    if( _type != json::BOOL) throw incorrect_type();
+    return _jsons._bool;
 }
 
 template<>
-inline const  float & Value::as<float>()  const  {
-    if( _type != Value::NUMBER) throw json::incorrect_type();
-    return _Values._float;
+inline const  float & json::as<float>()  const  {
+    if( _type != json::NUMBER) throw incorrect_type();
+    return _jsons._float;
 }
 
 template<>
-inline const  Value & Value::as<json::Value>()  const  {
+inline const  json & json::as<json>()  const  {
     return *this;
 }
 
 
 template<>
-inline std::string Value::to<std::string>()  const {
-    if( _type != Value::STRING ) return std::string();
-    return *_Values._string;
+inline std::string json::to<std::string>()  const {
+    if( _type != json::STRING ) return std::string();
+    return *_jsons._string;
 }
 
 template<>
-inline  bool  Value::to<bool>()  const {
-    if( _type != Value::BOOL) return false;
-    return _Values._bool;
+inline  bool  json::to<bool>()  const {
+    if( _type != json::BOOL) return false;
+    return _jsons._bool;
 }
 
 template<>
-inline  float  Value::to<float>()  const  {
-    if( _type != Value::NUMBER) return 0.0f;
-    return _Values._float;
+inline  float  json::to<float>()  const  {
+    if( _type != json::NUMBER) return 0.0f;
+    return _jsons._float;
+}
+
+template<>
+inline  int  json::to<int>()  const  {
+    if( _type != json::NUMBER) return 0;
+    return static_cast<int>(_jsons._float);
 }
 
 
@@ -918,66 +748,69 @@ inline  float  Value::to<float>()  const  {
 
 
 
-
- 
-inline const json::Value & json::Value::get(const char *i) const
+inline const json & json::get(const char *i) const
 {
-    if( _type != Value::OBJECT) throw json::incorrect_type();
-  //  std::cout << "getting value: " << i << std::endl;
-    return _Values._object->at( std::string(i) );
+    if( _type != json::OBJECT) throw incorrect_type();
+  //  std::cout << "getting json: " << i << std::endl;
+    return _jsons._object->at( std::string(i) );
 }
 
-inline const json::Value & json::Value::get(const std::string & i) const
+inline const json & json::get(const std::string & i) const
 {
-    if( _type != Value::OBJECT) throw json::incorrect_type();
-  //  std::cout << "getting value: " << i << std::endl;
-    return _Values._object->at(i);
+    if( _type != json::OBJECT) throw incorrect_type();
+  //  std::cout << "getting json: " << i << std::endl;
+    return _jsons._object->at(i);
 }
 
-inline const json::Value & json::Value::get(              int   i) const
+inline const json & json::get(              int   i) const
 {
-    if( _type != Value::ARRAY) throw json::incorrect_type();
-  //  std::cout << "getting index: " << i << "   size: " << _Values._array->size() << std::endl;
-    return _Values._array->at(i);
+    if( _type != json::ARRAY) throw incorrect_type();
+  //  std::cout << "getting index: " << i << "   size: " << _jsons._array->size() << std::endl;
+    return _jsons._array->at(i);
 }
 
 
-};
 
-};
 
- 
+}
 
-#define REMOVEWHITESPACE { char a = S.peek(); while( std::isspace(a) ) {S.get(); a = S.peek(); } }
+
+
+#define REMOVEWHITESPACE { auto a = S.peek(); while( std::isspace(a) ) {S.get(); a = S.peek(); } }
 
 namespace GNL_NAMESPACE
 {
 
 
 
-inline bool json::Value::exists(const std::string & key) const
+inline bool json::exists(const std::string & key) const
 {
-    if(_type != json::Value::OBJECT) return false;
+    if(_type != json::OBJECT) return false;
 
-    return( (bool)( _Values._object->count(key)>=1)  );
+    return( (bool)( _jsons._object->count(key)>=1)  );
 }
 
-// json::Value::Value(const std::string & rhs)
+// json::json(const std::string & rhs)
 // {
 //     std::istringstream S( rhs );
 //     parse( S );
 // }
 
-inline size_t json::Value::size() const
+inline size_t json::size() const
 {
     switch( _type )
     {
-        case json::Value::ARRAY:
-            return _Values._array->size();
-        case json::Value::OBJECT:
-            return _Values._object->size();
-        case json::Value::UNKNOWN:
+        case json::ARRAY:
+            return _jsons._array->size();
+        case json::OBJECT:
+            return _jsons._object->size();
+        case json::STRING:
+            return _jsons._string->size();
+        case json::UNKNOWN:
             return 0;
+        case json::BOOL:
+        case json::NUMBER:
+
         default:
             return 1;
     }
@@ -985,125 +818,127 @@ inline size_t json::Value::size() const
 }
 
 
-inline json::Value & json::Value::operator[](int i)
+inline json & json::operator[](int i)
 {
 
-    if( _type != Value::ARRAY)
+    if( _type != json::ARRAY)
     {
-        Init(Value::ARRAY);
+        Init(json::ARRAY);
 
     }
 
-    if( _Values._array->size() <= i ) _Values._array->resize(i+1);
+    if( (int)_jsons._array->size() <= i ) _jsons._array->resize(i+1);
 
 
-    return (*_Values._array)[i];
+    return (*_jsons._array)[i];
 }
 
-inline json::Value & json::Value::operator[](const std::string & i)
+inline json & json::operator[](const std::string & i)
 {
-    if( _type != Value::OBJECT)
+    if( _type != json::OBJECT)
     {
-        Init(Value::OBJECT);
+        Init(json::OBJECT);
     }
 
-    //std::cout << "getting value: " << i << std::endl;
-    return (*_Values._object)[i];
+    //std::cout << "getting json: " << i << std::endl;
+    return (*_jsons._object)[i];
 }
 
-inline json::Value & json::Value::operator[](const char i[])
+inline json & json::operator[](const char i[])
 {
-    if( _type != Value::OBJECT)
+    if( _type != json::OBJECT)
     {
-        Init(Value::OBJECT);
+        Init(json::OBJECT);
     }
 
-    return (*_Values._object)[i];
+    return (*_jsons._object)[i];
 }
 
 
 
 
-inline void json::Value::parse(const std::string &S)
+inline void json::parse(const std::string &S)
 {
     std::istringstream SS(S);
     parse(SS);
 }
 
-inline void json::Value::parse(std::istringstream &S )
+inline void json::parse(std::istringstream &S )
 {
     REMOVEWHITESPACE;
 
-    char c = S.peek();
+    char c = (char)S.peek();
     //::cout << c << std::endl;
     switch(c)
     {
         case  '"': // string
-            Init(Value::STRING);
-            *_Values._string =  Value::parseString(S);
+            Init(json::STRING);
+            *_jsons._string =  json::parseString(S);
             break;
 
         case 't': // bool
         case 'f': // bool
-            Init(Value::BOOL);
-            _Values._bool = Value::parseBool(S);
+            Init(json::BOOL);
+            _jsons._bool = json::parseBool(S);
             break;
         case '{': // object
-            Init( Value::OBJECT );
-            *_Values._object = std::move( Value::parseObject(S));//new json::Object();
+            Init( json::OBJECT );
+            *_jsons._object = std::move( json::parseObject(S));//new Object();
             break;
         case '[': // array
-            Init( Value::ARRAY );
-            *_Values._array = std::move( Value::parseArray(S) );
+            Init( json::ARRAY );
+            *_jsons._array = std::move( json::parseArray(S) );
             break;
         default: // number
 
             if( std::isdigit(c) || c=='-' || c=='+' || c=='.')
             {
-                Init(Value::NUMBER);
-                _Values._float = Value::parseNumber(S);
-               // std::cout << "Number found: " << _Values._float << std::endl;
+                Init(json::NUMBER);
+                _jsons._float = json::parseNumber(S);
+               // std::cout << "Number found: " << _jsons._float << std::endl;
             }
             break;
     }
 
 }
 
-inline bool json::Value::parseBool(std::istringstream & S)
+inline bool json::parseBool(std::istringstream & S)
 {
     REMOVEWHITESPACE;
-    char c = S.peek();
+    char c = (char)S.peek();
     if( std::tolower(c) == 't' )
     {
         while( !(c == ',' || c == '}' || c==']' || std::isspace(c)) )
         {
-            c = S.get();
+            c = (char)S.get();
         }
         return true;
     }
     while( !(c == ',' || c == '}' || c==']' || std::isspace(c)) )
     {
-        c = S.get();
+        c = (char)S.get();
     }
     return false;
 
 }
 
- 
 
-inline float json::Value::parseNumber(std::istringstream &S)
+
+inline float json::parseNumber(std::istringstream &S)
 {
     REMOVEWHITESPACE;
 
-    char c = S.peek();
+    char c = (char)S.peek();
 
     std::string num;
 
     while( std::isdigit(c) || c=='-' || c=='+' || c=='.' || c=='e' || c=='E')
     {
         S.get();
+
         num += c;
-        c = S.peek();
+
+        c = (char)S.peek();
     }
     float N = (float)std::atof(num.c_str() );
     //std::cout << "Number found: " << N << "\n";
@@ -1111,13 +946,13 @@ inline float json::Value::parseNumber(std::istringstream &S)
 }
 
 
-inline std::vector<json::Value>  json::Value::parseArray(std::istringstream &S)
+inline std::vector<json>  json::parseArray(std::istringstream &S)
 {
  //   std::cout << "Array found\n";
     REMOVEWHITESPACE;
-    char c = S.get();
+    char c = (char)S.get();
 
-    std::vector<json::Value>  A;
+    std::vector<json>  A;
 
     if( c == '[' )
     {
@@ -1125,7 +960,7 @@ inline std::vector<json::Value>  json::Value::parseArray(std::istringstream &S)
         {
             REMOVEWHITESPACE;
 
-            json::Value V;
+            json V;
 
             V.parse(S);
 
@@ -1134,7 +969,7 @@ inline std::vector<json::Value>  json::Value::parseArray(std::istringstream &S)
 
             REMOVEWHITESPACE;
 
-            c = S.get();
+            c = (char)S.get();
             if(c != ',' && c!=']')
             {
            //     std::cout << "comma not found\n";
@@ -1154,11 +989,11 @@ inline std::vector<json::Value>  json::Value::parseArray(std::istringstream &S)
 }
 
 
-inline std::string json::Value::parseString(std::istringstream & S)
+inline std::string json::parseString(std::istringstream & S)
 {
     REMOVEWHITESPACE;
 
-    char c = S.get();
+    char c = (char)S.get();
 
     // can be either:
     //'    usename   :  "gavin",  '
@@ -1170,13 +1005,13 @@ inline std::string json::Value::parseString(std::istringstream & S)
     if( c== '"')
     {
 
-        c = S.get();
+        c = (char)S.get();
 
         while( c != '"' )
         {
             if( c == '\\')
             {
-                c = S.get();
+                c = (char)S.get();
                 switch(c)
                 {
                     case 'n':
@@ -1196,21 +1031,21 @@ inline std::string json::Value::parseString(std::istringstream & S)
                 }
             }
             Key += c;
-            c = S.get();
+            c = (char)S.get();
         }
 
     }
 
-    // std::cout << "String value Found: " << Key << "  next character (" << S.peek() << std::endl;
+    // std::cout << "String json Found: " << Key << "  next character (" << S.peek() << std::endl;
     return (Key);
 }
 
 
-inline std::string json::Value::parseKey(std::istringstream & S)
+inline std::string json::parseKey(std::istringstream & S)
 {
     REMOVEWHITESPACE;
 
-    char c = S.get();
+    char c = (char)S.get();
 
     // can be either:
     //'    usename   :  "gavin",  '
@@ -1220,23 +1055,23 @@ inline std::string json::Value::parseKey(std::istringstream & S)
 
     if( c== '"')
     {
-        c = S.get();
+        c = (char)S.get();
         while( c != '"' )
         {
             Key += c;
-            c = S.get();
+            c = (char)S.get();
         }
 
     }
     else
     {
         Key += c;
-        c    = S.peek();
+        c    = (char)S.peek();
         while( !std::isspace(c) && c !=':')
         {
             Key += c;
             S.get();
-            c    = S.peek();
+            c    = (char)S.peek();
         }
 
     }
@@ -1244,28 +1079,28 @@ inline std::string json::Value::parseKey(std::istringstream & S)
     return (Key);
 }
 
-inline std::map<std::string, json::Value> json::Value::parseObject(std::istringstream &S)
+inline std::map<std::string, json> json::parseObject(std::istringstream &S)
 {
 
     REMOVEWHITESPACE;
 
-    //json::Object * O = new json::Object();
+    //Object * O = new Object();
 
-    char c = S.get();
+    char c = (char)S.get();
 
   //  std::cout << "Start Object: " << c << std::endl;
 
-    std::map<std::string, json::Value> vMap;
+    std::map<std::string, json> vMap;
     int count = 0;
     while(c != '}')
     {
-        std::string key = Value::parseKey(S);
+        std::string key = json::parseKey(S);
 
         REMOVEWHITESPACE;
 
-        c = S.get();
+        c = (char)S.get();
 
-        if(c !=':')
+        if(c != ':' )
         {
             //std::cout << "Key: " << key << std::endl;
             throw parse_error();
@@ -1277,8 +1112,8 @@ inline std::map<std::string, json::Value> json::Value::parseObject(std::istrings
 
         REMOVEWHITESPACE;
 
-         c = S.peek();
-         if(c == ',' || c =='}' ) c = S.get();
+         c = (char)S.peek();
+         if(c == ',' || c =='}' ) c = (char)S.get();
 
     }
 
@@ -1291,68 +1126,70 @@ inline std::map<std::string, json::Value> json::Value::parseObject(std::istrings
 
 }
 
-inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json::Value & p, std::string & spaces)
+inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json & p, std::string & spaces)
 {
     switch( p._type )
     {
-        case GNL_NAMESPACE::json::Value::UNKNOWN:   return os << "false";
-        case GNL_NAMESPACE::json::Value::NUMBER:    return os << p._Values._float;
-        case GNL_NAMESPACE::json::Value::STRING:    return os << '"' << *p._Values._string << '"' ;
-        case GNL_NAMESPACE::json::Value::ARRAY:
+        case GNL_NAMESPACE::json::UNKNOWN:   return os << "false";
+        case GNL_NAMESPACE::json::NUMBER:    return os << p._jsons._float;
+        case GNL_NAMESPACE::json::STRING:    return os << '"' << *p._jsons._string << '"' ;
+        case GNL_NAMESPACE::json::ARRAY:
         {
             os << "[";
-			int s=0;
-            for(auto & a : *p._Values._array)
+            int s=0;
+            for(auto & a : *p._jsons._array)
             {
-				if(a._type == GNL_NAMESPACE::json::Value::OBJECT)
-				{
-					__FormatOutput(os, a, spaces);
-				} else {
-                os << a;
-				}
-				s++;
-                if( s < p.size() ) os << ",";
+                if(a._type == GNL_NAMESPACE::json::OBJECT)
+                {
+                    __FormatOutput(os, a, spaces);
+                } else {
+                   os << a;
+                }
+                s++;
+                if( s < (int)p.size() ) os << ",";
             }
             return os << "]";
         }
-		case GNL_NAMESPACE::json::Value::OBJECT:
+        case GNL_NAMESPACE::json::OBJECT:
         {
-			int maxsize=0;
+            size_t maxsize=0;
 
-			for(auto & a : *p._Values._object)
-			{
-				if( a.first.size() > maxsize ) maxsize = a.first.size();
-			}
+            for(auto & a : *p._jsons._object)
+            {
+                if( a.first.size() > maxsize ) maxsize = a.first.size();
+            }
 
             os << std::endl << spaces << "{" << std::endl;
-			spaces += "\t";
-			int s = 0;
-            for(auto & a : *p._Values._object)
+            spaces += "\t";
+            int s = 0;
+            for(auto & a : *p._jsons._object)
             {
                 os << spaces << '"' << a.first << '"' <<  std::string( maxsize-a.first.size(), ' ') << " : " ;
                 __FormatOutput(os, a.second, spaces);
-				s++;
-				if( s < p.size() ) os << ",";
-				os << std::endl;
+                s++;
+                if( s < (int)p.size() ) os << ",";
+                os << std::endl;
             }
-			spaces.resize( spaces.size()-1 );
+            spaces.resize( spaces.size()-1 );
             return os << spaces << "}";
         }
-        case GNL_NAMESPACE::json::Value::BOOL:   
-			
-			return os << (p._Values._bool ? "true" : "false");
+        case GNL_NAMESPACE::json::BOOL:
+            return os << (p._jsons._bool ? "true" : "false");
+        default:
+            return os<<"false";
     }
 
-	return os;
+
 }
 
-inline std::ostream & operator<<(std::ostream &os, const GNL_NAMESPACE::json::Value & p)
+inline std::ostream & operator << (std::ostream &os, GNL_NAMESPACE::json const & p)
 {
-	std::string spaces;
-	__FormatOutput(os, p, spaces);
-	return os;
+    std::string spaces;
+    __FormatOutput(os, p, spaces);
+    return os;
 }
 
 #undef REMOVEWHITESPACE
 #undef GNL_NAMESPACE
 #endif
+

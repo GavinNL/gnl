@@ -1,37 +1,52 @@
-#ifndef __GNL_BINPACKING_H__
-#define __GNL_BINPACKING_H__
+/*
+    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+
+#ifndef GNL_BINPACKING_H
+#define GNL_BINPACKING_H
 
 #include <memory>
 
-#ifndef GNL_NAMESPACE
-    #define GNL_NAMESPACE gnl
-#endif
 
-namespace GNL_NAMESPACE
+namespace gnl
 {
 
-
+template<typename T>
 class Bin
 {
 
-
 public:
-    typedef struct
+    struct Rectangle
     {
-        float x;
-        float y;
-        float w;
-        float h;
-    } Rectangle;
+        T x;
+        T y;
+        T w;
+        T h;
+
+        bool valid;
+
+        operator bool() const
+        {
+            return valid;
+        }
+
+    } ;
 
 
-    Bin() : left(0), right(0)
+    Bin()
     {
     }
 
     float getUsedArea()
     {
         float area = 0.0;
+
         if(left)  area += left->getUsedArea();
         if(right) area += right->getUsedArea();
 
@@ -39,23 +54,17 @@ public:
         return area;
     }
 
-    Bin(float W, float H, float pad=0) : left(0), right(0)
+    Bin(T W, T H)
     {
-        x = 0;
-        y = 0;
+        x = static_cast<T>(0);
+        y = static_cast<T>(0);
         w = W;
         h = H;
-        padding = pad;
+
     }
 
-    Bin(float X, float Y, float W, float H, float pad=0) : left(0), right(0)
-    {
-        x = X;
-        y = Y;
-        w = W;
-        h = H;
-        padding = pad;
-    }
+    Bin(T X, T Y, T W, T H) : x(X), y(Y), w(W), h(H)
+    { }
 
     ~Bin()
     {
@@ -67,48 +76,54 @@ public:
     {
         left.reset();
         right.reset();
-        //if(left)  delete left;
-        //if(right) delete right;
     }
 
-    void resize(float W, float H, float pad=0)
+    void resize(T W, T H)
     {
         clear();
-        x = 0;
-        y = 0;
+        x = static_cast<T>(0);
+        y = static_cast<T>(0);
         w = W;
         h = H;
-        padding = pad;
+
     }
 
-    Rectangle insert(float W, float H)
+    Rectangle insert(T W, T H, T padding=static_cast<T>(0))
     {
-        Rectangle R = {-1,-1,-1,-1};
+        Rectangle R;
+        R.valid = false;
 
+        W += 2*padding;
+        H += 2*padding;
+        // failed
         if( W > w || H > h ) return R;
 
         if(left)
         {
             R = left->insert( W, H);
-            if(R.w > 0) return R;
+            if(R) return R;
 
             R = right->insert( W, H);
-            if(R.w > 0) return R;
+            if(R) return R;
 
         } else {
 
-            if( W+padding <= w && H+padding<= h)
+            if( W <= w && H<= h)
             {
                 // it fits!
-                left  = std::make_shared<Bin>( x+W, y   , w-W,  H  , padding);
-                right = std::make_shared<Bin>( x  ,y+H ,  w  , h-H, padding);
-                // std::cout << "It fits! (" << W << "," << H << ") -->(" << w << "," << h << ")\n";
-                R = {x,y,W,H};
+                 left.reset( new Bin( x+W, y   ,  w-W,  H )  );
+                right.reset( new Bin( x  , y+H ,  w  ,  h-H)  );
+
+                R.x = x+padding;
+                R.y = y+padding;
+                R.w = W-2*padding;
+                R.h = H-2*padding;
+                R.valid = true;
                 return( R );
             }
         }
 
-        R = {-1,-1,-1,-1};
+        //R = {-1,-1,-1,-1};
         return( R );
 
     }
@@ -116,18 +131,17 @@ public:
 
 
 protected:
-    std::shared_ptr<Bin> left;
-    std::shared_ptr<Bin> right;
+    std::unique_ptr<Bin> left;
+    std::unique_ptr<Bin> right;
 
-    float padding;
-    float x;
-    float y;
-    float w;
-    float h;
-
-};
+    T x;
+    T y;
+    T w;
+    T h;
 
 };
+
+}
 
 
 
