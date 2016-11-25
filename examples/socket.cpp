@@ -1,7 +1,7 @@
 #include <gnl/gnl_socket.h>
 
 #include<thread>
-
+#include<future>
 
 using namespace std;
 
@@ -17,37 +17,36 @@ int Server()
 
     std::cout << "[Server] Listening on 8810" << std::endl;
 
-    while (true)
+   // while (true)
     {
-        gnl::Socket client;
+
 
         std::cout << "[Server] Waiting for client" << std::endl;
 
-       // while( !s.ClientAvailable() )
-       // {
-       //     std::cout << "Checking if client is available" << std::endl;
-       //     std::this_thread::sleep_for( std::chrono::seconds(1) );
-       // }
-
-        s.Accept(&client);
+        //gnl::Socket client;
+        gnl::Socket client = s.Accept( );
         printf("[Server]: Client connected\n");
 
         while ( true )
         {
-            std::cout << "client has bytes: " << client.HasBytes() << std::endl;
-           // auto ret = ;
+            //if( client.IsError() )
+            //{
+            //    std::cout << "[Server] client socket detected an error" << std::endl;
+            //}
+            auto ret = client.Receive( buff, 100, false);
 
-            if( auto ret = client.Receive(buff, 100)  )
+            if( ret != 0  )
             {
-                std::cout << " Received " << ret <<" bytes "<< std::endl;
+                buff[ ret] = 0;
+                std::cout << "[Server] Received: "<< buff << std::endl;
             }
             else   // Receive will return 0 if the client disonnects, otherwise it will block
             {
-                std::cout << "[Server] Client error, disconnecting" << std::endl;
-                std::cout << "   IsError:" <<client.IsError() << std::endl;
-                client.Close();
-                break;
+               std::cout << "[Server] Client disconnecting gracefully" << std::endl;
+               client.Close();
+               break;
             }
+            std::this_thread::sleep_for( std::chrono::milliseconds(10) );
         }
         printf("[Server] Client disconnected\n");
     }
@@ -64,7 +63,7 @@ int Server()
 int Client()
 {
 
-    std::this_thread::sleep_for( std::chrono::seconds(3) );
+    std::this_thread::sleep_for( std::chrono::seconds(1) );
     gnl::Socket s;
 
     s.Create();
@@ -79,19 +78,22 @@ int Client()
 
 
     std::cout << "[Client] Established connection" << std::endl;
-
+    std::this_thread::sleep_for( std::chrono::seconds(1) );
     std::cout << "[Client] Sending Data:" << std::endl;
 
-    while(1)
-    {
-        s.SendRaw( "Hello this is a test", 18);
-        std::this_thread::sleep_for( std::chrono::seconds(3) );
-    }
+    //while(1)
+    //{
+        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        std::this_thread::sleep_for( std::chrono::seconds(1) );
+        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        std::this_thread::sleep_for( std::chrono::seconds(1) );
+        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        std::this_thread::sleep_for( std::chrono::seconds(1) );
+    //}
 
-    s.Close();
     std::cout << "[Client] disconnected" << std::endl;
-
     std::cout << "[Client] exited" << std::endl;
+    s.Close();
     return 0;
 
 }
@@ -99,13 +101,13 @@ int Client()
 int main(int argc, char **argv)
 {
 
-    if(argc==1)
-    {
-        Server();
-    } else {
-        Client();
-    }
+    auto s = std::async( std::launch::async, Server);
+    //std::this_thread::sleep_for( std::chrono::seconds(1) );
 
+    auto c = std::async( std::launch::async, Client);
+
+
+    std::this_thread::sleep_for( std::chrono::seconds(20) );
     return 0;
 
 }
