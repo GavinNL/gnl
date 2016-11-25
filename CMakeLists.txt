@@ -53,6 +53,7 @@ add_executable(meta_test         tests/meta_test.cpp)
 add_executable(threadpool_test   tests/threadpool_test.cpp)
 add_executable(interp_test       tests/interp_test.cpp)
 add_executable(binpacking_test   tests/binpacking_test.cpp)
+add_executable(variant           tests/variant_test.cpp)
 
 add_executable(json       examples/json.cpp)
 add_executable(path       examples/path.cpp)

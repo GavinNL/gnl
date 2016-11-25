@@ -1088,8 +1088,6 @@ inline std::map<std::string, json> json::parseObject(std::istringstream &S)
 
     char c = (char)S.get();
 
-  //  std::cout << "Start Object: " << c << std::endl;
-
     std::map<std::string, json> vMap;
     int count = 0;
     while(c != '}')
