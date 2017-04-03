@@ -366,6 +366,8 @@ class json
         OPERATOR( >= )
         OPERATOR( <= )
 
+        #undef OPERATOR
+
         bool operator==(const json & right) const
         {
             if( _type == right._type)
@@ -567,7 +569,7 @@ class json
         {
             if( _type != json::ARRAY) return Defaultjson;//throw incorrect_type();
 
-            if( i < size() )
+            if( i < (int)size() )
                 return _jsons._array->at(i).to<T>();
 
             return Defaultjson;
@@ -601,7 +603,7 @@ class json
 
             if( f->second.type() == type_ ) return true;
 
-            return true;
+            return false;
         }
 
         // gets the type of the object.

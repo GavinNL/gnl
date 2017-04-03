@@ -33,6 +33,7 @@
 #else
     #include <cstring>
     #include <netinet/in.h>
+    #include <sys/ioctl.h>
     #include <sys/time.h>
     #include <sys/types.h>
     #include <unistd.h>
@@ -178,32 +179,37 @@ class Socket
 
         Socket& operator = (const Socket & S)
         {
-            #ifdef _MSC_VER
-            wsda = S.wsda;
-            #endif
-            sock     = S.sock      ;
-            addr     = S.addr      ;
-            fromAddr = S.fromAddr  ;
-            __state  = S.__state   ;
-            __scks   = S.__scks    ;
-            __times  = S.__times   ;
-
+            if( &S != this)
+			{
+		        #ifdef _MSC_VER
+		        wsda = S.wsda;
+		        #endif
+		        sock     = S.sock      ;
+		        addr     = S.addr      ;
+		        fromAddr = S.fromAddr  ;
+		        __state  = S.__state   ;
+		        __scks   = S.__scks    ;
+		        __times  = S.__times   ;
+			}
             return *this;
         }
 
         Socket& operator = ( Socket && S)
         {
-            #ifdef _MSC_VER
-            wsda = S.wsda;
-            #endif
-            sock     = S.sock      ;
-            addr     = S.addr      ;
-            fromAddr = S.fromAddr  ;
-            __state  = S.__state   ;
-            __scks   = S.__scks    ;
-            __times  = S.__times   ;
+			if( &S != this)
+			{
+		        #ifdef _MSC_VER
+		        wsda = S.wsda;
+		        #endif
+		        sock     = S.sock      ;
+		        addr     = S.addr      ;
+		        fromAddr = S.fromAddr  ;
+		        __state  = S.__state   ;
+		        __scks   = S.__scks    ;
+		        __times  = S.__times   ;
 
-            S.sock    = INVALID_SOCKET;
+		        S.sock    = INVALID_SOCKET;
+			}
             return *this;
         }
 
@@ -303,13 +309,17 @@ class Socket
          * @return the number of bytes available to read
          *
          */
-        std::size_t BytesAvailable()
+        std::size_t HasBytes() { return BytesAvailable(); }
+
+        int BytesAvailable()
         {
-            unsigned long bytes_available;
+
+            int bytes_available;
+
             #ifdef _MSC_VER
                 auto ret = ioctlsocket(sock,FIONREAD,&bytes_available);
             #else
-                auto ret = ioctl(sock,FIONREAD,&bytes_available);
+                auto ret = ioctl(sock,FIONREAD, &bytes_available);
             #endif
 
             if(ret == -1)
@@ -317,6 +327,7 @@ class Socket
                 std::cout << "Error collecting byte information" << std::endl;
                 exit(1);
             }
+
             return bytes_available;
 
         }
@@ -344,7 +355,7 @@ class Socket
         int  ReceiveUDP(      void * buffer,    int size, sockaddr_in* from);
 
 
-        long Address();
+        std::uint32_t Address();
 
         /**
          * @brief ClientAvailable
@@ -353,6 +364,7 @@ class Socket
          */
         bool ClientAvailable();
 
+        SocketState State() const { return __state; }
     private:
         #ifdef _MSC_VER
         WSADATA            wsda;
@@ -553,9 +565,13 @@ inline void Socket::Close()
 	sock = INVALID_SOCKET;
 }
 
-inline long Socket::Address()
+inline uint32_t Socket::Address()
 {
-    return addr.sin_addr.S_un.S_addr;
+#ifdef _MSC_VER
+    return static_cast<std::uint32_t>(addr.sin_addr.S_un.S_addr);
+#else
+    return static_cast<std::uint32_t>(addr.sin_addr.s_addr);
+#endif
 }
 
 inline bool Socket::Connect(const char* host, unsigned short port)
@@ -615,7 +631,11 @@ inline int Socket::Receive(void * buffer, int size , bool wait_for_all)
 {
     auto t = recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
     if( t == 0)
+    {
+        std::cout << "Socket error" << std::endl;
         sock = INVALID_SOCKET;
+        __state = SocketState::Disconnected;
+    }
     return t;
 }
 
