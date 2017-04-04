@@ -134,7 +134,8 @@ class Socket
 
         struct Address
         {
-            SOCKADDR_IN addr;
+            sockaddr_in addr;
+          //  SOCKADDR_IN addr;
         };
 
         /**
@@ -232,7 +233,7 @@ class Socket
          * Sets the sock to use the appropriate protocol.
          * Default is TCP
          */
-        bool Create(Protocol p = Protocol::TCP);
+        bool Create(Protocol p  );
 
         /**
          * @brief Bind
@@ -441,20 +442,22 @@ inline Socket::~Socket()
 
 inline bool Socket::Create(Protocol p)
 {
+    __state = SocketState::Disconnected;
     switch (p)
     {
         case Protocol::TCP: return this->create(IPPROTO_TCP, SOCK_STREAM);
         case Protocol::UDP: return this->create(IPPROTO_UDP, SOCK_DGRAM);
         default                 : return false;
     }
+    return false;
 }
 
 
-inline bool Socket::create(int Protocol, int Type)
+inline bool Socket::create(int protocol, int Type)
 {
     __state = SocketState::Disconnected;
 
-	sock = ::socket(AF_INET, Type, Protocol);
+    sock = ::socket(AF_INET, Type, protocol);
 
     return sock != INVALID_SOCKET;
 }

@@ -408,7 +408,7 @@ class Variant
 
         void cpydata(void const * source,  void * dest, int length )
         {
-            unsigned char const * src = (unsigned char*)source;
+            unsigned char const * src = (unsigned char const *)source;
             unsigned char * dst = (unsigned char*)dest;
             while(length--) *dst++ = *src++;
         }

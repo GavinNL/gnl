@@ -11,7 +11,7 @@ int Server()
 
     gnl::Socket s;
 
-    s.Create();
+    s.Create(gnl::Socket::Protocol::TCP);
     s.Bind(8810);
     s.Listen();
 
@@ -66,7 +66,7 @@ int Client()
     std::this_thread::sleep_for( std::chrono::seconds(1) );
     gnl::Socket s;
 
-    s.Create();
+    s.Create(gnl::Socket::Protocol::TCP);
 
     std::cout << "[Client] Connecting " << std::endl;
 

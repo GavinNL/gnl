@@ -356,7 +356,7 @@ namespace gnl
              *
              * Returns a vector of files in a path
              */
-            std::vector<Path> GetFileList()
+            static std::vector<Path> GetFileList( const gnl::Path & dir_path)
             {
                 std::vector<Path> files;
 
@@ -365,7 +365,7 @@ namespace gnl
                 DIR           *d;
                 struct dirent *dir;
 
-                d   = opendir(  BasePath().ToString(UNIX_STYLE).c_str() );
+                d   = opendir(  dir_path.BasePath().ToString(UNIX_STYLE).c_str() );
 
                 if( d )
                 {
@@ -378,9 +378,9 @@ namespace gnl
                         if (dir->d_type != DT_DIR)
                         {
                             //std::cout << "(File)";
-                            files.push_back( BasePath() + Path(std::string(dir->d_name) ) );
+                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name) ) );
                         } else {
-                            files.push_back( BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
+                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
                         }
 
                         //std::cout << "File found: " << dir->d_name << "    Flags: " << dir->d_ino       << std::endl;
@@ -394,7 +394,7 @@ namespace gnl
                 using namespace std;
 
                // struct dirent *dir;
-                string search_path = BasePath().ToString(UNIX_STYLE) + "*.*";
+                string search_path = dir_path.BasePath().ToString(UNIX_STYLE) + "*.*";
 
                 //std::cout << "Searching: " << search_path << std::endl;
 
@@ -410,9 +410,9 @@ namespace gnl
                         {
                             if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
                             {
-                                    files.push_back( BasePath() + Path(fd.cFileName) );
+                                    files.push_back( dir_path.BasePath() + Path(fd.cFileName) );
                             } else {
-                                files.push_back( BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
+                                files.push_back( dir_path.BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
                             }
                         }
                         //std::cout << fd.cFileName << std::endl;
@@ -453,11 +453,10 @@ namespace gnl
 #endif
         }
 
-        FILE* fopen(const std::string & open_flags)
+        static FILE* fopen(const Path & P, const std::string & open_flags)
         {
-          auto P = *this;
-          mkdir(P.BasePath());
-          return ::fopen( ToString().c_str(), open_flags.c_str() );
+          mkdir( P.BasePath() );
+          return ::fopen( P.ToString().c_str(), open_flags.c_str() );
         }
 
         static inline bool mkdir(const Path & P, uint32_t chmod=0766)
