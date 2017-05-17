@@ -1,51 +1,4 @@
-#gnl
-
-A collection of header only/single file libraries designed to be easily
-dropped into any project.
-
-The following are a list of libraries
-
-## gnl_path
-Provides a way to represent paths to files/folders. Also gives some
-limited access to known paths such as the user's home directory
-and temp folders.
-
-## gnl_animate
-A library to represent time-varying variables. Variables are animated
-based on the real time clock and can be animated using different
-easing functions.
-
-## gnl_base64
-Encode and decode base64 strings
-
-## gnl_binpacking
-Tool for packing smaller rectangles into a bigger rectangle. Useful for
-texture atlas' and fonts
-
-## gnl_interp
-A library for various interpolation schemes such as bezier curves and splines
-
-## gnl_json
-A library for reading and manipulating json files
-
-## gnl_periodic
-A libray used for calling functions at a particular intervals.
-
-## gnl_socket
-A wrapper around unix sockets and winsock based on what OS you are compiling on.
-
-## gnl_threadpool
-A thread pool implementation. Push tasks onto the queue and the threadpool will
-automatically run the tasks in order
-
-## gnl_unicode
-A library for working with unicode conversions. Still in testing
-
-## gnl_variant
-An implementation of a variant. Probably not the best way to do it.
-
-
-## LICENSE: UNLICENSE
+# LICENSE: UNLICENSE #
 
 This is free and unencumbered software released into the public domain.
 
@@ -71,4 +24,53 @@ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 
 For more information, please refer to <http://unlicense.org/>
+
+
+
+# gnl #
+
+A collection of header only/single file libraries designed to be easily
+dropped into any project.
+
+The following are a list of libraries
+
+## gnl_path ##
+Provides a way to represent paths to files/folders. Also gives some
+limited access to known paths such as the user's home directory
+and temp folders.
+
+## gnl_animate ##
+A library to represent time-varying variables. Variables are animated
+based on the real time clock and can be animated using different
+easing functions.
+
+## gnl_base64 ##
+Encode and decode base64 strings
+
+## gnl_binpacking ##
+Tool for packing smaller rectangles into a bigger rectangle. Useful for
+texture atlas' and fonts
+
+## gnl_interp ##
+A library for various interpolation schemes such as bezier curves and splines
+
+## gnl_json ##
+A library for reading and manipulating json files
+
+## gnl_periodic ##
+A libray used for calling functions at a particular intervals.
+
+## gnl_socket ##
+A wrapper around unix sockets and winsock based on what OS you are compiling on.
+
+## gnl_threadpool ##
+A thread pool implementation. Push tasks onto the queue and the threadpool will
+automatically run the tasks in order
+
+## gnl_unicode ##
+A library for working with unicode conversions. Still in testing
+
+## gnl_variant ##
+An implementation of a variant. Probably not the best way to do it.
+
 

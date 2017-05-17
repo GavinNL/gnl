@@ -249,7 +249,7 @@ class Variant
         template<typename T>
         Variant(const T & V)
         {
-            std::cout << "VARIANT copy constructor" << std::endl;
+           // std::cout << "VARIANT copy constructor" << std::endl;
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
             new (data)T(V);
             current_type = index_in_list<T,_T...>::value;
@@ -263,7 +263,7 @@ class Variant
         template<typename T>
         Variant( T && V)
         {
-            std::cout << "VARIANT move constructor" << std::endl;
+           // std::cout << "VARIANT move constructor" << std::endl;
             //static_assert( type_in<T,_T...>::value, "That type is not represented in the variant!" );
 
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
@@ -276,7 +276,7 @@ class Variant
 
         Variant_Type & operator=( Variant_Type && V)
         {
-            std::cout << "VARIANT Move operator" << std::endl;
+          //  std::cout << "VARIANT Move operator" << std::endl;
             current_type = V.current_type;
             cpydata(V.data, data, bytes_size);
             V.current_type = 255;
@@ -289,7 +289,7 @@ class Variant
        typename std::enable_if <  type_in<T, _T...>::value  , Variant_Type  >::type & operator=( T &&V)
        {
           // std::cout << "Move operator" << std::endl;
-           std::cout << "VARIANT  Moving type" << std::endl;
+          // std::cout << "VARIANT  Moving type" << std::endl;
 
            static_assert( detail::type_in<T,_T...>::value, "That type is not represented in the variant!" );
 
