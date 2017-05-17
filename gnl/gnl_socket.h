@@ -33,6 +33,7 @@
 #else
     #include <cstring>
     #include <netinet/in.h>
+    #include <sys/ioctl.h>
     #include <sys/time.h>
     #include <sys/types.h>
     #include <unistd.h>
@@ -106,11 +107,7 @@ enum class SocketError
 };
 #endif
 
-enum class SocketProtocol
-{
-    TCP,
-    UDP
-};
+
 
 /**
  * @brief The Socket class
@@ -129,6 +126,17 @@ class Socket
 
     public:
 
+        enum class Protocol
+        {
+            TCP,
+            UDP
+        };
+
+        struct Address
+        {
+            sockaddr_in addr;
+          //  SOCKADDR_IN addr;
+        };
 
         /**
          * @brief Socket
@@ -138,6 +146,74 @@ class Socket
          */
         Socket();
 
+        Socket(const Socket & S)
+        {
+            if( &S != this)
+            {
+                #ifdef _MSC_VER
+                wsda = S.wsda;
+                #endif
+                sock     = S.sock      ;
+                addr     = S.addr      ;
+                fromAddr = S.fromAddr  ;
+                __state  = S.__state   ;
+                __scks   = S.__scks    ;
+                __times  = S.__times   ;
+            }
+        }
+
+
+        Socket( Socket && S )
+        {
+            #ifdef _MSC_VER
+            wsda = S.wsda;
+            #endif
+            sock     = S.sock      ;
+            addr     = S.addr      ;
+            fromAddr = S.fromAddr  ;
+            __state  = S.__state   ;
+            __scks   = S.__scks    ;
+            __times  = S.__times   ;
+
+            S.sock = INVALID_SOCKET;
+        }
+
+        Socket& operator = (const Socket & S)
+        {
+            if( &S != this)
+			{
+		        #ifdef _MSC_VER
+		        wsda = S.wsda;
+		        #endif
+		        sock     = S.sock      ;
+		        addr     = S.addr      ;
+		        fromAddr = S.fromAddr  ;
+		        __state  = S.__state   ;
+		        __scks   = S.__scks    ;
+		        __times  = S.__times   ;
+			}
+            return *this;
+        }
+
+        Socket& operator = ( Socket && S)
+        {
+			if( &S != this)
+			{
+		        #ifdef _MSC_VER
+		        wsda = S.wsda;
+		        #endif
+		        sock     = S.sock      ;
+		        addr     = S.addr      ;
+		        fromAddr = S.fromAddr  ;
+		        __state  = S.__state   ;
+		        __scks   = S.__scks    ;
+		        __times  = S.__times   ;
+
+		        S.sock    = INVALID_SOCKET;
+			}
+            return *this;
+        }
+
         /**
          * @brief Socket
          * @param p - the protocol to use
@@ -145,7 +221,7 @@ class Socket
          * Construct the socket and set the protocol to be used. Constructing
          * this way does not require you to call Create( )
          */
-        Socket(SocketProtocol p);
+        Socket(Protocol p);
 
         ~Socket();
 
@@ -157,7 +233,7 @@ class Socket
          * Sets the sock to use the appropriate protocol.
          * Default is TCP
          */
-        bool Create(SocketProtocol p = SocketProtocol::TCP);
+        bool Create(Protocol p  );
 
         /**
          * @brief Bind
@@ -184,7 +260,13 @@ class Socket
          *
          * Accepts a client connection. Blocks until a client connects.
          */
-        bool Accept( Socket* socket );
+        bool   Accept(Socket *socket) const;
+
+        /**
+         * @brief Accept
+         * @return A socket to the connected client.
+         */
+        Socket Accept() const;
 
 
         /**
@@ -215,22 +297,41 @@ class Socket
 
 
         /**
-         * @brief IsValid
-         * @return
-         *
-         * Determins if the socket is valid.
+         * @brief operator bool
+         * Determines if the socket is valid
          */
-        bool IsValid();
-
+        operator bool() const
+        {
+            return ( sock!=SOCKET_ERROR) && (sock!=INVALID_SOCKET);
+        }
 
         /**
-         * @brief HasBytes
-         * @return - true if bytes are available to be read.
+         * @brief BytesAvailable
+         * @return the number of bytes available to read
          *
-         * Checks if the socket has bytes available.
          */
-        bool HasBytes();
+        std::size_t HasBytes() { return BytesAvailable(); }
 
+        int BytesAvailable()
+        {
+
+            int bytes_available;
+
+            #ifdef _MSC_VER
+                auto ret = ioctlsocket(sock,FIONREAD,&bytes_available);
+            #else
+                auto ret = ioctl(sock,FIONREAD, &bytes_available);
+            #endif
+
+            if(ret == -1)
+            {
+                std::cout << "Error collecting byte information" << std::endl;
+                exit(1);
+            }
+
+            return bytes_available;
+
+        }
 
         /**
          * @brief Receive
@@ -240,7 +341,7 @@ class Socket
          *
          * @return the number of bytes read, or 0 if the client disconnected
          */
-        int  Receive( void * buffer,    int size, int spos = 0);
+        int  Receive( void * buffer,    int size, bool wait_for_all = false );
 
         /**
          * @brief SendRaw
@@ -251,39 +352,40 @@ class Socket
         int  SendRaw(const void* data,      int dataSize);
 
 
-
         int  SendUDP(   const void * buffer,    int size, sockaddr_in* to  );
         int  ReceiveUDP(      void * buffer,    int size, sockaddr_in* from);
 
 
-        long Address();
+        std::uint32_t Address();
+
+        /**
+         * @brief ClientAvailable
+         * @return
+         * Not sure if this works yet
+         */
         bool ClientAvailable();
 
+        SocketState State() const { return __state; }
     private:
         #ifdef _MSC_VER
-        WSADATA wsda;
+        WSADATA            wsda;
         #endif
         SocketFD           sock;
-
-        bool               blocking;
-        bool               Valid;
 
         struct sockaddr_in addr;
         struct sockaddr_in fromAddr;
 
         SocketState        __state = SocketState::Disconnected;
 
-        fd_set  __scks;
-       // FD_SET  __scks;
-        timeval __times;
+        fd_set             __scks;
+        timeval            __times;
 
-        //unsigned int totaldata;
+
         bool create(int Protocol, int Type);
-        bool check();
 };
 
 
-inline Socket::Socket() : sock(INVALID_SOCKET), blocking(true), Valid(false)
+inline Socket::Socket() : sock(INVALID_SOCKET)
 {
 	memset(&addr, 0, sizeof(addr));
 
@@ -301,7 +403,7 @@ inline Socket::Socket() : sock(INVALID_SOCKET), blocking(true), Valid(false)
     __times.tv_usec = 0;
 }
 
-inline Socket::Socket(SocketProtocol p) : sock(INVALID_SOCKET), blocking(true), Valid(false)
+inline Socket::Socket(Protocol p) : sock(INVALID_SOCKET)
 {
     memset(&addr, 0, sizeof(addr));
 
@@ -323,64 +425,48 @@ inline Socket::Socket(SocketProtocol p) : sock(INVALID_SOCKET), blocking(true), 
 
 inline Socket::~Socket()
 {
-	if (this->check())
+    if (*this)
         Close();
 
 }
 
-inline bool Socket::check()
-{
-    return sock != INVALID_SOCKET;
-}
+//inline bool Socket::check()
+//{
+//    return sock != INVALID_SOCKET;
+//}
+//
+//inline bool Socket::IsValid()
+//{
+//    return sock != INVALID_SOCKET;
+//}
 
-inline bool Socket::IsValid()
+inline bool Socket::Create(Protocol p)
 {
-    return sock != INVALID_SOCKET;
-}
-
-inline bool Socket::Create(SocketProtocol p)
-{
+    __state = SocketState::Disconnected;
     switch (p)
     {
-        case SocketProtocol::TCP: return this->create(IPPROTO_TCP, SOCK_STREAM);
-        case SocketProtocol::UDP: return this->create(IPPROTO_UDP, SOCK_DGRAM);
+        case Protocol::TCP: return this->create(IPPROTO_TCP, SOCK_STREAM);
+        case Protocol::UDP: return this->create(IPPROTO_UDP, SOCK_DGRAM);
         default                 : return false;
     }
+    return false;
 }
 
 
-inline bool Socket::create(int Protocol, int Type)
+inline bool Socket::create(int protocol, int Type)
 {
-    printf("Socket::Create()\n");
-    printf("   Checking\n");
-
-    if ( this->check() )
-    {
-		return false;
-    }
-
     __state = SocketState::Disconnected;
 
-  //  printf("Creating socket: type: %d,  protocol: %d\n", Type, Protocol);
-
-	sock = ::socket(AF_INET, Type, Protocol);
-
-    //lastCode = sock;
-
-    // if( sock == INVALID_SOCKET )
-    // {
-    //     printf("Socket create failed\n");
-    // } else {
-    //     printf("Listen Socket created\n");
-    // }
+    sock = ::socket(AF_INET, Type, protocol);
 
     return sock != INVALID_SOCKET;
 }
 
 inline bool Socket::Bind(unsigned short port)
 {
-    if ( !check() )
+    if ( !(*this) )
     {
+        // Socket has not been created.
         return false;
     }
 
@@ -396,10 +482,10 @@ inline bool Socket::Bind(unsigned short port)
 
     if(lastCode == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket Bind error");
-
+        //throw std::runtime_error("Socket Bind error");
+        return false;
     }
-    printf("Last code: %d\n", lastCode);
+    //printf("Last code: %d\n", lastCode);
     return lastCode == 0;
 }
 
@@ -409,13 +495,13 @@ inline bool Socket::Listen(unsigned int MaxConnections)
 
     if (lastCode == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket error");
+        //throw std::runtime_error("Socket error");
         return false;
     }
 
      __state = SocketState::Listening;
 
-	this->Valid = true;
+
 
 	return true;
 }
@@ -437,26 +523,38 @@ inline bool Socket::ClientAvailable()
     return false;
 }
 
-
-inline bool Socket::Accept( Socket* socket )
+inline Socket Socket::Accept( ) const
 {
-    if (!blocking && !HasBytes()) return false;
+    Socket socket;
+    int length   = sizeof(socket.addr);
+
+    socket.sock = ::accept(sock, (struct sockaddr*) &socket.addr, (socklen_t*)&length);
+
+    if (socket.sock == SOCKET_ERROR)
+    {
+        //throw std::runtime_error("Socket Accept error");
+        return socket;
+    }
+
+    socket.__state = SocketState::Connected;
+    return socket;
+}
+
+inline bool Socket::Accept( Socket * socket ) const
+{
 
     int length   = sizeof(socket->addr);
-	socket->sock = ::accept(sock, (struct sockaddr*) &socket->addr, (socklen_t*)&length);
 
-    // if( fcntl(socket->sock, F_GETFL) & O_NONBLOCK) {
-    //     std::cout << " socket is non-blocking " << std::endl;
-    // }
+    socket->sock = ::accept(sock, (struct sockaddr*) &socket->addr, (socklen_t*)&length);
 
-	if (socket->sock == SOCKET_ERROR)
+    if (socket->sock == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket Accept error");
+        //throw std::runtime_error("Socket Accept error");
         return false;
     }
 
     socket->__state = SocketState::Connected;
-	return true;
+    return true;
 }
 
 inline void Socket::Close()
@@ -473,14 +571,18 @@ inline void Socket::Close()
 	sock = INVALID_SOCKET;
 }
 
-inline long Socket::Address()
+inline uint32_t Socket::Address()
 {
-	return addr.sin_addr.s_addr;
+#ifdef _MSC_VER
+    return static_cast<std::uint32_t>(addr.sin_addr.S_un.S_addr);
+#else
+    return static_cast<std::uint32_t>(addr.sin_addr.s_addr);
+#endif
 }
 
 inline bool Socket::Connect(const char* host, unsigned short port)
 {
-    if ( !IsValid() )
+    if ( ! (*this) )
         return false;
 
     struct hostent* hostname;
@@ -500,39 +602,12 @@ inline bool Socket::Connect(const char* host, unsigned short port)
 
     __state = SocketState::Connected;
 
-	this->Valid = true;
-    std::cout << "Socket Connected Successfully" << std::endl;
     return true;
 }
 
-inline bool Socket::HasBytes()
-{
-    FD_ZERO(&__scks);
-    FD_SET( (unsigned)sock, &__scks );
-
-    auto d = select( (int)(sock + 1) , &__scks, NULL, NULL, &__times);
-    printf("Bytes available? %d \n", d);
-    return d > 0;
-}
-
-//inline bool Socket::CanRead()
-//{
-//    FD_ZERO(&__scks);
-//    FD_SET( (unsigned)sock, &__scks );
-//
-//    auto d = select( (int)(sock + 1) , &__scks, NULL, NULL, &__times);
-//
-//    printf("Bytes available? %d \n", d);
-//    return d > 0;
-//}
 
 inline bool Socket::IsError()
 {
-    // char c;
-    // ssize_t x = recv(sock, &c, 1, MSG_PEEK);
-    // printf("%x\n", (unsigned int)x);
-    // return x == -1;
-
 
     if (__state == SocketState::Error || sock == -1)
 		return true;
@@ -558,16 +633,15 @@ inline int Socket::ReceiveUDP(void *buffer, int size, sockaddr_in* from)
 }
 
 
-inline int Socket::Receive(  void * buffer, int size, int spos )
+inline int Socket::Receive(void * buffer, int size , bool wait_for_all)
 {
-    auto t = recv( sock, (char*)buffer + spos, size, MSG_WAITALL );
-
-    //if( t == 0 )
-    //{
-    //    std::cout << "Receive got " << t << " bytes" << std::endl;
-    //    Close();
-    //}
-
+    auto t = recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
+    if( t == 0)
+    {
+        std::cout << "Socket error" << std::endl;
+        sock = INVALID_SOCKET;
+        __state = SocketState::Disconnected;
+    }
     return t;
 }
 

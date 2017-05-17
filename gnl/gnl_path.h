@@ -19,12 +19,21 @@
 #include <stdexcept>
 #include <cstdlib>
 
+
 #ifndef _MSC_VER
     #include <dirent.h>
 //    #include <stdio.h>
 #else
     #include<windows.h>
 #endif
+
+#if defined(_WIN32)
+
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
+
 
 namespace gnl
 {
@@ -45,7 +54,7 @@ namespace gnl
              * @brief Path
              * Construct a blank path
              */
-            Path() : Path(std::string()) { }
+            Path() : Path(std::string("/")) { }
 
             /**
              * @brief Path
@@ -66,7 +75,15 @@ namespace gnl
             Path(const std::string & path)
             {
 
+                if(path=="")
+                {
+                  isfolder = false;
+                  relative = true;
+                  return;
+                }
+
                 dirs = Tokenize(path, "/\\");
+
 
                 if( path[ path.size()-1] == '/' || path[ path.size()-1] == '\\')
                 {
@@ -76,6 +93,7 @@ namespace gnl
                     filename = dirs[ dirs.size()-1];
                     dirs.pop_back();
                 }
+
 
                 if(path[0] == '/')
                 {
@@ -95,11 +113,24 @@ namespace gnl
 
             }
 
-            Path(const Path & P) : isfolder(P.isfolder), relative(P.relative), dirs(P.dirs), filename(P.filename)
+            Path(const Path & P) : isfolder(P.isfolder), relative(P.relative), device(P.device), filename(P.filename), dirs(P.dirs)
             {
 
             }
 
+            Path & operator=(const Path & P)
+            {
+              if( this == &P ) return *this;
+
+              isfolder = P.isfolder;
+              relative = P.relative;
+              device   = P.device;
+              filename = P.filename;
+              dirs     = P.dirs;
+
+              return *this;
+
+            }
 
             /**
              * @brief ToString
@@ -316,6 +347,8 @@ namespace gnl
             OPERATOR(>)
             OPERATOR(<=)
             OPERATOR(>=)
+
+            #undef OPERATOR
             /**
              * @brief GetDirectoryList
              * @param P
@@ -323,7 +356,7 @@ namespace gnl
              *
              * Returns a vector of files in a path
              */
-            std::vector<Path> GetFileList()
+            static std::vector<Path> GetFileList( const gnl::Path & dir_path)
             {
                 std::vector<Path> files;
 
@@ -332,7 +365,7 @@ namespace gnl
                 DIR           *d;
                 struct dirent *dir;
 
-                d   = opendir(  BasePath().ToString(UNIX_STYLE).c_str() );
+                d   = opendir(  dir_path.BasePath().ToString(UNIX_STYLE).c_str() );
 
                 if( d )
                 {
@@ -345,9 +378,9 @@ namespace gnl
                         if (dir->d_type != DT_DIR)
                         {
                             //std::cout << "(File)";
-                            files.push_back( BasePath() + Path(std::string(dir->d_name) ) );
+                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name) ) );
                         } else {
-                            files.push_back( BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
+                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
                         }
 
                         //std::cout << "File found: " << dir->d_name << "    Flags: " << dir->d_ino       << std::endl;
@@ -361,7 +394,7 @@ namespace gnl
                 using namespace std;
 
                // struct dirent *dir;
-                string search_path = BasePath().ToString(UNIX_STYLE) + "*.*";
+                string search_path = dir_path.BasePath().ToString(UNIX_STYLE) + "*.*";
 
                 //std::cout << "Searching: " << search_path << std::endl;
 
@@ -377,9 +410,9 @@ namespace gnl
                         {
                             if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
                             {
-                                    files.push_back( BasePath() + Path(fd.cFileName) );
+                                    files.push_back( dir_path.BasePath() + Path(fd.cFileName) );
                             } else {
-                                files.push_back( BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
+                                files.push_back( dir_path.BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
                             }
                         }
                         //std::cout << fd.cFileName << std::endl;
@@ -420,6 +453,41 @@ namespace gnl
 #endif
         }
 
+        static FILE* fopen(const Path & P, const std::string & open_flags)
+        {
+          mkdir( P.BasePath() );
+          return ::fopen( P.ToString().c_str(), open_flags.c_str() );
+        }
+
+        static inline bool mkdir(const Path & P, uint32_t chmod=0766)
+        {
+          if( P.IsRelative() )
+            throw std::runtime_error("Path must be absolute, not relative");
+
+          gnl::Path p("/");
+
+          bool success = false;
+
+          for( auto & d : P.dirs)
+          {
+            p = p.ToString() + std::string("/") + d;
+          #if defined(_WIN32)
+          #else
+
+                success = (::mkdir(p.ToString().c_str(), chmod) == 0);
+                if( success )
+                {
+               //   std::cout << "Directory Created: " << p.ToString() << std::endl;
+                } else {
+               //   std::cout << "Error Creating Directory: " << p.ToString() << std::endl;
+                }
+          #endif
+          }
+
+          return success;
+        }
+
+
         private:
             bool                       isfolder;   // does this point to a folder or a file?
             bool                       relative;
@@ -454,7 +522,7 @@ namespace gnl
     };
 
 
-    Path operator+(const Path & P1, const Path & P2)
+    inline Path operator+(const Path & P1, const Path & P2)
     {
         Path P = P1;
         P += P2;

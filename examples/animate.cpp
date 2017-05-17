@@ -1,8 +1,8 @@
-#include <gnl/gnl_animate.h>
 #include <chrono>
 #include <thread>
 #include <iostream>
 #include <string>
+#include <gnl/gnl_animate.h>
 
 
 void Run_Const( const gnl::Animate<float> & constanimate);
@@ -10,6 +10,29 @@ void Run_Const( const gnl::Animate<float> & constanimate);
 
 int main(int argc, char ** argv)
 {
+
+    gnl::Animate2<float> B;
+
+    B.set(0.0f)
+     .to( 10.0f, std::chrono::seconds(10))
+     .to( 10.0f, std::chrono::seconds(2));
+
+    for(int i=0;i<30;i++)
+    {
+        std::cout << std::string( (int)B.get(), '#') << std::endl;
+        std::this_thread::sleep_for( std::chrono::milliseconds(100) );
+    }
+
+
+    B.stop().to( 50.0f, std::chrono::seconds(1) );
+
+    for(int i=0;i<100;i++)
+    {
+        std::cout << std::string( (int)B.get(), '#') << std::endl;
+        std::this_thread::sleep_for( std::chrono::milliseconds(100) );
+    }
+
+    return 0;
     using namespace gnl;
 
     // A will hold an animated floating value.
@@ -94,3 +117,4 @@ void Run_Const( const gnl::Animate<float> & constanimate)
 
     }
 }
+

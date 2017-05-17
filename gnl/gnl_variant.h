@@ -208,7 +208,7 @@ struct print_as<0, Ts...>
 
     }
 };
-#endif
+
 
 
 
@@ -225,9 +225,12 @@ class Variant
 
         Variant_Type& operator=(const  Variant_Type & V)
         {
-           // std::cout << "Assigning Variant to another Variant" << std::endl;
-            current_type = V.current_type;
-            cpydata(V.data, data, bytes_size);
+            if( this != &V)
+            {
+                current_type = V.current_type;
+                cpydata(V.data, data, bytes_size);
+            }
+            return *this;
         }
 
         Variant(const Variant_Type & V)
@@ -246,21 +249,21 @@ class Variant
         template<typename T>
         Variant(const T & V)
         {
-            std::cout << "Const constructor" << std::endl;
+            std::cout << "VARIANT copy constructor" << std::endl;
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
             new (data)T(V);
             current_type = index_in_list<T,_T...>::value;
         }
 
-        template<typename T>
-        Variant( T & V) : Variant( static_cast<const T>(V) )
-        {
-        }
+        //template<typename T>
+        //Variant( T & V) : Variant( static_cast<const T>(V) )
+        //{
+        //}
 
         template<typename T>
         Variant( T && V)
         {
-            std::cout << "move constructor" << std::endl;
+            std::cout << "VARIANT move constructor" << std::endl;
             //static_assert( type_in<T,_T...>::value, "That type is not represented in the variant!" );
 
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
@@ -271,26 +274,39 @@ class Variant
 
 
 
-
-        template<typename T>
-        Variant& operator=( T && V)
+        Variant_Type & operator=( Variant_Type && V)
         {
-           // std::cout << "Move operator" << std::endl;
-            std::cout << "Moving type" << std::endl;
-            static_assert( type_in<T,_T...>::value, "That type is not represented in the variant!" );
+            std::cout << "VARIANT Move operator" << std::endl;
+            current_type = V.current_type;
+            cpydata(V.data, data, bytes_size);
+            V.current_type = 255;
 
-            if( is<T>() )
-            {
-                as<T>() = std::move(V);
-            }
-            else
-            {
-                Destroy();
-                new (data)T( std::move(V) );
-                current_type = index_in_list<T,_T...>::value;
-            }
             return *this;
         }
+
+
+       template<typename T>
+       typename std::enable_if <  type_in<T, _T...>::value  , Variant_Type  >::type & operator=( T &&V)
+       {
+          // std::cout << "Move operator" << std::endl;
+           std::cout << "VARIANT  Moving type" << std::endl;
+
+           static_assert( detail::type_in<T,_T...>::value, "That type is not represented in the variant!" );
+
+           if( is<T>() )
+           {
+               as<T>() = std::move( V );
+           }
+           else
+           {
+               Destroy();
+               new (data)T( std::move(V) );
+               current_type = index_in_list<T,_T...>::value;
+           }
+
+           return *this;
+       }
+
 
 
         template<typename T>
@@ -320,7 +336,7 @@ class Variant
         template<typename T>
         void MoveType( T && V)
         {
-            std::cout << "Moving type" << std::endl;
+            //std::cout << "Moving type" << std::endl;
             static_assert(
                              type_in<T,_T...>::value, "That type is not represented in the variant!" );
 
@@ -380,7 +396,7 @@ class Variant
             return *static_cast<T*>( (void*)&data[0]);
         }
 
-        friend std::ostream& operator<< (std::ostream& stream, const Variant_Type & V)
+        friend std::ostream & operator<< (std::ostream& stream, const Variant_Type & V)
         {
             static print_as<sizeof...(_T)-1, _T...> P;
 
@@ -390,18 +406,18 @@ class Variant
             return stream;
         }
 
-        void cpydata( void * source,  void *dest, int length )
+        void cpydata(void const * source,  void * dest, int length )
         {
-            unsigned char * src = (unsigned char*)source;
+            unsigned char const * src = (unsigned char const *)source;
             unsigned char * dst = (unsigned char*)dest;
             while(length--) *dst++ = *src++;
         }
 
+
+
         unsigned char current_type = 0xFF;
         unsigned char data[bytes_size];
 };
-
-
 
 
 
@@ -415,3 +431,5 @@ using Variant = gnl::detail::Variant<T...>;
 
 
 #endif // GNL_VARIANT_H
+
+

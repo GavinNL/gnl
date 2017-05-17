@@ -346,6 +346,117 @@ class Animate
 
 };
 
+
+template<typename T, typename p=float>
+class Animate2
+{
+public:
+    using timepoint    = std::chrono::time_point<std::chrono::high_resolution_clock>;
+    using tween_func   = std::function< p(p)>;
+
+    struct queue_elem
+    {
+        T            v = static_cast<T>(0);
+        timepoint    t = std::chrono::system_clock::now();
+        tween_func   f = [](p t) {return t;};
+        queue_elem   *next = nullptr;
+
+        ~queue_elem()
+        {
+            if(next) delete next;
+        }
+    };
+
+    Animate2(const T & f = static_cast<T>(0))
+    {
+        head = new queue_elem;
+        tail = head;
+    }
+
+    ~Animate2()
+    {
+        delete head;
+    }
+
+    Animate2& set(const T & v)
+    {
+        if( head->next )
+            delete head->next;
+
+        head->v = v;
+        tail = head;
+        return *this;
+    }
+
+    Animate2& stop()
+    {
+        set( get() );
+        return *this;
+    }
+
+    template<class rep, std::intmax_t num, std::intmax_t den>
+    Animate2 & to(const T & v, const std::chrono::duration<rep, std::ratio<num,den> > & dur )
+    {
+        if( head == tail)
+        {
+         //   std::cout << "No next" << std::endl;
+            head->t = std::chrono::system_clock::now();
+
+            auto * next = new queue_elem;
+            next->v = v;
+            next->t = head->t + dur;
+            head->next = next;
+            tail = next;
+        }
+        else
+        {
+            auto * next = new queue_elem;
+            next->v = v;
+            next->t = tail->t + dur;
+            tail->next = next;
+            tail = next;
+        }
+        return *this;
+    }
+
+    operator T()
+    {
+        return get();
+    }
+
+    T get() const
+    {
+        auto now = std::chrono::system_clock::now();
+
+        if( head == tail)
+        {
+            return head->v;
+        }
+        else
+        {
+            queue_elem & F1 = *head;
+            queue_elem & F2 = *head->next;
+            p t = std::chrono::duration<p>(now - F1.t).count() / std::chrono::duration<p>(F2.t - F1.t).count();
+            if( t > 1.0)
+            {
+
+                auto * old = head;
+                head = head->next;
+                old->next = nullptr;
+                delete old;
+                //std::cout << "Head deleted" << std::endl;
+                return get();
+            }
+            t = F2.f(t);
+            return F2.v*t + F1.v*( static_cast<p>(1.0) - t ); //F.tween( F.start_value, F.end_value, t);
+        }
+
+    }
+
+    mutable queue_elem *head = nullptr;
+    mutable queue_elem *tail = nullptr;
+};
+
 }
 
 #endif
