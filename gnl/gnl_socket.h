@@ -482,8 +482,8 @@ inline bool Socket::Bind(unsigned short port)
 
     if(lastCode == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket Bind error");
-
+        //throw std::runtime_error("Socket Bind error");
+        return false;
     }
     //printf("Last code: %d\n", lastCode);
     return lastCode == 0;
@@ -495,7 +495,8 @@ inline bool Socket::Listen(unsigned int MaxConnections)
 
     if (lastCode == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket error");
+        //throw std::runtime_error("Socket error");
+        return false;
     }
 
      __state = SocketState::Listening;
@@ -531,7 +532,8 @@ inline Socket Socket::Accept( ) const
 
     if (socket.sock == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket Accept error");
+        //throw std::runtime_error("Socket Accept error");
+        return socket;
     }
 
     socket.__state = SocketState::Connected;
@@ -547,7 +549,8 @@ inline bool Socket::Accept( Socket * socket ) const
 
     if (socket->sock == SOCKET_ERROR)
     {
-        throw std::runtime_error("Socket Accept error");
+        //throw std::runtime_error("Socket Accept error");
+        return false;
     }
 
     socket->__state = SocketState::Connected;
