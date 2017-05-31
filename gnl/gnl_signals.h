@@ -61,7 +61,6 @@ class BaseSlot
  * and call all function objects with a single call
  * to the () operator
  */
-//template<typename return_type, typename... _Funct>
 template<typename func_t>
 class Signal
 {

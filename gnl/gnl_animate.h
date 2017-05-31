@@ -14,32 +14,34 @@
 
 #include <functional>
 #include <chrono>
+#include <algorithm>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 #include <list>
 #include <assert.h>
 
 namespace gnl
 {
 
-template<typename T, typename p=double>
 /**
  * @brief The Animate2 class
  *
  * Newer implementation of the animate class using a list.
  */
+template<typename T, typename p=double>
 class Animate3
 {
 public:
-    using timepoint    = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using tween_func   = std::function< p(p)>;
     using animate_type = Animate3<T, p>;
     using clock        = std::chrono::system_clock;
+    using timepoint    = std::chrono::time_point<clock>;
 
     struct queue_elem
     {
         T            v = static_cast<T>(0);
-        timepoint    t = std::chrono::system_clock::now();
+        timepoint    t = clock::now();
         tween_func   f = [](p t) {return t;};
 
         bool operator==(queue_elem const & other)
@@ -144,10 +146,11 @@ public:
 
         if(m_Q.size()==1)
         {
-            head.t = std::chrono::system_clock::now();
+            head.t = clock::now();
         }
 
-        m_Q.push_back( queue_elem(v, head.t+dur) );
+        auto mdur = std::chrono::duration_cast< timepoint::duration >(dur);
+        m_Q.push_back( queue_elem(v, timepoint(head.t+mdur) ) );
         return *this;
     }
 
@@ -169,7 +172,7 @@ public:
      */
     T get() const
     {
-        auto now = std::chrono::system_clock::now();
+        auto now = clock::now();
 
         if( m_Q.size() == 1)
         {
@@ -214,7 +217,7 @@ public:
      */
     double time_left() const
     {
-        return std::max( static_cast<p>(0), std::chrono::duration<p>( m_Q.back().t - std::chrono::system_clock::now() ).count());
+        return std::max( static_cast<p>(0), std::chrono::duration<p>( m_Q.back().t - clock::now() ).count());
     }
 
     mutable std::list<queue_elem> m_Q;
@@ -223,6 +226,7 @@ public:
 
 template<typename T, typename p=double>
 using Animate = Animate3<T,p>;
+
 }
 
 #endif

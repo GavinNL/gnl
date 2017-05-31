@@ -18,7 +18,7 @@
 #include <cctype>
 #include <stdexcept>
 #include <cstdlib>
-
+#include <cstdint>
 
 #ifndef _MSC_VER
     #include <dirent.h>
@@ -459,7 +459,7 @@ namespace gnl
           return ::fopen( P.ToString().c_str(), open_flags.c_str() );
         }
 
-        static inline bool mkdir(const Path & P, uint32_t chmod=0766)
+        static inline bool mkdir(const Path & P, std::uint32_t chmod=0766)
         {
           if( P.IsRelative() )
             throw std::runtime_error("Path must be absolute, not relative");

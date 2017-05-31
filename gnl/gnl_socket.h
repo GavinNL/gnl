@@ -23,6 +23,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <iostream>
+#include <cstdint>
 
 #ifdef _MSC_VER
 
@@ -315,11 +316,12 @@ class Socket
         int BytesAvailable()
         {
 
-            int bytes_available;
 
             #ifdef _MSC_VER
-                auto ret = ioctlsocket(sock,FIONREAD,&bytes_available);
+                u_long bytes_available;
+                auto ret = ioctlsocket(sock, FIONREAD , &bytes_available);
             #else
+                int bytes_available;
                 auto ret = ioctl(sock,FIONREAD, &bytes_available);
             #endif
 

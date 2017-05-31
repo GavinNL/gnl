@@ -41,7 +41,7 @@ class ThreadPool
 
 };
 
-// the constructor just launches some amount of workers
+// The constructor just launches some amount of workers
 inline ThreadPool::ThreadPool(size_t threads)
     :   stop(false)
 {
