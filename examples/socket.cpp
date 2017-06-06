@@ -6,10 +6,12 @@
 using namespace std;
 
 unsigned char buff[512];
+
 int Server()
 {
 
     gnl::Socket s;
+
 
     s.Create(gnl::Socket::Protocol::TCP);
     s.Bind(8810);

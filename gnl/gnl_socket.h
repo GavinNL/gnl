@@ -467,7 +467,6 @@ inline bool Socket::Create(Protocol p)
         case Protocol::UDP: return this->create(IPPROTO_UDP, SOCK_DGRAM);
         default                 : return false;
     }
-    return false;
 }
 
 

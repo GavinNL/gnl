@@ -248,6 +248,16 @@ class Signal
 };
 
 
+/**
+ * @brief The Signal2 class
+ *
+ * Dispatcher signal. Queue up function calls, then invoke all of them
+ * using the Dispatch() method.
+ *
+ * Once Dispatch is called, the queue is cleared.
+ *
+ * The queue of function calls is double buffered.
+ */
 template<typename func_t>
 class Signal2 : public Signal<func_t>
 {
@@ -267,26 +277,26 @@ class Signal2 : public Signal<func_t>
 
         void Dispatch( )
         {
-            for( auto & t : m_Q )
+            std::swap(m_Q, m_Q1);
+            for( auto & t : m_Q1 )
             {
                 t();
             }
+            m_Q1.clear();
         }
 
         protected:
             template<typename ..._Funct>
             void Queue(_Funct&&... _Args)
             {
-                for(auto & f : this->set_container() )
+                for(auto & f : this->get_container() )
                 {
                     m_Q.push_back( std::bind( f.second,std::forward< _Funct >(_Args)... ) );
                 }
-
-                //m_queue.push_back( tuple_t( std::forward< _Funct >(_Args)...) );
             }
 
-            //std::vector<  tuple_t  >   m_queue;
             std::vector< std::function<void(void)> > m_Q;
+            std::vector< std::function<void(void)> > m_Q1;
 };
 
 
