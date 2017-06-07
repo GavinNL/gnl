@@ -67,9 +67,9 @@ void SignalsExample()
 void Signals2Example()
 {
     std::cout << "================================" << std::endl;
-    std::cout << " Signals2 Example" << std::endl;
+    std::cout << " Dispatcher Example" << std::endl;
     std::cout << "================================" << std::endl;
-    gnl::Signal2<void(int,float)> S1;
+    gnl::DispatcherSignal<void(int,float)> S1;
 
     // Save the slots, they are disconnected
     // when their destructor is called.
@@ -147,8 +147,76 @@ void ThreadedSignalsExample()
 
 }
 
+void function2(int x , float y )
+{
+
+}
+
+void MutexTests()
+{
+    std::cout << "================================" << std::endl;
+    std::cout << " Mutex tests " << std::endl;
+    std::cout << "================================" << std::endl;
+
+    using SignalType = gnl::ThreadedSignal<void(int,float)>;
+    using SlotType   = gnl::ThreadedSignal<void(int,float)>::Slot;
+
+    SignalType Signal;
+    auto s1 = std::make_shared<SlotType>();
+    auto s2 = std::make_shared<SlotType>();
+    auto s3 = std::make_shared<SlotType>();
+
+
+
+    auto L1 = [&s1](int x, float y)
+    {
+        std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(  2 ));
+        if( s1->Disconnect() )
+        {
+            std::cout << "Slot 1 Disconnected" << std::endl;
+        }
+    };
+
+    auto L2 = [&s2](int x, float y)
+    {
+        std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(  4 ) );
+        if( s2->Disconnect() )
+        {
+            std::cout << "Slot 2 Disconnected" << std::endl;
+        }
+    };
+
+    auto L3 = [&s3](int x, float y)
+    {
+        std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
+        std::this_thread::sleep_for(std::chrono::seconds(  6 ) );
+        if( s3->Disconnect() )
+        {
+            std::cout << "Slot 3 Disconnected" << std::endl;
+        }
+    };
+    // Save the slots, they are disconnected
+    // when their destructor is called.
+    *s1 = std::move( Signal.Connect( L1 ) );
+    *s2 = std::move( Signal.Connect( L2 ) );
+    *s3 = std::move( Signal.Connect( L3 ) );
+
+    for(int i=0; i < 10; i++)
+    {
+        //std::cout << "Calling " << Signal.NumSlots() << " slots" << std::endl;
+        Signal(3,3.14159f);
+        std::this_thread::sleep_for(std::chrono::milliseconds(434));
+
+    }
+
+}
+
+
 int main(int argc, char ** argv)
 {
+    //MutexTests(); // giving errors
     SignalsExample();
 
     Signals2Example();

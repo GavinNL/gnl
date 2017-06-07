@@ -28,6 +28,7 @@
 #ifndef GNL_SIGNALS_H
 #define GNL_SIGNALS_H
 
+#include <algorithm>
 #include <functional>
 #include <vector>
 #include <tuple>
@@ -35,45 +36,6 @@
 
 namespace gnl
 {
-#if 0
-template<int...> struct seq { };
-
-template<int N, int ...S> struct gens : gens<N-1, N-1, S...> { };
-
-template<int ...S> struct gens<0, S...>{ typedef seq<S...> type; };
-
-
-template <typename return_type, typename ...Args>
-/**
- * @brief The SavedFunctionCall struct
- * A wrapper around a tuple to store the function arguments.
- */
-struct SavedFunctionCall
-{
-    using function_t = std::function<return_type(Args...)>;
-    using tuple_t    = std::tuple<Args...>;
-
-public:
-
-    SavedFunctionCall( const tuple_t & t) : params(t)
-    {
-    }
-
-    return_type operator () ( function_t &  f ) const
-    {
-        return callFunc( f , typename gens<sizeof...(Args)>::type() );
-    }
-
-private:
-    template<int ...S>
-    return_type callFunc(std::function<return_type(Args...)> & f, seq<S...>) const
-    {
-        return f( std::get<S>(params) ...);
-    }
-
-    tuple_t params;
-};
-#endif
 
 class BaseSlot
 {
@@ -97,22 +59,40 @@ class Signal
 
         using value_t           = std::pair<id,function_t>;
 
-        using container_t       = std::vector< value_t  >;
-        using container_p       = std::shared_ptr< container_t >;
-        using mutex_p           = std::shared_ptr< std::mutex >;
+        class container_t
+        {
+        public:
+            void remove(id ID)
+            {
+                if( ID == 0 ) return;
 
+                std::lock_guard<std::mutex> L( m_mutex);
+
+
+                m_container.erase(std::remove_if(m_container.begin(),
+                                                 m_container.end(),
+                                                 [ID](const value_t & x){ return x.first==ID;}),
+                                  m_container.end());
+
+            }
+
+            public:
+                std::vector<value_t>  m_container;
+                std::mutex            m_mutex;
+        };
+
+        using container_p       = std::shared_ptr< container_t >;
 
         class Slot : public BaseSlot
         {
         private:
             id           m_id;
             container_p  m_Container;
-            mutex_p      m_mutex;
 
         public:
             Slot() : m_id(0){}
 
-            Slot(id ID, container_p p, mutex_p m) : m_id(ID) , m_Container(p), m_mutex(m)
+            Slot(id ID, container_p p ) : m_id(ID) , m_Container(p)
             {
             }
 
@@ -123,7 +103,6 @@ class Signal
                 m_id        = std::move( other.m_id );
                 other.m_id  = 0;
                 m_Container = std::move( other.m_Container);
-                m_mutex     = std::move(other.m_mutex);
             }
 
             virtual ~Slot()
@@ -139,7 +118,6 @@ class Signal
                 {
                     m_id        = std::move( other.m_id );
                     m_Container = std::move( other.m_Container);
-                    m_mutex     = std::move(other.m_mutex);
                     other.m_id = 0;
                 }
                 return *this;
@@ -151,28 +129,19 @@ class Signal
              * Disconnects the slot from the signal caller. This is automatically
              * called when the slot is destroyed.
              */
-            virtual void Disconnect()
+            virtual bool Disconnect()
             {
-                if( m_id == 0 ) return;
-                std::lock_guard<std::mutex> L( *m_mutex);
-
-                for(auto & t : *m_Container)
-                {
-                    if( t.first == m_id)
-                    {
-                        //std::cout << "Slot Disconnected" << std::endl;
-                        t.first = 0;
-                        break;
-                    }
-
-                }
-                m_mutex.reset();
+                if( m_id == 0 ) return false;
+                auto i = m_id;
                 m_id = 0;
+                m_Container->remove(i);
+                return true;
+
             }
         };
 
 
-        Signal() : m_signals( new container_t() ), m_mutex( new std::mutex() )
+        Signal() : m_signals( new container_t() )
         {
 
         }
@@ -188,14 +157,15 @@ class Signal
         Slot Connect( function_t f , int position = -1)
         {
             static id ID = 1;
-            std::lock_guard<std::mutex> L( *m_mutex );
+            std::lock_guard<std::mutex> L( get_container().m_mutex );
 
+            auto & container = get_container().m_container;
             if(position<0)
-                 get_container().emplace_back( ID, f );
+                container.emplace_back( ID, f );
             else
-                get_container().insert( get_container().begin()+position, value_t(ID,f) );
+                container.insert( container.begin()+position, value_t(ID,f) );
 
-            return  Slot(ID++, m_signals, m_mutex);
+            return  Slot(ID++, m_signals);
 
         }
 
@@ -229,8 +199,8 @@ class Signal
         template<typename ..._Funct>
         void operator()( _Funct &&... _Args )
         {
-            std::lock_guard<std::mutex> L( *m_mutex );
-            for(auto & f : get_container())
+            std::lock_guard<std::mutex> L( m_signals->m_mutex );
+            for(auto & f : get_container().m_container)
             {
                 if( f.first != 0 )
                 {
@@ -239,12 +209,17 @@ class Signal
             }
         }
 
+        std::size_t NumSlots() const
+        {
+            return m_signals->m_container.size();
+        }
+
 
     protected:
         container_t&                 get_container() const { return *m_signals; }
 
         container_p                  m_signals;
-        std::shared_ptr<std::mutex>  m_mutex;
+      //  std::shared_ptr<std::mutex>  m_mutex;
 };
 
 
@@ -259,7 +234,7 @@ class Signal
  * The queue of function calls is double buffered.
  */
 template<typename func_t>
-class Signal2 : public Signal<func_t>
+class DispatcherSignal : public Signal<func_t>
 {
     public:
 
@@ -289,7 +264,7 @@ class Signal2 : public Signal<func_t>
             template<typename ..._Funct>
             void Queue(_Funct&&... _Args)
             {
-                for(auto & f : this->get_container() )
+                for(auto & f : this->get_container().m_container )
                 {
                     m_Q.push_back( std::bind( f.second,std::forward< _Funct >(_Args)... ) );
                 }
@@ -308,8 +283,7 @@ class ThreadedSignal : public Signal<func_t>
         template<typename ..._Funct>
         void operator()( _Funct&&... _Args )
         {
-
-            for( auto & f : this->get_container() )
+            for( auto & f : this->get_container().m_container )
             {
                 if( f.first != 0 )
                 {
