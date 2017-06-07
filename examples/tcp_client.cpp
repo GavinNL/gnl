@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
   for(int i=0;i<10;i++)
   {
     char message[] = "XHello!"; // "Hello!" + 1 zero byte at the end
-    message[0]     = strlen(message)-1; // set the first byte to be the total bytes sent
+    message[0]     = (char)strlen(message)-1; // set the first byte to be the total bytes sent
     C.SendRaw( message, message[0]+1);
 
     std::this_thread::sleep_for( std::chrono::seconds(1) );

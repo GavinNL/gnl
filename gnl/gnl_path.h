@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <cstdint>
+#include <cstdio>
 
 #ifndef _MSC_VER
     #include <dirent.h>
@@ -442,6 +443,26 @@ namespace gnl
 #endif
             }
 
+
+         static std::string get_env_var(const std::string & var_name)
+         {
+#ifdef _WIN32
+             char * buf = nullptr;
+             size_t sz = 0;
+             if (_dupenv_s(&buf, &sz, var_name.c_str()) == 0 && buf != nullptr)
+             {
+                 std::string s(buf);
+                 free(buf);
+                 return s;
+             }
+#else
+             auto * p = std::getenv(var_name.c_str());
+             return std::string(p);
+#endif
+             return std::string();
+
+         }
+
          /**
          * @brief Home
          * @return  The home path of the current user
@@ -449,11 +470,11 @@ namespace gnl
         static Path Home()
         {
 #ifdef _WIN32
-            auto * p = std::getenv("USERPROFILE");
+            auto p = get_env_var("USERPROFILE");
 #else
-            auto * p = std::getenv("HOME");
+            auto p = get_env_var("HOME");
 #endif
-            return Path( std::string(p) + "/");
+            return Path( p + "/");
         }
 
         /**
@@ -463,17 +484,23 @@ namespace gnl
         static Path Temp()
         {
 #ifdef _WIN32
-            auto * p = std::getenv("TMP");
-            return Path( std::string(p) + "/");
+            auto p = get_env_var("TMP");
+            return Path(p + "/");
 #else
             return Path( "/tmp/");
 #endif
         }
 
-        static FILE* fopen(const Path & P, const std::string & open_flags)
+        static std::FILE* fopen(const Path & P, const std::string & open_flags)
         {
           mkdir( P.BasePath() );
-          return ::fopen( P.ToString().c_str(), open_flags.c_str() );
+#ifdef _WIN32
+          FILE * F;
+          ::fopen_s(&F, P.ToString().c_str(), open_flags.c_str() );
+          return F;
+#else
+          return std::fopen(P.ToString().c_str(), open_flags.c_str() );
+#endif
         }
 
         static inline bool mkdir(const Path & P, std::uint32_t chmod=0766)

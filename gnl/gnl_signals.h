@@ -171,7 +171,7 @@ class Signal
 
         void Disconnect(id SlotID)
         {
-            std::lock_guard<std::mutex> L( *m_mutex );;
+            std::lock_guard<std::mutex> L( get_container().m_mutex );
             auto it = get_container().begin();
             while(it != get_container().end() )
             {

@@ -14,7 +14,7 @@ include_directories ("${PROJECT_SOURCE_DIR}")
 IF (WIN32)
   # set stuff for windows
   add_definitions(
-      /W4
+      /W3
       )
 ELSE()
   # set stuff for other systems
@@ -25,7 +25,7 @@ ELSE()
       -Werror=shadow
       -Wpointer-arith
       -Wcast-align
-      -Wstrict-prototypes
+  #    -Wstrict-prototypes
       -Wstrict-overflow=5
       -Wwrite-strings
   #    -Waggregate-return
