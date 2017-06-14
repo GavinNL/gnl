@@ -422,7 +422,7 @@ class Variant
             return stream;
         }
 
-        void cpydata(void const * source,  void * dest, int length )
+        void cpydata(void const * source,  void * dest, size_t length )
         {
             unsigned char const * src = (unsigned char const *)source;
             unsigned char * dst = (unsigned char*)dest;

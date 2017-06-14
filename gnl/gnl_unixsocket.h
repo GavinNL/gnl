@@ -3,6 +3,7 @@
 #ifndef GNL_UNIX_SOCKET
 #define GNL_UNIX_SOCKET
 
+#if defined __linux__
 
 #include <assert.h>
 #include <stdio.h>
@@ -14,6 +15,7 @@
 #include <errno.h>
 
 #include <sys/ioctl.h>
+
 
 class Unix_Socket
 {
@@ -97,7 +99,8 @@ public:
 
   size_t Write( void const * buffer , size_t size)
   {
-    return write(m_fd, buffer, size);
+    return send(m_fd, buffer, size, 0);
+    //return write(m_fd, buffer, size);
   }
 
   bool Close()
@@ -117,3 +120,6 @@ private:
 };
 
 #endif
+
+#endif
+
