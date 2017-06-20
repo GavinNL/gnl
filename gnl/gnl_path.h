@@ -573,6 +573,323 @@ namespace gnl
         return P;
     }
 
+
+
+
+    class path2
+    {
+        public:
+            static const char separator = '/';
+
+            path2()
+            {
+
+            }
+
+            path2(const std::string & p)
+            {
+                std::string::size_type s = 0;
+
+                do
+                {
+                    auto e = p.find_first_of( "/\\", s);
+
+
+                    m_path_elements.push_back( p.substr(s , e==std::string::npos?e:(e-s+1) ) );
+
+
+                    s = e+1;
+                }
+                while( s != std::string::npos+1);
+                if( m_path_elements.back()=="") m_path_elements.pop_back();
+
+                //m_path = p;
+            }
+
+            path2(const std::string::value_type * x) : path2( std::string(x) )
+            {
+
+            }
+
+            path2(const path2 & other) : m_path_elements(other.m_path_elements)
+            {
+            }
+
+            path2(path2 && other) : m_path_elements( std::move(other.m_path_elements) )
+            {
+            }
+
+            path2 & operator=(const path2 & other)
+            {
+                if(&other != this)
+                {
+                    m_path_elements = other.m_path_elements;
+                }
+                return *this;
+            }
+
+            path2 & operator=( path2 && other)
+            {
+                if(&other != this)
+                {
+                    m_path_elements = std::move(other.m_path_elements);
+                }
+                return *this;
+            }
+
+            ~path2()
+            {
+
+            }
+
+            std::string filename() const
+            {
+                if( is_file() )
+                {
+                    return m_path_elements.back();
+                }
+
+                return ".";
+
+            }
+
+            path2 root_name() const
+            {
+                if( m_path_elements.size()
+                        &&
+
+                    (( m_path_elements[0].size()   && m_path_elements[0][0]=='/' ) ||
+                    ( m_path_elements[0].size()>1 && m_path_elements[0][1]==':' )))
+                {
+                    return path2( m_path_elements[0].substr(0, m_path_elements[0].size()-1) );
+                }
+                else
+                {
+                    return path2("");
+                }
+
+
+                return std::string("");
+            }
+
+            path2 root_directory() const
+            {
+                return root_path();
+            }
+            path2 root_path() const // tested
+            {
+                if( is_relative() )
+                {
+                    return path2("");
+                } else {
+                    return path2(m_path_elements.front());
+                }
+            }
+
+            path2 relative_path() const // tested
+            {
+                if( is_absolute() )
+                {
+                    path2 p;
+
+                    for(auto e = m_path_elements.begin()+1;
+                        e != m_path_elements.end();++e)
+                        p.m_path_elements.push_back( *e );
+
+                    return p;
+                }
+                return *this;
+
+            }
+
+            path2 parent_path() const
+            {
+                if( m_path_elements.size() )
+                {
+                    path2 ret;
+                    ret.m_path_elements = m_path_elements;
+                    ret.m_path_elements.pop_back();
+                    return ret;
+                }
+                return path2();
+                //auto p = m_path.find_last_of(separator);
+               // return m_path.substr(0, p+1);
+                return "";
+            }
+
+            path2 stem() const // tested
+            {
+                if( size() > 0)
+                {
+                    auto p = m_path_elements.back().find_last_of('.');
+                    return path2(m_path_elements.back().substr(0, p));
+                }
+                return path2("");
+            }
+
+            path2 extension() const // tested
+            {
+                if( is_file() )
+                {
+
+                    auto p = m_path_elements.back().find_last_of('.');
+                    if( p == std::string::npos)
+                        return path2("");
+                    return path2(m_path_elements.back().substr(p));
+                }
+
+                return path2("");
+            }
+
+            size_t size() const
+            {
+                return m_path_elements.size();
+            }
+
+            bool is_folder() const
+            {
+                //std::cout << "size:" << m_path_elements.size() << std::endl;
+                //std::cout << "back: " << m_path_elements.back() << std::endl;
+                if( m_path_elements.size())
+                    return m_path_elements.back().back()==separator;
+                return false;
+            }
+
+            bool is_file() const
+            {
+                if( m_path_elements.size())
+                    return m_path_elements.back().back()!=separator;
+                return false;
+            }
+            bool is_relative() const
+            {
+                return(!is_absolute());
+            }
+
+            bool is_absolute() const
+            {
+                if( m_path_elements.size() >= 1)
+                {
+                    // C:/  (windows based)
+                    auto & first = m_path_elements.front();
+
+                    switch( first.size() )
+                    {
+                        case 0:
+                            return false;
+                        case 1:
+                            return true;
+                        default:
+                            if( first[1]==':') return true;
+                            return false;
+                    }
+                }
+                return false;
+            }
+
+            class iterator
+            {
+                std::string::iterator i;
+            };
+
+            std::string to_string() const
+            {
+                std::string out;
+                out.reserve(100);
+                for(auto & p : m_path_elements)
+                    out += p;
+                return out;
+            }
+
+
+
+            bool operator==(const std::string & other) const
+            {
+                return to_string()==other;
+            }
+
+            void append(const path2 & other)
+            {
+                if( other.is_relative() )
+                {
+                    for(auto & e: other.m_path_elements)
+                        m_path_elements.push_back(e);
+                }
+            }
+
+            void concat(const path2 & other)
+            {
+                auto S = to_string() + other.to_string();
+                *this = path2(S);
+            }
+
+            path2 operator / (const path2 & other) const
+            {
+                path2 p(*this);
+                p.append(other);
+                return p;
+            }
+
+            path2 operator + (const path2 & other) const
+            {
+                path2 p(*this);
+                p.concat(other);
+                return p;
+            }
+
+            void clear()
+            {
+                m_path_elements.clear();
+            }
+
+            path2 & remove_filename()
+            {
+                if( is_file() )
+                {
+                    m_path_elements.pop_back();
+                }
+                return *this;
+            }
+
+            path2 & replace_filename(const path2 & filename)
+            {
+                remove_filename();
+                append(filename);
+                return *this;
+            }
+
+            path2 & replace_extension(const path2 & ext)
+            {
+                if( is_file() )
+                {
+                    auto S        = stem().to_string();
+                    std::string e = ext.to_string();
+                    if( e[0] != '.')
+                        S += '.';
+                    S += e;
+
+                    remove_filename();
+
+                    append(S);
+                }
+                return *this;
+            }
+
+
+        private:
+            std::vector<std::string>   m_path_elements;
+
+
+    };
+
+
+
+}
+
+inline std::ostream & operator<<(std::ostream &os, const gnl::path2 & p)
+{
+    os <<  p.to_string();
+    return os;
 }
 
 inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
@@ -581,6 +898,21 @@ inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
     return os;
 }
 
+//inline bool operator==( const gnl::path2 & lhs, const gnl::path2 & rhs )
+//{
+//}
+
+//inline bool operator!=( const gnl::path2& lhs, const gnl::path2 & rhs );
+
+//inline bool operator<( const gnl::path2& lhs, const gnl::path2& rhs )
+//{
+//}
+
+//inline bool operator<=( const gnl::path2& lhs, const gnl::path2& rhs );
+
+//inline bool operator>( const gnl::path2& lhs, const gnl::path2& rhs );
+
+//inline bool operator>=( const gnl::path2& lhs, const gnl::path2& rhs );
 
 
 #endif
