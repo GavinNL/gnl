@@ -37,10 +37,10 @@
 namespace gnl
 {
 
-class BaseSlot
+class base_slot
 {
     public:
-        virtual ~BaseSlot() {}
+        virtual ~base_slot() {}
 };
 
 /**
@@ -51,7 +51,7 @@ class BaseSlot
  * to the () operator
  */
 template<typename func_t>
-class Signal
+class signal
 {
     public:
         using id                = unsigned long;  //id type
@@ -83,36 +83,36 @@ class Signal
 
         using container_p       = std::shared_ptr< container_t >;
 
-        class Slot : public BaseSlot
+        class slot : public base_slot
         {
         private:
             id           m_id;
             container_p  m_Container;
 
         public:
-            Slot() : m_id(0){}
+            slot() : m_id(0){}
 
-            Slot(id ID, container_p p ) : m_id(ID) , m_Container(p)
+            slot(id ID, container_p p ) : m_id(ID) , m_Container(p)
             {
             }
 
-            Slot(const Slot & other) = delete;
+            slot(const slot & other) = delete;
 
-            Slot(Slot && other)
+            slot(slot && other)
             {
                 m_id        = std::move( other.m_id );
                 other.m_id  = 0;
                 m_Container = std::move( other.m_Container);
             }
 
-            virtual ~Slot()
+            virtual ~slot()
             {
                 Disconnect();
             }
 
-            Slot & operator=(const Slot & other) = delete;
+            slot & operator=(const slot & other) = delete;
 
-            Slot & operator=(Slot && other)
+            slot & operator=(slot && other)
             {
                 if( this != &other)
                 {
@@ -141,7 +141,7 @@ class Signal
         };
 
 
-        Signal() : m_signals( new container_t() )
+        signal() : m_signals( new container_t() )
         {
 
         }
@@ -154,7 +154,7 @@ class Signal
          *
          * Connects a function object to the signal
          */
-        Slot Connect( function_t f , int position = -1)
+        slot connect( function_t f , int position = -1)
         {
             static id ID = 1;
             std::lock_guard<std::mutex> L( get_container().m_mutex );
@@ -165,11 +165,11 @@ class Signal
             else
                 container.insert( container.begin()+position, value_t(ID,f) );
 
-            return  Slot(ID++, m_signals);
+            return  slot(ID++, m_signals);
 
         }
 
-        void Disconnect(id SlotID)
+        void disconnect(id SlotID)
         {
             std::lock_guard<std::mutex> L( get_container().m_mutex );
             auto it = get_container().begin();
@@ -191,9 +191,9 @@ class Signal
          *
          * Same as the Connect( ) method.
          */
-        Slot operator << ( function_t f )
+        slot operator << ( function_t f )
         {
-            return Connect(f);
+            return connect(f);
         }
 
         template<typename ..._Funct>
@@ -234,7 +234,7 @@ class Signal
  * The queue of function calls is double buffered.
  */
 template<typename func_t>
-class DispatcherSignal : public Signal<func_t>
+class dispatcher_signal : public signal<func_t>
 {
     public:
 
@@ -250,7 +250,7 @@ class DispatcherSignal : public Signal<func_t>
             Queue( std::forward<_Funct>(_Args)...);
         }
 
-        void Dispatch( )
+        void dispatch( )
         {
             std::swap(m_Q, m_Q1);
             for( auto & t : m_Q1 )
@@ -276,7 +276,7 @@ class DispatcherSignal : public Signal<func_t>
 
 
 template<typename func_t>
-class ThreadedSignal : public Signal<func_t>
+class threaded_signal : public signal<func_t>
 {
     public:
 

@@ -32,14 +32,14 @@ void SignalsExample()
     std::cout << "================================" << std::endl;
     std::cout << " Signals Example" << std::endl;
     std::cout << "================================" << std::endl;
-    gnl::Signal<void(int,float)> S1;
+    gnl::signal<void(int,float)> S1;
 
     // Save the slots, they are disconnected
     // when their destructor is called.
-    auto s1 = S1.Connect(function);
-    auto s2 = S1.Connect(St::static_method);
+    auto s1 = S1.connect(function);
+    auto s2 = S1.connect(St::static_method);
 
-    auto s3 = S1.Connect(
+    auto s3 = S1.connect(
                 [&S1](int x, float y)
                     {
                         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
@@ -49,7 +49,7 @@ void SignalsExample()
     {
         St MyStruct;
 
-        auto s4 = S1.Connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
+        auto s4 = S1.connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
 
         // slots will disconnect themselves once they go out of scope
         std::cout << "==== Will call 4 functions ====" << std::endl;
@@ -69,14 +69,14 @@ void Signals2Example()
     std::cout << "================================" << std::endl;
     std::cout << " Dispatcher Example" << std::endl;
     std::cout << "================================" << std::endl;
-    gnl::DispatcherSignal<void(int,float)> S1;
+    gnl::dispatcher_signal<void(int,float)> S1;
 
     // Save the slots, they are disconnected
     // when their destructor is called.
-    auto s1 = S1.Connect(function);
-    auto s2 = S1.Connect(St::static_method);
+    auto s1 = S1.connect(function);
+    auto s2 = S1.connect(St::static_method);
 
-    auto s3 = S1.Connect(
+    auto s3 = S1.connect(
                 [ &S1](int x, float y)
     {
         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << ". Calling Signal again wont cause infinte loop for Signals2" << std::endl;
@@ -86,7 +86,7 @@ void Signals2Example()
     {
         St MyStruct;
 
-        auto s4 = S1.Connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
+        auto s4 = S1.connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
 
         // slots will disconnect themselves once they go out of scope
         std::cout << "Three slots queued up" << std::endl;
@@ -97,11 +97,11 @@ void Signals2Example()
 
 
     std::cout << "Dispatching the slots ." << std::endl;
-    S1.Dispatch();
+    S1.dispatch();
 
 
     std::cout << "Dispatching a second time will call the function queued up by the lamda function." << std::endl;
-    S1.Dispatch();
+    S1.dispatch();
 
 
 
@@ -114,14 +114,14 @@ void ThreadedSignalsExample()
     std::cout << "================================" << std::endl;
     std::cout << "The invoked slots are called in their own thread." << std::endl << std::endl;
 
-    gnl::ThreadedSignal<void(int,float)> S1;
+    gnl::threaded_signal<void(int,float)> S1;
 
     // Save the slots, they are disconnected
     // when their destructor is called.
-    auto s1 = S1.Connect(function);
-    auto s2 = S1.Connect(St::static_method);
+    auto s1 = S1.connect(function);
+    auto s2 = S1.connect(St::static_method);
 
-    auto s3 = S1.Connect(
+    auto s3 = S1.connect(
                 [&S1](int x, float y)
                     {
                         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
@@ -131,7 +131,7 @@ void ThreadedSignalsExample()
     {
         St MyStruct;
 
-        auto s4 = S1.Connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
+        auto s4 = S1.connect( std::bind(&St::method, &MyStruct, std::placeholders::_1, std::placeholders::_2) ) ;
 
         // slots will disconnect themselves once they go out of scope
         std::cout << "==== Will call 4 functions ====" << std::endl;
@@ -158,8 +158,8 @@ void MutexTests()
     std::cout << " Mutex tests " << std::endl;
     std::cout << "================================" << std::endl;
 
-    using SignalType = gnl::ThreadedSignal<void(int,float)>;
-    using SlotType   = gnl::ThreadedSignal<void(int,float)>::Slot;
+    using SignalType = gnl::threaded_signal<void(int,float)>;
+    using SlotType   = gnl::threaded_signal<void(int,float)>::slot;
 
     SignalType Signal;
     auto s1 = std::make_shared<SlotType>();
@@ -199,9 +199,9 @@ void MutexTests()
     };
     // Save the slots, they are disconnected
     // when their destructor is called.
-    *s1 = std::move( Signal.Connect( L1 ) );
-    *s2 = std::move( Signal.Connect( L2 ) );
-    *s3 = std::move( Signal.Connect( L3 ) );
+    *s1 = std::move( Signal.connect( L1 ) );
+    *s2 = std::move( Signal.connect( L2 ) );
+    *s3 = std::move( Signal.connect( L3 ) );
 
     for(int i=0; i < 10; i++)
     {

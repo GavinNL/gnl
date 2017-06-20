@@ -179,7 +179,7 @@ struct data_destroyer<0, Ts...>
 
 
 template<typename... Ts>
-class Variant;
+class variant;
 
 
 
@@ -229,17 +229,17 @@ struct print_as<0, Ts...>
 
 
 template<typename ..._T>
-class Variant
+class variant
 {
     public:
         static const std::size_t size       = sizeof...(_T);
         static const std::size_t bytes_size = type_size<_T...>::max;
 
-        using Variant_Type = Variant<_T...>;
+        using variant_type = variant<_T...>;
 
-        Variant() {}
+        variant() {}
 
-        Variant_Type& operator=(const  Variant_Type & V)
+        variant_type& operator=(const  variant_type & V)
         {
             if( this != &V)
             {
@@ -249,13 +249,13 @@ class Variant
             return *this;
         }
 
-        Variant(const Variant_Type & V)
+        variant(const variant_type & V)
         {
             current_type = V.current_type;
             cpydata(V.data, data, bytes_size);
         }
 
-        Variant(Variant_Type && V)
+        variant(variant_type && V)
         {
             current_type = V.current_type;
             cpydata(V.data, data, bytes_size);
@@ -263,7 +263,7 @@ class Variant
         }
 
         template<typename T>
-        Variant(const T & V)
+        variant(const T & V)
         {
            // std::cout << "VARIANT copy constructor" << std::endl;
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
@@ -277,7 +277,7 @@ class Variant
         //}
 
         template<typename T>
-        Variant( T && V)
+        variant( T && V)
         {
            // std::cout << "VARIANT move constructor" << std::endl;
             //static_assert( type_in<T,_T...>::value, "That type is not represented in the variant!" );
@@ -290,7 +290,7 @@ class Variant
 
 
 
-        Variant_Type & operator=( Variant_Type && V)
+        variant_type & operator=( variant_type && V)
         {
           //  std::cout << "VARIANT Move operator" << std::endl;
             current_type = V.current_type;
@@ -302,7 +302,7 @@ class Variant
 
 
        template<typename T>
-       typename std::enable_if <  type_in<T, _T...>::value  , Variant_Type  >::type & operator=( T &&V)
+       typename std::enable_if <  type_in<T, _T...>::value  , variant_type  >::type & operator=( T &&V)
        {
           // std::cout << "Move operator" << std::endl;
           // std::cout << "VARIANT  Moving type" << std::endl;
@@ -315,7 +315,7 @@ class Variant
            }
            else
            {
-               Destroy();
+               destroy();
                new (data)T( std::move(V) );
                current_type = index_in_list<T,_T...>::value;
            }
@@ -326,22 +326,22 @@ class Variant
 
 
         template<typename T>
-        Variant& operator=(const T & V)
+        variant& operator=(const T & V)
         {
          //   std::cout << "Assignment operator" << std::endl;
-            ConstructType<T>(V);
+            construct_type<T>(V);
             return *this;
         }
 
 
 
-        ~Variant()
+        ~variant()
         {
           //  std::cout << "destroying variant" << std::endl;
-            Destroy();
+            destroy();
         }
 
-        void Destroy()
+        void destroy()
         {
             if(current_type == 0xFF ) return;
             static data_destroyer< sizeof...(_T)-1, _T...> destroy;
@@ -350,7 +350,7 @@ class Variant
 
 
         template<typename T>
-        void MoveType( T && V)
+        void move_type( T && V)
         {
             //std::cout << "Moving type" << std::endl;
             static_assert(
@@ -362,7 +362,7 @@ class Variant
             }
             else
             {
-                Destroy();
+                destroy();
                 new (data)T( std::move(V) );
                 current_type = index_in_list<T,_T...>::value;
             }
@@ -370,7 +370,7 @@ class Variant
         }
 
         template<typename T>
-        void ConstructType(const T & V)
+        void construct_type(const T & V)
         {
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
 
@@ -382,7 +382,7 @@ class Variant
             }
             else
             {
-                Destroy();
+                destroy();
                 new (data)T(V);
                 current_type = index_in_list<T,_T...>::value;
             }
@@ -412,7 +412,7 @@ class Variant
             return *static_cast<T*>( (void*)&data[0]);
         }
 
-        friend std::ostream & operator<< (std::ostream& stream, const Variant_Type & V)
+        friend std::ostream & operator<< (std::ostream& stream, const variant_type & V)
         {
             static print_as<sizeof...(_T)-1, _T...> P;
 
@@ -441,7 +441,7 @@ class Variant
 }
 
 template<typename ...T>
-using Variant = gnl::detail::Variant<T...>;
+using Variant = gnl::detail::variant<T...>;
 
 }
 

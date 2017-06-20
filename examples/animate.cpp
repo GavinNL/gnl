@@ -5,12 +5,10 @@
 #include <gnl/gnl_animate.h>
 
 
-using Animate = gnl::Animate<float>;
-
 int main(int argc, char ** argv)
 {
 
-    Animate B;
+    gnl::animate<float> B;
 
     B.set(0.0f)
      .to(  10.0f, 10.0)

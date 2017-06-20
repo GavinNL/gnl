@@ -47,11 +47,11 @@ namespace gnl
  * Newer implementation of the animate class using a list.
  */
 template<typename T, typename p=double>
-class Animate3
+class animate
 {
 public:
     using tween_func   = std::function< p(p)>;
-    using animate_type = Animate3<T, p>;
+    using animate_type = animate<T, p>;
     using clock        = std::chrono::system_clock;
     using timepoint    = std::chrono::time_point<clock>;
 
@@ -80,20 +80,20 @@ public:
         }
     };
 
-    Animate3(const T & f = static_cast<T>(0))
+    animate(const T & f = static_cast<T>(0))
     {
         m_Q.push_back( queue_elem(f, clock::now() ) );
     }
 
-    ~Animate3()
+    ~animate()
     {
     }
 
-    Animate3(const animate_type & other) : m_Q( other.m_Q )
+    animate(const animate_type & other) : m_Q( other.m_Q )
     {
     }
 
-    Animate3(Animate3 && other)
+    animate(animate && other)
     {
 
         if( this != &other)
@@ -108,7 +108,7 @@ public:
      *
      * Clears all transitions and sets the value
      */
-    Animate3& set(const T & v)
+    animate& set(const T & v)
     {
         auto f = m_Q.front();
         f.v = v;
@@ -127,7 +127,7 @@ public:
      *
      * Stops the transitions
      */
-    Animate3 & stop()
+    animate & stop()
     {
         set( get() );
         return *this;
@@ -141,7 +141,7 @@ public:
      *
      * Transition to a new value over a duration.
      */
-    Animate3 & to( const T & v, double seconds)
+    animate & to( const T & v, double seconds)
     {
         return to(  v, std::chrono::nanoseconds( static_cast<intmax_t>(seconds*1e9) ) );
     }
@@ -156,7 +156,7 @@ public:
      *
      */
     template<class rep, std::intmax_t num, std::intmax_t den>
-    Animate3 & to(const T & v, const std::chrono::duration<rep, std::ratio<num,den> > & dur )
+    animate & to(const T & v, const std::chrono::duration<rep, std::ratio<num,den> > & dur )
     {
         assert( m_Q.size() != 0 );
         auto & head = m_Q.back();
@@ -241,8 +241,6 @@ public:
 
 };
 
-template<typename T, typename p=double>
-using Animate = Animate3<T,p>;
 
 }
 
