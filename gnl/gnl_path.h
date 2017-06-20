@@ -876,6 +876,11 @@ namespace gnl
             }
 
 
+            void swap( path2 & other)
+            {
+                std::swap(m_path_elements, other.m_path_elements);
+            }
+
         private:
             std::vector<std::string>   m_path_elements;
 
