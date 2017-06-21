@@ -579,6 +579,15 @@ namespace gnl
     class path2
     {
         public:
+
+#if defined __linux__
+        using value_type	= char;
+#elif defined _WIN32
+        using value_type    = wchar_t;
+#endif
+        using string_type = std::basic_string<value_type>;
+
+
             static const char separator = '/';
 
             path2()
@@ -586,7 +595,7 @@ namespace gnl
 
             }
 
-            path2(const std::string & p)
+            path2(const string_type & p)
             {
                 std::string::size_type s = 0;
 
@@ -601,12 +610,12 @@ namespace gnl
                     s = e+1;
                 }
                 while( s != std::string::npos+1);
-                if( m_path_elements.back()=="") m_path_elements.pop_back();
+                if( m_path_elements.back() == "") m_path_elements.pop_back();
 
                 //m_path = p;
             }
 
-            path2(const std::string::value_type * x) : path2( std::string(x) )
+            path2(const value_type * x) : path2( string_type(x) )
             {
 
             }
@@ -642,7 +651,7 @@ namespace gnl
 
             }
 
-            std::string filename() const
+            string_type filename() const
             {
                 if( is_file() )
                 {
@@ -712,9 +721,6 @@ namespace gnl
                     return ret;
                 }
                 return path2();
-                //auto p = m_path.find_last_of(separator);
-               // return m_path.substr(0, p+1);
-                return "";
             }
 
             path2 stem() const // tested
@@ -733,7 +739,7 @@ namespace gnl
                 {
 
                     auto p = m_path_elements.back().find_last_of('.');
-                    if( p == std::string::npos)
+                    if( p == string_type::npos)
                         return path2("");
                     return path2(m_path_elements.back().substr(p));
                 }
@@ -748,8 +754,6 @@ namespace gnl
 
             bool is_folder() const
             {
-                //std::cout << "size:" << m_path_elements.size() << std::endl;
-                //std::cout << "back: " << m_path_elements.back() << std::endl;
                 if( m_path_elements.size())
                     return m_path_elements.back().back()==separator;
                 return false;
@@ -789,7 +793,7 @@ namespace gnl
 
 
 
-            std::string to_string() const
+            string_type to_string() const
             {
                 std::string out;
                 out.reserve(100);
@@ -800,17 +804,19 @@ namespace gnl
 
 
 
-            bool operator==(const std::string & other) const
+            bool operator==(const string_type & other) const
             {
                 return to_string()==other;
             }
 
             void append(const path2 & other)
             {
-                if( other.is_relative() )
+                for(auto & e: other.m_path_elements)
                 {
-                    for(auto & e: other.m_path_elements)
-                        m_path_elements.push_back(e);
+                    if( e[0]  == '/')
+                        m_path_elements.push_back( e.substr(1, e.size()-1) );
+                    else
+                        m_path_elements.push_back( e );
                 }
             }
 
@@ -860,7 +866,7 @@ namespace gnl
                 if( is_file() )
                 {
                     auto S        = stem().to_string();
-                    std::string e = ext.to_string();
+                    string_type e = ext.to_string();
                     if( e[0] != '.')
                         S += '.';
                     S += e;
@@ -879,7 +885,7 @@ namespace gnl
             }
 
 
-            static std::FILE* fopen(const path2 & P, const std::string & open_flags, bool create_dirs = false)
+            static std::FILE* fopen(const path2 & P, const string_type & open_flags, bool create_dirs = false)
             {
 
                if( create_dirs )
@@ -919,34 +925,76 @@ namespace gnl
 
 
 
+
+            /**
+            * @brief Home
+            * @return  The home path of the current user
+            */
+           static path2 home_dir()
+           {
+   #ifdef _WIN32
+               auto p = get_env_var("USERPROFILE");
+   #else
+               auto p = get_env_var("HOME");
+   #endif
+               return path2( p + "/");
+           }
+
+           /**
+            * @brief Temp
+            * @return A path used for temporary files.
+            */
+           static path2 temp_dir()
+           {
+   #ifdef _WIN32
+               auto p = get_env_var("TMP");
+               return Path(p + "/");
+   #else
+               return path2( "/tmp/");
+   #endif
+           }
+
+
         private:
-            std::vector<std::string>   m_path_elements;
+            std::vector<string_type>   m_path_elements;
 
 
 
-            static bool __mkdir(std::string const & p, std::int32_t chmod=0766)
+            static bool __mkdir(string_type const & p, std::int32_t chmod=0766)
             {
 #if defined(_WIN32)
-#else
 
-      auto success = (::mkdir(p.c_str(), chmod) == 0);
-      if( success )
-      {
-      } else {
-      }
-      return success;
+#else
+              auto success = (::mkdir(p.c_str(), chmod) == 0);
+              if( success )
+              {
+              } else {
+              }
+              return success;
 #endif
+
+            }
+
+            static std::string get_env_var(const string_type & var_name)
+            {
+   #ifdef _WIN32
+                char * buf = nullptr;
+                size_t sz = 0;
+                if (_dupenv_s(&buf, &sz, var_name.c_str()) == 0 && buf != nullptr)
+                {
+                    std::string s(buf);
+                    free(buf);
+                    return s;
+                }
+   #else
+                auto * p = std::getenv(var_name.c_str());
+                return string_type(p);
+   #endif
+                return string_type();
 
             }
     };
 
-
-
-
-    namespace filesystem
-    {
-
-    }
 
 }
 

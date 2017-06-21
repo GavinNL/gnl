@@ -19,6 +19,9 @@ int main()
     std::fclose(Fi);
 
     std::cout << gnl::path2::mkdir( gnl::path2("/usr/bin/testfolder/testsubfolder/") ) << std::endl;
+
+    std::cout << gnl::path2::home_dir() << std::endl;
+    std::cout << gnl::path2::temp_dir() / gnl::path2::temp_dir() << std::endl;
     return 0;
     gnl::path2 paths[] = {
         gnl::path2(),
