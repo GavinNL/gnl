@@ -14,6 +14,12 @@ int x[] ={1,2,3,4,5};
 int main()
 {
 
+    auto * Fi = gnl::path2::fopen( gnl::path2("/tmp/test/test/test/file.txt"), "w");
+    std::cout << Fi << std::endl;
+    std::fclose(Fi);
+
+    std::cout << gnl::path2::mkdir( gnl::path2("/usr/bin/testfolder/testsubfolder/") ) << std::endl;
+    return 0;
     gnl::path2 paths[] = {
         gnl::path2(),
         //gnl::path2("/home/gavin/"),

@@ -787,10 +787,7 @@ namespace gnl
                 return false;
             }
 
-            class iterator
-            {
-                std::string::iterator i;
-            };
+
 
             std::string to_string() const
             {
@@ -881,13 +878,75 @@ namespace gnl
                 std::swap(m_path_elements, other.m_path_elements);
             }
 
+
+            static std::FILE* fopen(const path2 & P, const std::string & open_flags, bool create_dirs = false)
+            {
+
+               if( create_dirs )
+               {
+                if( P.is_file())
+                    mkdir(P.parent_path());
+               }
+
+    #ifdef _WIN32
+              FILE * F;
+              ::fopen_s(&F, P.ToString().c_str(), open_flags.c_str() );
+              return F;
+    #else
+              return std::fopen(P.to_string().c_str(), open_flags.c_str() );
+    #endif
+            }
+
+
+
+            static inline bool mkdir(const path2 & P, std::uint32_t chmod=0766)
+            {
+                if( P.empty() ) return false;
+
+                if( !__mkdir( P.to_string(), chmod ) )
+                {
+                     mkdir( P.parent_path(), chmod);
+                     return __mkdir( P.to_string(), chmod);
+                }
+                return true;
+
+            }
+
+            bool empty() const
+            {
+                return m_path_elements.size()==0;
+            }
+
+
+
         private:
             std::vector<std::string>   m_path_elements;
 
 
+
+            static bool __mkdir(std::string const & p, std::int32_t chmod=0766)
+            {
+#if defined(_WIN32)
+#else
+
+      auto success = (::mkdir(p.c_str(), chmod) == 0);
+      if( success )
+      {
+      } else {
+      }
+      return success;
+#endif
+
+            }
     };
 
 
+
+
+    namespace filesystem
+    {
+
+    }
 
 }
 
@@ -921,4 +980,5 @@ inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
 
 
 #endif
+
 
