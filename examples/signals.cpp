@@ -172,7 +172,7 @@ void MutexTests()
     {
         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(  2 ));
-        if( s1->Disconnect() )
+        if( s1->disconnect() )
         {
             std::cout << "Slot 1 Disconnected" << std::endl;
         }
@@ -182,7 +182,7 @@ void MutexTests()
     {
         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(  4 ) );
-        if( s2->Disconnect() )
+        if( s2->disconnect() )
         {
             std::cout << "Slot 2 Disconnected" << std::endl;
         }
@@ -192,7 +192,7 @@ void MutexTests()
     {
         std::cout << std::this_thread::get_id() << ": " << "Lambda Function: " << x << ", " << y << std::endl;
         std::this_thread::sleep_for(std::chrono::seconds(  6 ) );
-        if( s3->Disconnect() )
+        if( s3->disconnect() )
         {
             std::cout << "Slot 3 Disconnected" << std::endl;
         }

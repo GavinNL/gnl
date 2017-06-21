@@ -107,7 +107,7 @@ class signal
 
             virtual ~slot()
             {
-                Disconnect();
+                disconnect();
             }
 
             slot & operator=(const slot & other) = delete;
@@ -129,7 +129,7 @@ class signal
              * Disconnects the slot from the signal caller. This is automatically
              * called when the slot is destroyed.
              */
-            virtual bool Disconnect()
+            virtual bool disconnect()
             {
                 if( m_id == 0 ) return false;
                 auto i = m_id;
