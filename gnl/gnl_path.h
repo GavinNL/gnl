@@ -695,7 +695,7 @@ namespace gnl
                 }
 
 
-                return std::string("");
+                return path2(std::string(""));
             }
 
             path2 root_directory() const
@@ -827,11 +827,12 @@ namespace gnl
                 return out;
             }
 
-
+#if defined _WIN32
             bool operator==(const std::string & other) const
             {
                 return to_string()==string_type(other.begin(), other.end());
             }
+#endif
 
             bool operator==(const string_type & other) const
             {
