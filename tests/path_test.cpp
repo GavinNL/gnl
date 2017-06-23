@@ -18,7 +18,6 @@ TEST_CASE( "Path 2 Tests" )
     REQUIRE( gnl::path2("/home/gavin/file.txt").extension().extension()   == ".txt");
     REQUIRE( gnl::path2("/home/gavin/file.txt").parent_path() == "/home/gavin/");
 
-
     REQUIRE( gnl::path2("home/gavin/file.txt").is_absolute() == false);
     REQUIRE( gnl::path2("home/gavin/file.txt").is_relative() == true);
     REQUIRE( gnl::path2("home/gavin/file.txt").is_file()     == true);
@@ -49,6 +48,8 @@ TEST_CASE( "Path 2 Tests" )
     std::cout << P << std::endl;
     REQUIRE( gnl::path2("C:/home/gavin/file.txt").replace_filename("hello.txt") == "C:/home/gavin/hello.txt");
     REQUIRE( gnl::path2("C:/home/gavin/file.txt").replace_extension(".bmp") == "C:/home/gavin/file.bmp");
+#if 0
+#endif
     // gnl::path2("/home/gavin/"),
     // gnl::path2("file.txt"),
     // gnl::path2("/home/file.txt"),

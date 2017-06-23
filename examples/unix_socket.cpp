@@ -1,4 +1,4 @@
-
+#if defined __linux__
 #define SOCKET_NAME "/tmp/9Lq7BNBnBycd6nxy.socket"
 #define BUFFER_SIZE 12
 
@@ -123,3 +123,11 @@ main(int argc, char *argv[])
 
   exit(EXIT_SUCCESS);
 }
+#else
+
+int main()
+{
+    return 0;
+}
+
+#endif
