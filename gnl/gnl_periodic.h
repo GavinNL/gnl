@@ -83,7 +83,7 @@ class Periodic
          * @param args     - arugments to the function
          *
          */
-        Periodic& Start(  F&& f, Args&&... args);
+        Periodic& start(  F&& f, Args&&... args);
 
 
         ~Periodic();
@@ -93,20 +93,20 @@ class Periodic
          * @param count - the total amount of times to call the function. Can be set
          *                while the Periodic is active.
          */
-        Periodic& Count( std::uint64_t count);
+        Periodic& count( std::uint64_t count);
 
         /**
          * @brief Stop
          * Stops the Periodic.
          */
-        void Stop();
+        void stop();
 
 
         /**
          * @brief SetInterval
          * @param interval - the interval between function calls
          */
-        Periodic& Interval(const std::chrono::microseconds & interval );
+        Periodic& interval(const std::chrono::microseconds & interval );
 
 
         /**
@@ -114,9 +114,9 @@ class Periodic
          * @param seconds - number of seconds between function calls
          * @return
          */
-        Periodic& Interval(const double & seconds )
+        Periodic& interval(const double & seconds )
         {
-            Interval( std::chrono::microseconds( static_cast<std::uint64_t>(seconds*1e6) ) );
+            interval( std::chrono::microseconds( static_cast<std::uint64_t>(seconds*1e6) ) );
             return *this;
         }
 
@@ -144,21 +144,21 @@ inline Periodic::~Periodic()
     }
 }
 
-inline Periodic& Periodic::Count( std::uint64_t count)
+inline Periodic& Periodic::count( std::uint64_t count)
 {
     std::lock_guard<std::mutex> L(__data_mutex);
     __count = count;
     return *this;
 }
 
-inline void Periodic::Stop()
+inline void Periodic::stop()
 {
     std::lock_guard<std::mutex> L(__data_mutex);
     __stop = true;
 }
 
 
-inline Periodic & Periodic::Interval(const std::chrono::microseconds & interval )
+inline Periodic & Periodic::interval(const std::chrono::microseconds & interval )
 {
     __interval = interval;
     return *this;
@@ -167,7 +167,7 @@ inline Periodic & Periodic::Interval(const std::chrono::microseconds & interval 
 
 
 template<class F, class... Args>
-inline Periodic& Periodic::Start(F&& f, Args&&... args)
+inline Periodic& Periodic::start(F&& f, Args&&... args)
 {
     using return_type = typename std::result_of< F(Args...) >::type;
 

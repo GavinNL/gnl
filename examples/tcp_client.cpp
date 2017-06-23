@@ -28,18 +28,18 @@ void Listen(gnl::Socket & C)
   {
     // read the first byte indicating the
     // length of the next messsage
-    int bytes = C.Receive(&message_size, 1, true);
+    int bytes = C.recv(&message_size, 1, true);
     if( bytes != 1) // client closed connetion
     {
-      C.Close();
+      C.close();
       break;
     }
 
     // read the message
-    bytes = C.Receive( message , message_size, true);
+    bytes = C.recv( message , message_size, true);
     if( bytes != message_size ) // client closed connetion
     {
-      C.Close();
+      C.close();
       break;
     }
 
@@ -55,8 +55,8 @@ int main(int argc, char *argv[])
 
   gnl::Socket C;
 
-  C.Create( gnl::Socket::Protocol::TCP);
-  C.Connect("127.0.0.1", 30000);
+  C.create( gnl::Socket::Protocol::TCP);
+  C.connect("127.0.0.1", 30000);
 
   std::thread ListenThread( Listen , std::ref( C ) );
 
@@ -64,12 +64,12 @@ int main(int argc, char *argv[])
   {
     char message[] = "XHello!"; // "Hello!" + 1 zero byte at the end
     message[0]     = (char)strlen(message)-1; // set the first byte to be the total bytes sent
-    C.SendRaw( message, message[0]+1);
+    C.send( message, message[0]+1);
 
     std::this_thread::sleep_for( std::chrono::seconds(1) );
   }
 
-  C.Close();
+  C.close();
 
   ListenThread.join();
 

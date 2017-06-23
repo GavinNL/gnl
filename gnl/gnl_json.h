@@ -104,12 +104,12 @@ class json
 
         json() : _type(BOOL)
         {
-            Init(BOOL);
+            init(BOOL);
         }
 
         json( json::TYPE T) : _type(BOOL)
         {
-            Init(T);
+            init(T);
         }
 
         json(const json  & rhs) : _type(BOOL)
@@ -120,42 +120,42 @@ class json
         json(const std::string & rhs) : _type(BOOL)
         {
           //  std::cout << "init as string" << std::endl;
-            Init(STRING);
+            init(STRING);
             *_jsons._string = rhs;
         }
 
         json(const char * rhs) : _type(BOOL)
         {
           //  std::cout << "init as char*" << std::endl;
-            Init(STRING);
+            init(STRING);
             *_jsons._string = std::string(rhs);
         }
 
         json(const bool & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
-            Init(BOOL);
+            init(BOOL);
             _jsons._bool = f;
         }
 
         json(const int & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
-            Init(NUMBER);
+            init(NUMBER);
             _jsons._float = static_cast<float>(f);
         }
 
         json(const double & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
-            Init(NUMBER);
+            init(NUMBER);
             _jsons._float = static_cast<float>(f);
         }
 
         json(const float & f) : _type(BOOL)
         {
            // std::cout << "init as float*" << std::endl;
-            Init(NUMBER);
+            init(NUMBER);
             _jsons._float = f;
         }
 
@@ -163,7 +163,7 @@ class json
         {
            // std::cout << "Initializer list: Jjson" << std::endl;
             clear();
-            Init(ARRAY);
+            init(ARRAY);
             int i=0;
             for(auto a : l)
             {
@@ -264,7 +264,7 @@ class json
 
         json & operator=(const float       & rhs)
         {
-            Init(json::NUMBER);
+            init(json::NUMBER);
 
             _type = json::NUMBER;
             _jsons._float = rhs;
@@ -274,7 +274,7 @@ class json
 
         json & operator=(const int         & rhs)
         {
-            Init(json::NUMBER);
+            init(json::NUMBER);
 
             _jsons._float = (float)rhs;
 
@@ -283,14 +283,14 @@ class json
 
         json & operator=(const bool        & rhs)
         {
-            Init(json::BOOL);
+            init(json::BOOL);
             _jsons._bool = rhs;
             return *this;
         }
 
         json & operator=(const std::string & rhs)
         {
-            Init(json::STRING);
+            init(json::STRING);
             *_jsons._string = rhs;
             return *this;
         }
@@ -298,7 +298,7 @@ class json
 
         json & operator=(const char   *    rhs)
         {
-            Init(json::STRING);
+            init(json::STRING);
             *_jsons._string = std::string(rhs);
             return *this;
         }
@@ -325,7 +325,7 @@ class json
         {
             if( this == &rhs ) return *this;
 
-            if( _type != rhs._type) Init( rhs._type );
+            if( _type != rhs._type) init( rhs._type );
 
             switch( rhs._type )
             {
@@ -534,7 +534,7 @@ class json
         }
 
 
-        void Init( TYPE T)
+        void init( TYPE T)
         {
             clear( );
             _type = T;
@@ -840,7 +840,7 @@ inline json & json::operator[](int i)
 
     if( _type != json::ARRAY)
     {
-        Init(json::ARRAY);
+        init(json::ARRAY);
 
     }
 
@@ -854,7 +854,7 @@ inline json & json::operator[](const std::string & i)
 {
     if( _type != json::OBJECT)
     {
-        Init(json::OBJECT);
+        init(json::OBJECT);
     }
 
     //std::cout << "getting json: " << i << std::endl;
@@ -865,7 +865,7 @@ inline json & json::operator[](const char i[])
 {
     if( _type != json::OBJECT)
     {
-        Init(json::OBJECT);
+        init(json::OBJECT);
     }
 
     return (*_jsons._object)[i];
@@ -889,28 +889,28 @@ inline void json::parse(std::istringstream &S )
     switch(c)
     {
         case  '"': // string
-            Init(json::STRING);
+            init(json::STRING);
             *_jsons._string =  json::parseString(S);
             break;
 
         case 't': // bool
         case 'f': // bool
-            Init(json::BOOL);
+            init(json::BOOL);
             _jsons._bool = json::parseBool(S);
             break;
         case '{': // object
-            Init( json::OBJECT );
+            init( json::OBJECT );
             *_jsons._object = std::move( json::parseObject(S));//new Object();
             break;
         case '[': // array
-            Init( json::ARRAY );
+            init( json::ARRAY );
             *_jsons._array = std::move( json::parseArray(S) );
             break;
         default: // number
 
             if( std::isdigit(c) || c=='-' || c=='+' || c=='.')
             {
-                Init(json::NUMBER);
+                init(json::NUMBER);
                 _jsons._float = json::parseNumber(S);
                // std::cout << "Number found: " << _jsons._float << std::endl;
             }

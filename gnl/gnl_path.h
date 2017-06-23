@@ -1071,7 +1071,7 @@ namespace gnl
 
 inline std::ostream & operator<<(std::ostream &os, const gnl::path2 & p)
 {
-    os <<  p.to_stdstring();
+    os <<  p.string();
     return os;
 }
 

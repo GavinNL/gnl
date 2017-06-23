@@ -250,7 +250,7 @@ class Socket
          * Sets the sock to use the appropriate protocol.
          * Default is TCP
          */
-        bool Create(Protocol p  );
+        bool create(Protocol p  );
 
         /**
          * @brief Bind
@@ -259,7 +259,7 @@ class Socket
          *
          * Bind the socket to a port so it can start listening. Call Listen after this.
          */
-        bool Bind(unsigned short port);
+        bool bind(unsigned short port);
 
         /**
          * @brief Listen
@@ -268,7 +268,7 @@ class Socket
          *
          * Starts listening on the bound port. Retu
          */
-        bool Listen(unsigned int MaxConnections=64);
+        bool listen(unsigned int MaxConnections=64);
 
         /**
          * @brief Accept
@@ -277,13 +277,13 @@ class Socket
          *
          * Accepts a client connection. Blocks until a client connects.
          */
-        bool   Accept(Socket *socket) const;
+        bool   accept(Socket *socket) const;
 
         /**
          * @brief Accept
          * @return A socket to the connected client.
          */
-        Socket Accept() const;
+        Socket accept() const;
 
 
         /**
@@ -294,14 +294,14 @@ class Socket
          *
          * Connects to a remote socket.
          */
-        bool  Connect( const char * host, unsigned short port);
+        bool  connect( const char * host, unsigned short port);
 
 
         /**
          * @brief Close
          * Closes the connection to the socket.
          */
-        void Close();
+        void close();
 
 
         /**
@@ -310,7 +310,7 @@ class Socket
          *
          * Checks for any errors on the current socket.
          */
-        bool IsError();
+        bool is_error();
 
 
         /**
@@ -327,9 +327,9 @@ class Socket
          * @return the number of bytes available to read
          *
          */
-        std::size_t HasBytes() { return BytesAvailable(); }
+        std::size_t has_bytes() { return bytes_available(); }
 
-        int BytesAvailable()
+        int bytes_available()
         {
 
 
@@ -359,7 +359,7 @@ class Socket
          *
          * @return the number of bytes read, or 0 if the client disconnected
          */
-        int  Receive( void * buffer,    int size, bool wait_for_all = false );
+        int  recv( void * buffer,    int size, bool wait_for_all = false );
 
         /**
          * @brief SendRaw
@@ -367,7 +367,7 @@ class Socket
          * @param dataSize - amount of bytes to send
          * @return
          */
-        int  SendRaw(const void* data,      int dataSize);
+        int  send(const void* data,      int dataSize);
 
 
         int  SendUDP(   const void * buffer,    int size, sockaddr_in* to  );
@@ -381,9 +381,9 @@ class Socket
          * @return
          * Not sure if this works yet
          */
-        bool ClientAvailable();
+        bool client_available();
 
-        SocketState State() const { return __state; }
+        SocketState state() const { return __state; }
     private:
         #ifdef _MSC_VER
         WSADATA            wsda;
@@ -438,13 +438,13 @@ inline Socket::Socket(Protocol p) : sock(INVALID_SOCKET)
     __times.tv_sec  = 0;
     __times.tv_usec = 0;
 
-    Create(p);
+    create(p);
 }
 
 inline Socket::~Socket()
 {
     if (*this)
-        Close();
+        close();
 
 }
 
@@ -458,7 +458,7 @@ inline Socket::~Socket()
 //    return sock != INVALID_SOCKET;
 //}
 
-inline bool Socket::Create(Protocol p)
+inline bool Socket::create(Protocol p)
 {
     __state = SocketState::Disconnected;
     switch (p)
@@ -479,7 +479,7 @@ inline bool Socket::create(int protocol, int Type)
     return sock != INVALID_SOCKET;
 }
 
-inline bool Socket::Bind(unsigned short port)
+inline bool Socket::bind(unsigned short port)
 {
     if ( !(*this) )
     {
@@ -506,7 +506,7 @@ inline bool Socket::Bind(unsigned short port)
     return lastCode == 0;
 }
 
-inline bool Socket::Listen(unsigned int MaxConnections)
+inline bool Socket::listen(unsigned int MaxConnections)
 {
     auto lastCode = ::listen(sock, MaxConnections);
 
@@ -523,7 +523,7 @@ inline bool Socket::Listen(unsigned int MaxConnections)
 	return true;
 }
 
-inline bool Socket::ClientAvailable()
+inline bool Socket::client_available()
 {
     fd_set readSet;
     FD_ZERO(&readSet);
@@ -540,7 +540,7 @@ inline bool Socket::ClientAvailable()
     return false;
 }
 
-inline Socket Socket::Accept( ) const
+inline Socket Socket::accept( ) const
 {
     Socket socket;
     int length   = sizeof(socket.addr);
@@ -557,7 +557,7 @@ inline Socket Socket::Accept( ) const
     return socket;
 }
 
-inline bool Socket::Accept( Socket * socket ) const
+inline bool Socket::accept( Socket * socket ) const
 {
 
     int length   = sizeof(socket->addr);
@@ -574,7 +574,7 @@ inline bool Socket::Accept( Socket * socket ) const
     return true;
 }
 
-inline void Socket::Close()
+inline void Socket::close()
 {
     __state = SocketState::Disconnected;
 
@@ -597,7 +597,7 @@ inline uint32_t Socket::Address()
 #endif
 }
 
-inline bool Socket::Connect(const char* host, unsigned short port)
+inline bool Socket::connect(const char* host, unsigned short port)
 {
     if ( ! (*this) )
         return false;
@@ -623,7 +623,7 @@ inline bool Socket::Connect(const char* host, unsigned short port)
 }
 
 
-inline bool Socket::IsError()
+inline bool Socket::is_error()
 {
 
     if (__state == SocketState::Error || sock == -1)
@@ -650,9 +650,9 @@ inline int Socket::ReceiveUDP(void *buffer, int size, sockaddr_in* from)
 }
 
 
-inline int Socket::Receive(void * buffer, int size , bool wait_for_all)
+inline int Socket::recv(void * buffer, int size , bool wait_for_all)
 {
-    auto t = recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
+    auto t = ::recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
     if( t == 0)
     {
         std::cout << "Socket error" << std::endl;
@@ -671,9 +671,9 @@ inline int Socket::SendUDP( const void * buffer, int size, sockaddr_in* to )
 #endif
 }
 
-inline int Socket::SendRaw(const void* data, int dataSize)
+inline int Socket::send(const void* data, int dataSize)
 {
-    return send(sock, static_cast<const char*>(data), dataSize, 0);
+    return ::send(sock, static_cast<const char*>(data), dataSize, 0);
 }
 
 }

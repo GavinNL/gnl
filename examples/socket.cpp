@@ -13,9 +13,9 @@ int Server()
     gnl::Socket s;
 
 
-    s.Create(gnl::Socket::Protocol::TCP);
-    s.Bind(8810);
-    s.Listen();
+    s.create(gnl::Socket::Protocol::TCP);
+    s.bind(8810);
+    s.listen();
 
     std::cout << "[Server] Listening on 8810" << std::endl;
 
@@ -26,7 +26,7 @@ int Server()
         std::cout << "[Server] Waiting for client" << std::endl;
 
         //gnl::Socket client;
-        gnl::Socket client = s.Accept( );
+        gnl::Socket client = s.accept( );
         printf("[Server]: Client connected\n");
 
         while ( true )
@@ -35,7 +35,7 @@ int Server()
             //{
             //    std::cout << "[Server] client socket detected an error" << std::endl;
             //}
-            auto ret = client.Receive( buff, 100, false);
+            auto ret = client.recv( buff, 100, false);
 
             if( ret != 0  )
             {
@@ -45,7 +45,7 @@ int Server()
             else   // Receive will return 0 if the client disonnects, otherwise it will block
             {
                std::cout << "[Server] Client disconnecting gracefully" << std::endl;
-               client.Close();
+               client.close();
                break;
             }
             std::this_thread::sleep_for( std::chrono::milliseconds(10) );
@@ -53,7 +53,7 @@ int Server()
         printf("[Server] Client disconnected\n");
     }
 
-    s.Close();
+    s.close();
 
     std::cout << "[Server] exited" << std::endl;
 
@@ -68,11 +68,11 @@ int Client()
     std::this_thread::sleep_for( std::chrono::seconds(1) );
     gnl::Socket s;
 
-    s.Create(gnl::Socket::Protocol::TCP);
+    s.create(gnl::Socket::Protocol::TCP);
 
     std::cout << "[Client] Connecting " << std::endl;
 
-    if( !s.Connect("localhost", 8810) )
+    if( !s.connect("localhost", 8810) )
     {
         std::cout << "[Client] couldn't connect" << std::endl;
         return 0;
@@ -85,17 +85,17 @@ int Client()
 
     //while(1)
     //{
-        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        s.send( "Hello this is a test", 5+4+2+1+4+4);
         std::this_thread::sleep_for( std::chrono::seconds(1) );
-        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        s.send( "Hello this is a test", 5+4+2+1+4+4);
         std::this_thread::sleep_for( std::chrono::seconds(1) );
-        s.SendRaw( "Hello this is a test", 5+4+2+1+4+4);
+        s.send( "Hello this is a test", 5+4+2+1+4+4);
         std::this_thread::sleep_for( std::chrono::seconds(1) );
     //}
 
     std::cout << "[Client] disconnected" << std::endl;
     std::cout << "[Client] exited" << std::endl;
-    s.Close();
+    s.close();
     return 0;
 
 }

@@ -30,18 +30,18 @@ void Client_Thread(gnl::Socket & C)
   {
     // read the first byte indicating the
     // length of the next messsage
-    int bytes = C.Receive(&message_size, 1, true);
+    int bytes = C.recv(&message_size, 1, true);
     if( bytes != 1) // client closed connetion
     {
-      C.Close();
+      C.close();
       break;
     }
 
     // read the message
-    bytes = C.Receive(message, message_size, true);
+    bytes = C.recv(message, message_size, true);
     if( bytes != message_size ) // client closed connetion
     {
-      C.Close();
+      C.close();
       break;
     }
 
@@ -49,10 +49,10 @@ void Client_Thread(gnl::Socket & C)
     std::cout << "Message Recieved (" << I << ") :" << message << std::endl;
 
     // Send the message back to the client.
-    C.SendRaw( buffer, message_size+1 );
+    C.send( buffer, message_size+1 );
   }
 
-  C.Close();
+  C.close();
   std::cout << "Client disconnected ( " << I << ")" << std::endl;
 }
 
@@ -60,14 +60,14 @@ int main(int argc, char *argv[])
 {
   gnl::Socket S;
 
-  S.Create( gnl::Socket::Protocol::TCP ); // no arguemts = TCP by default
+  S.create( gnl::Socket::Protocol::TCP ); // no arguemts = TCP by default
 
-  while( !S.Bind(30000) )
+  while( !S.bind(30000) )
   {
     std::cout << "Cannot bind. Retrying in 3 seconds" << std::endl;
     std::this_thread::sleep_for( std::chrono::seconds(3) );
   }
-  S.Listen();
+  S.listen();
 
 
   // Each client needs a socket and a thread
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
   {
     int i=0;
 
-    auto NewClient = S.Accept();         // Accept the client connection (blocking)
+    auto NewClient = S.accept();         // Accept the client connection (blocking)
 
     for(auto & c : m_Clients)            //  Find an appropriate spot in the vector to place the client
     {
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
       i++;
     }
 
-    NewClient.Close(); // no more available spots, so close any new connections.
+    NewClient.close(); // no more available spots, so close any new connections.
 
   }
 
@@ -114,7 +114,7 @@ int main(int argc, char *argv[])
   for(auto & c : m_Clients)
   {
     if(c.first)
-      c.first.Close();
+      c.first.close();
 
     if( c.second.joinable())
       c.second.join();
