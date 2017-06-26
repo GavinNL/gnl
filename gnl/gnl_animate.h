@@ -1,12 +1,29 @@
 /*
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
 
 #ifndef GNL_ANIMATE
@@ -14,32 +31,34 @@
 
 #include <functional>
 #include <chrono>
+#include <algorithm>
 #include <vector>
 #include <cmath>
+#include <cstdint>
 #include <list>
 #include <assert.h>
 
 namespace gnl
 {
 
-template<typename T, typename p=double>
 /**
  * @brief The Animate2 class
  *
  * Newer implementation of the animate class using a list.
  */
-class Animate3
+template<typename T, typename p=double>
+class animate
 {
 public:
-    using timepoint    = std::chrono::time_point<std::chrono::high_resolution_clock>;
     using tween_func   = std::function< p(p)>;
-    using animate_type = Animate3<T, p>;
+    using animate_type = animate<T, p>;
     using clock        = std::chrono::system_clock;
+    using timepoint    = std::chrono::time_point<clock>;
 
     struct queue_elem
     {
         T            v = static_cast<T>(0);
-        timepoint    t = std::chrono::system_clock::now();
+        timepoint    t = clock::now();
         tween_func   f = [](p t) {return t;};
 
         bool operator==(queue_elem const & other)
@@ -61,20 +80,20 @@ public:
         }
     };
 
-    Animate3(const T & f = static_cast<T>(0))
+    animate(const T & f = static_cast<T>(0))
     {
         m_Q.push_back( queue_elem(f, clock::now() ) );
     }
 
-    ~Animate3()
+    ~animate()
     {
     }
 
-    Animate3(const animate_type & other) : m_Q( other.m_Q )
+    animate(const animate_type & other) : m_Q( other.m_Q )
     {
     }
 
-    Animate3(Animate3 && other)
+    animate(animate && other)
     {
 
         if( this != &other)
@@ -89,7 +108,7 @@ public:
      *
      * Clears all transitions and sets the value
      */
-    Animate3& set(const T & v)
+    animate& set(const T & v)
     {
         auto f = m_Q.front();
         f.v = v;
@@ -108,7 +127,7 @@ public:
      *
      * Stops the transitions
      */
-    Animate3 & stop()
+    animate & stop()
     {
         set( get() );
         return *this;
@@ -122,7 +141,7 @@ public:
      *
      * Transition to a new value over a duration.
      */
-    Animate3 & to( const T & v, double seconds)
+    animate & to( const T & v, double seconds)
     {
         return to(  v, std::chrono::nanoseconds( static_cast<intmax_t>(seconds*1e9) ) );
     }
@@ -137,17 +156,18 @@ public:
      *
      */
     template<class rep, std::intmax_t num, std::intmax_t den>
-    Animate3 & to(const T & v, const std::chrono::duration<rep, std::ratio<num,den> > & dur )
+    animate & to(const T & v, const std::chrono::duration<rep, std::ratio<num,den> > & dur )
     {
         assert( m_Q.size() != 0 );
         auto & head = m_Q.back();
 
         if(m_Q.size()==1)
         {
-            head.t = std::chrono::system_clock::now();
+            head.t = clock::now();
         }
 
-        m_Q.push_back( queue_elem(v, head.t+dur) );
+        auto mdur = std::chrono::duration_cast< timepoint::duration >(dur);
+        m_Q.push_back( queue_elem(v, timepoint(head.t+mdur) ) );
         return *this;
     }
 
@@ -169,7 +189,7 @@ public:
      */
     T get() const
     {
-        auto now = std::chrono::system_clock::now();
+        auto now = clock::now();
 
         if( m_Q.size() == 1)
         {
@@ -214,15 +234,14 @@ public:
      */
     double time_left() const
     {
-        return std::max( static_cast<p>(0), std::chrono::duration<p>( m_Q.back().t - std::chrono::system_clock::now() ).count());
+        return std::max( static_cast<p>(0), std::chrono::duration<p>( m_Q.back().t - clock::now() ).count());
     }
 
     mutable std::list<queue_elem> m_Q;
 
 };
 
-template<typename T, typename p=double>
-using Animate = Animate3<T,p>;
+
 }
 
 #endif

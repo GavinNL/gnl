@@ -1,13 +1,29 @@
 /*
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
 // In progress, no testing done yet
 // Do not use yet.
@@ -163,7 +179,7 @@ struct data_destroyer<0, Ts...>
 
 
 template<typename... Ts>
-class Variant;
+class variant;
 
 
 
@@ -213,17 +229,17 @@ struct print_as<0, Ts...>
 
 
 template<typename ..._T>
-class Variant
+class variant
 {
     public:
         static const std::size_t size       = sizeof...(_T);
         static const std::size_t bytes_size = type_size<_T...>::max;
 
-        using Variant_Type = Variant<_T...>;
+        using variant_type = variant<_T...>;
 
-        Variant() {}
+        variant() {}
 
-        Variant_Type& operator=(const  Variant_Type & V)
+        variant_type& operator=(const  variant_type & V)
         {
             if( this != &V)
             {
@@ -233,13 +249,13 @@ class Variant
             return *this;
         }
 
-        Variant(const Variant_Type & V)
+        variant(const variant_type & V)
         {
             current_type = V.current_type;
             cpydata(V.data, data, bytes_size);
         }
 
-        Variant(Variant_Type && V)
+        variant(variant_type && V)
         {
             current_type = V.current_type;
             cpydata(V.data, data, bytes_size);
@@ -247,7 +263,7 @@ class Variant
         }
 
         template<typename T>
-        Variant(const T & V)
+        variant(const T & V)
         {
            // std::cout << "VARIANT copy constructor" << std::endl;
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
@@ -261,7 +277,7 @@ class Variant
         //}
 
         template<typename T>
-        Variant( T && V)
+        variant( T && V)
         {
            // std::cout << "VARIANT move constructor" << std::endl;
             //static_assert( type_in<T,_T...>::value, "That type is not represented in the variant!" );
@@ -274,7 +290,7 @@ class Variant
 
 
 
-        Variant_Type & operator=( Variant_Type && V)
+        variant_type & operator=( variant_type && V)
         {
           //  std::cout << "VARIANT Move operator" << std::endl;
             current_type = V.current_type;
@@ -286,7 +302,7 @@ class Variant
 
 
        template<typename T>
-       typename std::enable_if <  type_in<T, _T...>::value  , Variant_Type  >::type & operator=( T &&V)
+       typename std::enable_if <  type_in<T, _T...>::value  , variant_type  >::type & operator=( T &&V)
        {
           // std::cout << "Move operator" << std::endl;
           // std::cout << "VARIANT  Moving type" << std::endl;
@@ -299,7 +315,7 @@ class Variant
            }
            else
            {
-               Destroy();
+               destroy();
                new (data)T( std::move(V) );
                current_type = index_in_list<T,_T...>::value;
            }
@@ -310,22 +326,22 @@ class Variant
 
 
         template<typename T>
-        Variant& operator=(const T & V)
+        variant& operator=(const T & V)
         {
          //   std::cout << "Assignment operator" << std::endl;
-            ConstructType<T>(V);
+            construct_type<T>(V);
             return *this;
         }
 
 
 
-        ~Variant()
+        ~variant()
         {
           //  std::cout << "destroying variant" << std::endl;
-            Destroy();
+            destroy();
         }
 
-        void Destroy()
+        void destroy()
         {
             if(current_type == 0xFF ) return;
             static data_destroyer< sizeof...(_T)-1, _T...> destroy;
@@ -334,7 +350,7 @@ class Variant
 
 
         template<typename T>
-        void MoveType( T && V)
+        void move_type( T && V)
         {
             //std::cout << "Moving type" << std::endl;
             static_assert(
@@ -346,7 +362,7 @@ class Variant
             }
             else
             {
-                Destroy();
+                destroy();
                 new (data)T( std::move(V) );
                 current_type = index_in_list<T,_T...>::value;
             }
@@ -354,7 +370,7 @@ class Variant
         }
 
         template<typename T>
-        void ConstructType(const T & V)
+        void construct_type(const T & V)
         {
             static_assert( type_in< typename std::remove_const<T>::type, _T...>::value, "That type is not represented in the variant!" );
 
@@ -366,7 +382,7 @@ class Variant
             }
             else
             {
-                Destroy();
+                destroy();
                 new (data)T(V);
                 current_type = index_in_list<T,_T...>::value;
             }
@@ -396,7 +412,7 @@ class Variant
             return *static_cast<T*>( (void*)&data[0]);
         }
 
-        friend std::ostream & operator<< (std::ostream& stream, const Variant_Type & V)
+        friend std::ostream & operator<< (std::ostream& stream, const variant_type & V)
         {
             static print_as<sizeof...(_T)-1, _T...> P;
 
@@ -406,7 +422,7 @@ class Variant
             return stream;
         }
 
-        void cpydata(void const * source,  void * dest, int length )
+        void cpydata(void const * source,  void * dest, size_t length )
         {
             unsigned char const * src = (unsigned char const *)source;
             unsigned char * dst = (unsigned char*)dest;
@@ -425,7 +441,7 @@ class Variant
 }
 
 template<typename ...T>
-using Variant = gnl::detail::Variant<T...>;
+using Variant = gnl::detail::variant<T...>;
 
 }
 

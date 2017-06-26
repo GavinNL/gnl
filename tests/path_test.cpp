@@ -5,7 +5,73 @@
 #include "catch.hpp"
 
 
+TEST_CASE( "Path 2 Tests" )
+{
 
+
+    REQUIRE( gnl::path2("/home/gavin/file.txt").is_absolute() == true);
+    REQUIRE( gnl::path2("/home/gavin/file.txt").is_relative() == false);
+    REQUIRE( gnl::path2("/home/gavin/file.txt").is_file()     == true);
+    REQUIRE( gnl::path2("/home/gavin/file.txt").is_folder()   == false);
+    REQUIRE( gnl::path2("/home/gavin/file.txt").filename()    == "file.txt");
+    REQUIRE( gnl::path2("/home/gavin/file.txt").extension()   == ".txt");
+    REQUIRE( gnl::path2("/home/gavin/file.txt").extension().extension()   == ".txt");
+    REQUIRE( gnl::path2("/home/gavin/file.txt").parent_path() == "/home/gavin/");
+
+    REQUIRE( gnl::path2("home/gavin/file.txt").is_absolute() == false);
+    REQUIRE( gnl::path2("home/gavin/file.txt").is_relative() == true);
+    REQUIRE( gnl::path2("home/gavin/file.txt").is_file()     == true);
+    REQUIRE( gnl::path2("home/gavin/file.txt").is_folder()   == false);
+
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").is_absolute() == true);
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").root_path() == "C:/");
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").root_name() == "C:");
+    REQUIRE( gnl::path2("/home/gavin/file.txt").root_path() == "/");
+    REQUIRE( gnl::path2("/home/gavin/file.txt").root_name() == "");
+
+    REQUIRE( gnl::path2("/home/gavin/file.txt").stem() == "file");
+    REQUIRE( gnl::path2("/home/gavin/file").stem() == "file");
+
+
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").relative_path() == "home/gavin/file.txt");
+
+
+    gnl::path2 root("/home/");
+    gnl::path2 file("file.txt");
+
+    REQUIRE( (root/file) == "/home/file.txt" );
+    REQUIRE( (root/"file.txt") == "/home/file.txt" );
+
+
+    gnl::path2 P("C:/home/gavin/file.txt");
+    P.replace_extension("bmp");
+    std::cout << P << std::endl;
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").replace_filename("hello.txt") == "C:/home/gavin/hello.txt");
+    REQUIRE( gnl::path2("C:/home/gavin/file.txt").replace_extension(".bmp") == "C:/home/gavin/file.bmp");
+#if 0
+#endif
+    // gnl::path2("/home/gavin/"),
+    // gnl::path2("file.txt"),
+    // gnl::path2("/home/file.txt"),
+    // gnl::path2("home/file.txt"),
+    // gnl::path2("./home/file.txt"),
+    // gnl::path2("C:/home/file.txt"),
+    // gnl::path2("C:\\home\\file.txt")
+
+    //REQUIRE( gnl::path2("/home/gavin/file.txt").extension() == ".txt");
+    //REQUIRE( gnl::path2("/home/gavin/file.txt").stem() == "file");
+    //REQUIRE( gnl::path2("/home/gavin/file.txt").is_absolute() == true);
+    //REQUIRE( gnl::path2("home/gavin/file.txt").is_absolute() == false);
+    //REQUIRE( gnl::path2("C:/home/gavin/file.txt").is_absolute() == true);
+
+    //REQUIRE( gnl::path2("C:/home/gavin/file.txt").root_name() == "C:");
+    //REQUIRE( gnl::path2("C:/home/gavin/file.txt").root_directory() == "C:/");
+    //
+    //REQUIRE( gnl::path2("/home/gavin/file.txt").root_name() == "");
+    //REQUIRE( gnl::path2("/home/gavin/file.txt").root_directory() == "/");
+
+
+}
 
 TEST_CASE( "Path Tests" )
 {

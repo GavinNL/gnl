@@ -1,13 +1,29 @@
 /*
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
 #ifndef GNL_SOCKET_H
 #define GNL_SOCKET_H
@@ -23,6 +39,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <iostream>
+#include <cstdint>
 
 #ifdef _MSC_VER
 
@@ -41,6 +58,8 @@
     #include <netdb.h>
     #include <pthread.h>
     #include <sys/select.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>
 #endif
 
 #if !defined(SOCKET_ERROR)
@@ -233,7 +252,7 @@ class Socket
          * Sets the sock to use the appropriate protocol.
          * Default is TCP
          */
-        bool Create(Protocol p  );
+        bool create(Protocol p  );
 
         /**
          * @brief Bind
@@ -242,7 +261,7 @@ class Socket
          *
          * Bind the socket to a port so it can start listening. Call Listen after this.
          */
-        bool Bind(unsigned short port);
+        bool bind(unsigned short port);
 
         /**
          * @brief Listen
@@ -251,7 +270,7 @@ class Socket
          *
          * Starts listening on the bound port. Retu
          */
-        bool Listen(unsigned int MaxConnections=64);
+        bool listen(unsigned int MaxConnections=64);
 
         /**
          * @brief Accept
@@ -260,13 +279,13 @@ class Socket
          *
          * Accepts a client connection. Blocks until a client connects.
          */
-        bool   Accept(Socket *socket) const;
+        bool   accept(Socket *socket) const;
 
         /**
          * @brief Accept
          * @return A socket to the connected client.
          */
-        Socket Accept() const;
+        Socket accept() const;
 
 
         /**
@@ -277,14 +296,14 @@ class Socket
          *
          * Connects to a remote socket.
          */
-        bool  Connect( const char * host, unsigned short port);
+        bool  connect( const char * host, unsigned short port);
 
 
         /**
          * @brief Close
          * Closes the connection to the socket.
          */
-        void Close();
+        void close();
 
 
         /**
@@ -293,7 +312,7 @@ class Socket
          *
          * Checks for any errors on the current socket.
          */
-        bool IsError();
+        bool is_error();
 
 
         /**
@@ -310,16 +329,17 @@ class Socket
          * @return the number of bytes available to read
          *
          */
-        std::size_t HasBytes() { return BytesAvailable(); }
+        std::size_t has_bytes() { return bytes_available(); }
 
-        int BytesAvailable()
+        int bytes_available()
         {
 
-            int bytes_available;
 
             #ifdef _MSC_VER
-                auto ret = ioctlsocket(sock,FIONREAD,&bytes_available);
+                u_long bytes_available;
+                auto ret = ioctlsocket(sock, FIONREAD , &bytes_available);
             #else
+                int bytes_available;
                 auto ret = ioctl(sock,FIONREAD, &bytes_available);
             #endif
 
@@ -341,7 +361,7 @@ class Socket
          *
          * @return the number of bytes read, or 0 if the client disconnected
          */
-        int  Receive( void * buffer,    int size, bool wait_for_all = false );
+        int  recv( void * buffer,    int size, bool wait_for_all = false );
 
         /**
          * @brief SendRaw
@@ -349,7 +369,7 @@ class Socket
          * @param dataSize - amount of bytes to send
          * @return
          */
-        int  SendRaw(const void* data,      int dataSize);
+        int  send(const void* data,      int dataSize);
 
 
         int  SendUDP(   const void * buffer,    int size, sockaddr_in* to  );
@@ -363,9 +383,9 @@ class Socket
          * @return
          * Not sure if this works yet
          */
-        bool ClientAvailable();
+        bool client_available();
 
-        SocketState State() const { return __state; }
+        SocketState state() const { return __state; }
     private:
         #ifdef _MSC_VER
         WSADATA            wsda;
@@ -420,13 +440,13 @@ inline Socket::Socket(Protocol p) : sock(INVALID_SOCKET)
     __times.tv_sec  = 0;
     __times.tv_usec = 0;
 
-    Create(p);
+    create(p);
 }
 
 inline Socket::~Socket()
 {
     if (*this)
-        Close();
+        close();
 
 }
 
@@ -440,7 +460,7 @@ inline Socket::~Socket()
 //    return sock != INVALID_SOCKET;
 //}
 
-inline bool Socket::Create(Protocol p)
+inline bool Socket::create(Protocol p)
 {
     __state = SocketState::Disconnected;
     switch (p)
@@ -449,7 +469,6 @@ inline bool Socket::Create(Protocol p)
         case Protocol::UDP: return this->create(IPPROTO_UDP, SOCK_DGRAM);
         default                 : return false;
     }
-    return false;
 }
 
 
@@ -462,7 +481,7 @@ inline bool Socket::create(int protocol, int Type)
     return sock != INVALID_SOCKET;
 }
 
-inline bool Socket::Bind(unsigned short port)
+inline bool Socket::bind(unsigned short port)
 {
     if ( !(*this) )
     {
@@ -489,7 +508,7 @@ inline bool Socket::Bind(unsigned short port)
     return lastCode == 0;
 }
 
-inline bool Socket::Listen(unsigned int MaxConnections)
+inline bool Socket::listen(unsigned int MaxConnections)
 {
     auto lastCode = ::listen(sock, MaxConnections);
 
@@ -506,7 +525,7 @@ inline bool Socket::Listen(unsigned int MaxConnections)
 	return true;
 }
 
-inline bool Socket::ClientAvailable()
+inline bool Socket::client_available()
 {
     fd_set readSet;
     FD_ZERO(&readSet);
@@ -523,7 +542,7 @@ inline bool Socket::ClientAvailable()
     return false;
 }
 
-inline Socket Socket::Accept( ) const
+inline Socket Socket::accept( ) const
 {
     Socket socket;
     int length   = sizeof(socket.addr);
@@ -540,7 +559,7 @@ inline Socket Socket::Accept( ) const
     return socket;
 }
 
-inline bool Socket::Accept( Socket * socket ) const
+inline bool Socket::accept( Socket * socket ) const
 {
 
     int length   = sizeof(socket->addr);
@@ -557,7 +576,7 @@ inline bool Socket::Accept( Socket * socket ) const
     return true;
 }
 
-inline void Socket::Close()
+inline void Socket::close()
 {
     __state = SocketState::Disconnected;
 
@@ -580,7 +599,7 @@ inline uint32_t Socket::Address()
 #endif
 }
 
-inline bool Socket::Connect(const char* host, unsigned short port)
+inline bool Socket::connect(const char* host, unsigned short port)
 {
     if ( ! (*this) )
         return false;
@@ -606,7 +625,7 @@ inline bool Socket::Connect(const char* host, unsigned short port)
 }
 
 
-inline bool Socket::IsError()
+inline bool Socket::is_error()
 {
 
     if (__state == SocketState::Error || sock == -1)
@@ -633,9 +652,9 @@ inline int Socket::ReceiveUDP(void *buffer, int size, sockaddr_in* from)
 }
 
 
-inline int Socket::Receive(void * buffer, int size , bool wait_for_all)
+inline int Socket::recv(void * buffer, int size , bool wait_for_all)
 {
-    auto t = recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
+    auto t = ::recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
     if( t == 0)
     {
         std::cout << "Socket error" << std::endl;
@@ -654,10 +673,615 @@ inline int Socket::SendUDP( const void * buffer, int size, sockaddr_in* to )
 #endif
 }
 
-inline int Socket::SendRaw(const void* data, int dataSize)
+inline int Socket::send(const void* data, int dataSize)
 {
-    return send(sock, static_cast<const char*>(data), dataSize, 0);
+    return ::send(sock, static_cast<const char*>(data), dataSize, 0);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// New Implementations here!
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief The socket_address class
+ *
+ * The socket address class is used to identify the address of the
+ * connected socket. It is used by the udp_socket to indicate which
+ * client has sent a packet and to indicate which client to send a message
+ * to.
+ */
+class socket_address
+{
+public:
+    using address_t = struct sockaddr_in;
+
+    socket_address()
+    {
+        memset((char *) &m_address, 0, sizeof(m_address));
+    }
+
+    socket_address(uint16_t port)
+    {
+        memset((char *) &m_address, 0, sizeof(m_address));
+        m_address.sin_family = AF_INET;
+        m_address.sin_port = htons(port);
+        m_address.sin_addr.s_addr = INADDR_ANY;
+    }
+
+    socket_address(char const * ip_address, uint16_t port)
+    {
+        //setup address structure
+        memset((char *) &m_address, 0, sizeof(m_address));
+        m_address.sin_family = AF_INET;
+        m_address.sin_port = htons(port);
+
+
+        #if defined _MSC_VER
+        si_other.sin_addr.S_un.S_addr = inet_addr(ip_address);
+        #else
+        m_address.sin_addr.s_addr = inet_addr(ip_address);
+
+        #endif
+    }
+
+    operator bool()
+    {
+        return m_address.sin_port == 0;
+    }
+
+    /**
+     * @brief native_address
+     * @return
+     * Returns the native address handle of the address strut
+     */
+    address_t const & native_address() const
+    {
+        return m_address;
+    }
+
+    /**
+     * @brief native_address
+     * @return
+     * Returns the native address handle of the address strut
+     */
+    address_t & native_address()
+    {
+        return m_address;
+    }
+
+    /**
+     * @brief ip
+     * @return
+     * Returns the ipaddress as a character string
+     */
+    char const * ip() const
+    {
+        return inet_ntoa(m_address.sin_addr);
+    }
+
+    /**
+     * @brief port
+     * @return
+     * Returns the port number
+     */
+    uint16_t port() const
+    {
+        return ntohs(m_address.sin_port);
+    }
+
+    struct sockaddr_in m_address;
+};
+
+
+class socket_base
+{
+public:
+#if defined _WIN32
+    using socket_t = SOCKET;
+#else
+    using socket_t = int;
+#endif
+
+    static const std::size_t error = std::size_t(-1);
+    static const std::size_t none  = std::size_t(0);
+
+
+    bool create(int __domain, int __type, int __protocol)
+    {
+    #ifdef _MSC_VER
+        WSADATA wsa;
+        if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+        {
+            printf("Failed. Error Code : %d",WSAGetLastError());
+            exit(EXIT_FAILURE);
+        }
+    #endif
+        if ( (m_fd=socket(__domain, __type, __protocol)) == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Create failed with error code : %d\n" , WSAGetLastError() );
+            #else
+            printf("Create failed with error code : %d : %s\n" , errno,  strerror(errno) );
+            #endif
+            return false;
+        }
+        return true;
+    }
+
+    bool bind(socket_address const & addr)
+    {
+        int ret = ::bind(m_fd ,(struct sockaddr const*)&addr.m_address , sizeof(addr.m_address));
+
+        if( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            //exit(EXIT_FAILURE);
+            return false;
+        }
+        return true;
+    }
+
+
+    /**
+     * @brief close
+     * Closes the socket. The socket will cast to false after this has been
+     * called.
+     */
+    void close()
+    {
+        #ifdef _MSC_VER
+            ::closesocket(m_fd);
+        #else
+            ::shutdown(m_fd, SHUT_RDWR);
+            ::close(m_fd);
+        #endif
+        m_fd = none;
+    }
+
+    /**
+     * @brief native_handle
+     * @return
+     *
+     * Returns the native handle of the socket descriptor
+     */
+    socket_t native_handle() const
+    {
+        return m_fd;
+    }
+
+    protected:
+
+        socket_t m_fd = SOCKET_ERROR;
+};
+
+/**
+ * @brief The udp_socket class
+ *
+ * A udp socket class to send UDP data to various clients.
+ */
+class udp_socket : public socket_base
+{
+public:
+
+    /**
+     * @brief create
+     *
+     * Creates the socket.  This must be called before you can bind it.
+     */
+    bool create()
+    {
+        return socket_base::create(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    }
+
+
+    /**
+     * @brief send
+     * @param data - the data packet to send
+     * @param length - number of bytes in the packet to send
+     * @param addr - the address to send the data to
+     * @return Returns socket::error if an error occurs or returns the number
+     *         of bytes sent if success
+     *
+     *
+     */
+    std::size_t  send(char const * data, size_t length, socket_address const & addr)
+    {
+        int ret = sendto(m_fd, data, length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
+        if ( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Send failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Send failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            return error;
+        }
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief recv
+     * @param buf - buffer to write the data into
+     * @param length - maximum length of the buffer
+     * @param addr -  reference to a address struct where the ip/port of teh
+     *                client will be stored
+     * @return returns udp_socket::error if error or the number of bytes recieved
+     *
+     * Recieves data from the socket
+     */
+    std::size_t recv(char * buf, int length, socket_address & addr)
+    {
+#if defined _MSVER
+        int slen =  sizeof(struct sockaddr_in);
+#else
+        socklen_t slen = sizeof(struct sockaddr_in);
+#endif
+        int ret  = recvfrom( m_fd, buf, length, 0, (struct sockaddr *) &addr.m_address, &slen);
+
+        if (ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Recv failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            exit(EXIT_FAILURE);
+
+            return std::size_t(-1);
+        }
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return !( ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE) );
+    }
+
+};
+
+
+
+class tcp_socket : public socket_base
+{
+public:
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return !( ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE) );
+    }
+
+    /**
+     * @brief bind
+     * @param port
+     * @return
+     *
+     * Bind the socket to a port so it can start listening for incoming
+     * tcp connections.
+     */
+    bool bind( uint16_t port)
+    {
+        return socket_base::bind( socket_address(port) );
+    }
+
+    /**
+     * @brief connect
+     * @param server - the server ip address/host name
+     * @param port - the port number
+     * @return
+     *
+     * Connect to a server
+     */
+    bool connect( const char * server, std::uint16_t port)
+    {
+        socket_address addr(server, port);
+
+        auto ret = ::connect( m_fd, (struct sockaddr*)&addr.native_address(), sizeof( addr.native_address()));
+
+        m_address = addr;
+        if( ret == SOCKET_ERROR)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * @brief create
+     * @return
+     *
+     * Create the socket. THis must be called before you do any actions on
+     * the socket.
+     */
+    bool create()
+    {
+        return socket_base::create(AF_INET, SOCK_STREAM, IPPROTO_TCP );
+    }
+
+    /**
+     * @brief listen
+     * @param max_connections
+     * @return
+     *
+     * Puts the socket into listening mode so that it can accept client
+     * connections
+     */
+    bool listen( std::size_t max_connections)
+    {
+        auto code = ::listen( m_fd, (int)max_connections);
+
+        if( code == error)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief accept
+     * @return
+     *
+     * Accept a new connected client. This function blocks until
+     * a client connects.
+     */
+    tcp_socket accept()
+    {
+        tcp_socket client;
+
+        int length   = sizeof( m_address.native_address() );
+
+        client.m_fd = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
+
+        int res = ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
+
+        return client;
+
+    }
+
+    /**
+     * @brief send
+     * @param data
+     * @param size
+     * @return returns 0 if the client disconnected, otherwise returns the
+     *         number of bytes sent
+     *
+     * Sends data to this socket.
+     */
+    std::size_t send( char const * data, size_t size)
+    {
+        auto ret = ::send(m_fd, static_cast<const char*>(data), size, 0);
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief recv
+     * @param data
+     * @param size
+     * @return  the number of bytes read, or zero if the client disconnected.
+     *          returns tcp_socket::error if an error occoured
+     *
+     * Recieves data from the socket. This function blocks until the total
+     * number of bytes have been recieved.
+     */
+    std::size_t recv(char * data, size_t size)
+    {
+        bool wait_for_all = true; // default for now.
+
+        auto t = ::recv( m_fd, (char*)data, size, wait_for_all ? MSG_WAITALL : 0 );
+
+        if( t == 0 && size != 0 )
+        {
+            m_fd = INVALID_SOCKET;
+        }
+        return std::size_t(t);
+    }
+
+    /**
+     * @brief get_address
+     * @return
+     *
+     * Gets the address of the socket.
+     */
+    socket_address get_address() const
+    {
+        return m_address;
+    }
+protected:
+    socket_address m_address;
+};
+
+
+#if defined __linux__
+
+class domain_tcp_socket : public socket_base
+{
+public:
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return !( ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE) );
+    }
+
+    /**
+     * @brief bind
+     * @param port
+     * @return
+     *
+     * Bind the socket to a port so it can start listening for incoming
+     * tcp connections.
+     */
+    bool bind( const char * path )
+    {
+        struct sockaddr_un d_name;
+        memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
+        d_name.sun_family = AF_UNIX;
+        strcpy(d_name.sun_path, path);
+
+        int ret = ::bind(m_fd, (const struct sockaddr *) &d_name,
+                       sizeof(struct sockaddr_un));
+
+        if( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            //exit(EXIT_FAILURE);
+            return false;
+        }
+        return true;
+    }
+
+
+    bool unlink(const char * path)
+    {
+        return ::unlink( path ) == 0;
+    }
+
+    /**
+     * @brief connect
+     * @param server - the server ip address/host name
+     * @param port - the port number
+     * @return
+     *
+     * Connect to a server
+     */
+    bool connect( const char * path)
+    {
+        struct sockaddr_un d_name;
+        memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
+        d_name.sun_family = AF_UNIX;
+        strcpy(d_name.sun_path, path);
+
+        auto ret = ::connect( m_fd, (struct sockaddr*)&d_name, sizeof( d_name));
+
+        if( ret == SOCKET_ERROR)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * @brief create
+     * @return
+     *
+     * Create the socket. THis must be called before you do any actions on
+     * the socket.
+     */
+    bool create()
+    {
+        return socket_base::create(AF_UNIX, SOCK_STREAM, 0 );
+    }
+
+    /**
+     * @brief listen
+     * @param max_connections
+     * @return
+     *
+     * Puts the socket into listening mode so that it can accept client
+     * connections
+     */
+    bool listen( std::size_t max_connections = 10)
+    {
+        auto code = ::listen( m_fd, (int)max_connections);
+
+        if( code == error)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief accept
+     * @return
+     *
+     * Accept a new connected client. This function blocks until
+     * a client connects.
+     */
+    domain_tcp_socket accept()
+    {
+        domain_tcp_socket client;
+
+        client.m_fd = ::accept(m_fd, NULL, NULL);
+
+        return client;
+
+    }
+
+    /**
+     * @brief send
+     * @param data
+     * @param size
+     * @return returns 0 if the client disconnected, otherwise returns the
+     *         number of bytes sent
+     *
+     * Sends data to this socket.
+     */
+    std::size_t send( char const * data, size_t size)
+    {
+        auto ret = ::send(m_fd, static_cast<const char*>(data), size, 0);
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief recv
+     * @param data
+     * @param size
+     * @return  the number of bytes read, or zero if the client disconnected.
+     *          returns tcp_socket::error if an error occoured
+     *
+     * Recieves data from the socket. This function blocks until the total
+     * number of bytes have been recieved.
+     */
+    std::size_t recv(char * data, size_t size)
+    {
+
+
+        auto t = ::recv( m_fd, (char*)data, size, 0 );
+
+        if( t == 0 && size != 0 )
+        {
+            m_fd = INVALID_SOCKET;
+        }
+        return std::size_t(t);
+    }
+
+
+
+};
+#endif
 
 }
 

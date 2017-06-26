@@ -2,20 +2,19 @@ project(gnl)
 cmake_minimum_required(VERSION 2.8)
 aux_source_directory(. SRC_LIST)
 
-FILE(GLOB_RECURSE HeaderFiles    "./gnl/*.h")
-FILE(GLOB_RECURSE ExamplesFiles  "./examples/*.cpp" )
-FILE(GLOB_RECURSE OtherFiles     "README.md" )
+FILE(GLOB_RECURSE HeaderFiles    "./*.h"
+                                 "./*.cpp"
+                                 "./*.md"
+                                 ".gitignore")
 
 add_custom_target(headers    SOURCES ${HeaderFiles})
-add_custom_target(examples   SOURCES ${ExamplesFiles})
-add_custom_target(other      SOURCES ${OtherFiles})
 
 include_directories ("${PROJECT_SOURCE_DIR}")
 
 IF (WIN32)
   # set stuff for windows
   add_definitions(
-      /W4
+      /W3
       )
 ELSE()
   # set stuff for other systems
@@ -26,7 +25,7 @@ ELSE()
       -Werror=shadow
       -Wpointer-arith
       -Wcast-align
-      -Wstrict-prototypes
+  #    -Wstrict-prototypes
       -Wstrict-overflow=5
       -Wwrite-strings
   #    -Waggregate-return
@@ -46,27 +45,41 @@ ELSE()
 ENDIF()
 
 
-add_executable(path_test         tests/path_test.cpp)
-add_executable(json_test         tests/json_test.cpp)
-add_executable(periodic_test     tests/periodic_test.cpp)
-add_executable(meta_test         tests/meta_test.cpp)
-add_executable(threadpool_test   tests/threadpool_test.cpp)
-add_executable(interp_test       tests/interp_test.cpp)
-add_executable(binpacking_test   tests/binpacking_test.cpp)
-add_executable(variant           tests/variant_test.cpp)
+# Finds all the .cpp files in the "subdir" folder and compiles
+# each of them into an executable
+MACRO(COMPILE_SUBDIR_EXECS subdir)
 
-add_executable(json       examples/json.cpp)
-add_executable(path       examples/path.cpp)
-add_executable(periodic   examples/periodic.cpp)
-add_executable(socket     examples/socket.cpp)
-add_executable(animate    examples/animate.cpp)
+    FILE(GLOB children relative ${CMAKE_CURRENT_LIST_DIR} ${subdir}/*.cpp)
+    SET(dirlist "")
 
-IF (WIN32)
-  # set stuff for windows
-ELSE()
-  # set stuff for other systems
-  target_link_libraries (periodic_test   pthread)
-  target_link_libraries (threadpool_test pthread)
-  target_link_libraries (periodic        pthread)
-  target_link_libraries (socket          pthread)
-ENDIF()
+    FOREACH( child ${children} )
+
+        IF(NOT IS_DIRECTORY ${child})
+            string( REPLACE ${CMAKE_CURRENT_LIST_DIR}/${subdir}/ "" child ${child})
+            string( REPLACE ".cpp" "" child ${child} )
+
+            MESSAGE(---${child}---)
+
+            add_executable( ${child}   ${subdir}/${child}.cpp)
+            IF (WIN32)
+              # set stuff for windows
+            ELSE()
+              target_link_libraries ( ${child}   pthread)
+            ENDIF()
+
+            set_target_properties( ${child}
+                PROPERTIES
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/${subdir}"
+            )
+
+        ENDIF()
+
+    ENDFOREACH()
+
+ENDMACRO()
+
+
+COMPILE_SUBDIR_EXECS(examples)
+COMPILE_SUBDIR_EXECS(tests)
+
+

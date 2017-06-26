@@ -29,10 +29,10 @@ For more information, please refer to <http://unlicense.org/>
 
 # gnl #
 
-A collection of header only/single file libraries designed to be easily
-dropped into any project.
+A collection of cross-platform header only/single file libraries designed to
+be easily dropped into any project.
 
-The following are a list of libraries
+The following are a list of classes provided by gnl.
 
 ## gnl_path ##
 Provides a way to represent paths to files/folders. Also gives some
@@ -65,12 +65,14 @@ A wrapper around unix sockets and winsock based on what OS you are compiling on.
 
 ## gnl_threadpool ##
 A thread pool implementation. Push tasks onto the queue and the threadpool will
-automatically run the tasks in order
+automatically run the tasks in order.
 
 ## gnl_unicode ##
-A library for working with unicode conversions. Still in testing
+A library for working with unicode conversions. Still in testing.
 
 ## gnl_variant ##
-An implementation of a variant. Probably not the best way to do it.
+An implementation of a variant. Probably not the best way to do it.  It can be
+used if you don't want to include the massive Boost library and can't wait
+till C++17 becomes more standard.
 
 

@@ -14,18 +14,18 @@
 namespace gnl
 {
 
-class ThreadPool
+class thread_pool
 {
 
     public:
-        ThreadPool(size_t num_threads);
+        thread_pool(size_t num_threads);
 
 
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
 
-        ~ThreadPool();
+        ~thread_pool();
 
     private:
         // need to keep track of threads so we can join them
@@ -41,8 +41,8 @@ class ThreadPool
 
 };
 
-// the constructor just launches some amount of workers
-inline ThreadPool::ThreadPool(size_t threads)
+// The constructor just launches some amount of workers
+inline thread_pool::thread_pool(size_t threads)
     :   stop(false)
 {
     for(size_t i = 0;i<threads;++i)
@@ -75,7 +75,7 @@ inline ThreadPool::ThreadPool(size_t threads)
 // add new work item to the pool
 template<class F, class... Args>
 #define RETURN_TYPE typename std::result_of<F(Args...)>::type
-std::future< RETURN_TYPE > ThreadPool::push(F&& f, Args&&... args)
+std::future< RETURN_TYPE > thread_pool::push(F&& f, Args&&... args)
 {
 #undef RETURN_TYPE
     using return_type = typename std::result_of<F(Args...)>::type;
@@ -100,7 +100,7 @@ std::future< RETURN_TYPE > ThreadPool::push(F&& f, Args&&... args)
 }
 
 // the destructor joins all threads
-inline ThreadPool::~ThreadPool()
+inline thread_pool::~thread_pool()
 {
     {
         std::unique_lock<std::mutex> lock(queue_mutex);

@@ -1,13 +1,29 @@
 /*
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
 #ifndef GNL_PERIODIC_H
 #define GNL_PERIODIC_H
@@ -67,7 +83,7 @@ class Periodic
          * @param args     - arugments to the function
          *
          */
-        Periodic& Start(  F&& f, Args&&... args);
+        Periodic& start(  F&& f, Args&&... args);
 
 
         ~Periodic();
@@ -77,20 +93,20 @@ class Periodic
          * @param count - the total amount of times to call the function. Can be set
          *                while the Periodic is active.
          */
-        Periodic& Count( std::uint64_t count);
+        Periodic& count( std::uint64_t count);
 
         /**
          * @brief Stop
          * Stops the Periodic.
          */
-        void Stop();
+        void stop();
 
 
         /**
          * @brief SetInterval
          * @param interval - the interval between function calls
          */
-        Periodic& Interval(const std::chrono::microseconds & interval );
+        Periodic& interval(const std::chrono::microseconds & interval );
 
 
         /**
@@ -98,9 +114,9 @@ class Periodic
          * @param seconds - number of seconds between function calls
          * @return
          */
-        Periodic& Interval(const double & seconds )
+        Periodic& interval(const double & seconds )
         {
-            Interval( std::chrono::microseconds( static_cast<std::uint64_t>(seconds*1e6) ) );
+            interval( std::chrono::microseconds( static_cast<std::uint64_t>(seconds*1e6) ) );
             return *this;
         }
 
@@ -128,21 +144,21 @@ inline Periodic::~Periodic()
     }
 }
 
-inline Periodic& Periodic::Count( std::uint64_t count)
+inline Periodic& Periodic::count( std::uint64_t count)
 {
     std::lock_guard<std::mutex> L(__data_mutex);
     __count = count;
     return *this;
 }
 
-inline void Periodic::Stop()
+inline void Periodic::stop()
 {
     std::lock_guard<std::mutex> L(__data_mutex);
     __stop = true;
 }
 
 
-inline Periodic & Periodic::Interval(const std::chrono::microseconds & interval )
+inline Periodic & Periodic::interval(const std::chrono::microseconds & interval )
 {
     __interval = interval;
     return *this;
@@ -151,7 +167,7 @@ inline Periodic & Periodic::Interval(const std::chrono::microseconds & interval 
 
 
 template<class F, class... Args>
-inline Periodic& Periodic::Start(F&& f, Args&&... args)
+inline Periodic& Periodic::start(F&& f, Args&&... args)
 {
     using return_type = typename std::result_of< F(Args...) >::type;
 

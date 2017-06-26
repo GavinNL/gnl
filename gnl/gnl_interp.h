@@ -1,13 +1,29 @@
 /*
-    THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-    MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
-    OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org>
+ */
 
 #ifndef GNL_INTERPOLATION_H
 #define GNL_INTERPOLATION_H
@@ -27,12 +43,12 @@ template<typename T, typename FloatingType=float>
  *
  * Calculate the interpolant on the interval 0..1
  */
-struct CubicHermiteInterpolant
+struct cubic_hermite_interpolant
 {
 
-    CubicHermiteInterpolant() {}
+    cubic_hermite_interpolant() {}
 
-    CubicHermiteInterpolant(const T & P0, const T & M0 , const T & P1 , const T & M1) : p0(P0),
+    cubic_hermite_interpolant(const T & P0, const T & M0 , const T & P1 , const T & M1) : p0(P0),
                                                                        p1(P1),
                                                                        m0( M0 ),
                                                                        m1( M1 )
@@ -83,67 +99,65 @@ template<typename _T, typename FloatingType=float>
  * This class does not store a copy of the vectors, it uses
  * the vectors as a reference.
  */
-struct LinerSpline
+struct linear_spline
 {
-    LinerSpline() {}
-
-
-    _T  operator()(FloatingType t)
+    linear_spline(std::vector<FloatingType> const & time, std::vector<_T> const & x) : t(time.data()), y(x.data()), size( std::min(time.size(),x.size()))
     {
-        return get(t);
     }
 
-    _T get(FloatingType t)
+    linear_spline( FloatingType const * time, _T const * x, std::size_t length) : t(time), y(x), size( length )
     {
-        if( nodes.size() < 3)
+    }
+
+    _T  operator()(FloatingType time)
+    {
+        return get(time);
+    }
+
+    _T get(FloatingType time)
+    {
+        if( size < 3)
             return _T(0);
 
+        const auto t0 = t[i];//nodes[i].first;//times[i];
+        const auto t1 = t[i+1];  //nodes[i+1].first;//times[i+1];
+        //const auto t0 = nodes[i].first;//times[i];
+        //const auto t1 = nodes[i+1].first;//times[i+1];
 
-        const auto t0 = nodes[i].first;//times[i];
-        const auto t1 = nodes[i+1].first;//times[i+1];
-
-        if( t > t1 )
+        if( time > t1 )
         {
             __UpdateInterpolant(i+1);
-            return (*this)(t);
+            return (*this)(time);
         }
-        else if( t < t0 )
+        else if( time < t0 )
         {
             __UpdateInterpolant(i-1);
-            return (*this)(t);
+            return (*this)(time);
         }
 
 
-        const auto & p0 = nodes[i].second;
-        const auto & p1 = nodes[i+1].second;
+        const auto & p0 = y[i];
+        const auto & p1 = y[i+1];
 
-        t = (t-t0) * invT;
+        time = (time-t0) * invT;
 
-        return p0 * ( static_cast<FloatingType>(1.0) - t) + p1*t;
-    }
-
-    void Insert( FloatingType t, _T value )
-    {
-        nodes.push_back( std::pair<FloatingType,_T>(t,value) );
-    }
-
-    std::pair<FloatingType,_T> & operator[](std::size_t j)
-    {
-        return nodes[j];
+        return p0 * ( static_cast<FloatingType>(1.0) - time) + p1*time;
     }
 
     void __UpdateInterpolant(int j)
     {
-        assert( j < nodes.size() - 1 );
+        assert( j < size - 1 );
         i = j;
-        invT   = 1.0f / ( nodes[i+1].first - nodes[i].first );
+        invT   = 1.0f / ( t[i+1] - t[i] );
     }
 
     FloatingType invT = 1.0f;
     int          i    = 0;
 
-
-    std::vector< std::pair<FloatingType,_T> >   nodes;
+    _T           const * y;
+    FloatingType const * t;
+    std::size_t       size;
+    //std::vector< std::pair<FloatingType,_T> >   nodes;
 
 };
 
@@ -158,11 +172,11 @@ template<typename _T>
  * This class does not store a copy of the vectors, it uses
  * the vectors as a reference.
  */
-struct CubicSpline
+struct cubic_spline
 {
-    CubicSpline() {}
+    cubic_spline() {}
 
-    CubicSpline(const std::vector<float> & pT, const std::vector<_T> & p) : points(p), times(pT)
+    cubic_spline(const std::vector<float> & pT, const std::vector<_T> & p) : points(p), times(pT)
     {
        // assert( pT.size() > 3);
 
@@ -229,7 +243,8 @@ struct CubicSpline
     std::vector<_T>           points;
     std::vector<float>        times;
 
-    CubicHermiteInterpolant<_T>    interp;
+
+    cubic_hermite_interpolant<_T>    interp;
 };
 
 
@@ -244,9 +259,9 @@ struct CubicSpline
  *
  */
 template<typename T, typename FloatingType=float>
-struct Bezier
+struct bezier
 {
-    Bezier( const std::vector<T> & p ) : points(p)
+    bezier( const std::vector<T> & p ) : points(p)
     {
     }
 
