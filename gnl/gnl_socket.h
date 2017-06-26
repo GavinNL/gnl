@@ -676,6 +676,327 @@ inline int Socket::send(const void* data, int dataSize)
     return ::send(sock, static_cast<const char*>(data), dataSize, 0);
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// New Implementations here!
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief The socket_address class
+ *
+ * The socket address class is used to identify the address of the
+ * connected socket. It is used by the udp_socket to indicate which
+ * client has sent a packet and to indicate which client to send a message
+ * to.
+ */
+class socket_address
+{
+public:
+    using address_t = struct sockaddr_in;
+
+    socket_address()
+    {
+        memset((char *) &m_address, 0, sizeof(m_address));
+    }
+
+    socket_address(uint16_t port)
+    {
+        memset((char *) &m_address, 0, sizeof(m_address));
+        m_address.sin_family = AF_INET;
+        m_address.sin_port = htons(port);
+        m_address.sin_addr.s_addr = INADDR_ANY;
+    }
+
+    socket_address(char const * ip_address, uint16_t port)
+    {
+        //setup address structure
+        memset((char *) &m_address, 0, sizeof(m_address));
+        m_address.sin_family = AF_INET;
+        m_address.sin_port = htons(port);
+
+
+        #if defined _MSC_VER
+        si_other.sin_addr.S_un.S_addr = inet_addr(ip_address);
+        #else
+        m_address.sin_addr.s_addr = inet_addr(ip_address);
+
+        #endif
+    }
+
+    operator bool()
+    {
+        return m_address.sin_port == 0;
+    }
+
+    /**
+     * @brief native_address
+     * @return
+     * Returns the native address handle of the address strut
+     */
+    address_t const & native_address() const
+    {
+        return m_address;
+    }
+
+    /**
+     * @brief native_address
+     * @return
+     * Returns the native address handle of the address strut
+     */
+    address_t & native_address()
+    {
+        return m_address;
+    }
+
+    /**
+     * @brief ip
+     * @return
+     * Returns the ipaddress as a character string
+     */
+    char const * ip() const
+    {
+        return inet_ntoa(m_address.sin_addr);
+    }
+
+    /**
+     * @brief port
+     * @return
+     * Returns the port number
+     */
+    uint16_t port() const
+    {
+        return ntohs(m_address.sin_port);
+    }
+
+    struct sockaddr_in m_address;
+};
+
+
+class socket_base
+{
+public:
+#if defined _WIN32
+    using socket_t = SOCKET;
+#else
+    using socket_t = int;
+#endif
+
+    static const std::size_t error = std::size_t(-1);
+    static const std::size_t none  = std::size_t(0);
+
+
+    bool create(int __domain, int __type, int __protocol)
+    {
+    #ifdef _MSC_VER
+        WSADATA wsa;
+        if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
+        {
+            printf("Failed. Error Code : %d",WSAGetLastError());
+            exit(EXIT_FAILURE);
+        }
+    #endif
+        if ( (m_fd=socket(__domain, __type, __protocol)) == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Create failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Create failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief close
+     * Closes the socket. The socket will cast to false after this has been
+     * called.
+     */
+    void close()
+    {
+        #ifdef _MSC_VER
+            ::closesocket(m_fd);
+        #else
+            ::shutdown(m_fd, SHUT_RDWR);
+            ::close(m_fd);
+        #endif
+        m_fd = none;
+    }
+
+    /**
+     * @brief native_handle
+     * @return
+     *
+     * Returns the native handle of the socket descriptor
+     */
+    socket_t native_handle() const
+    {
+        return m_fd;
+    }
+
+    protected:
+
+        socket_t m_fd = SOCKET_ERROR;
+};
+
+/**
+ * @brief The udp_socket class
+ *
+ * A udp socket class to send UDP data to various clients.
+ */
+class udp_socket : public socket_base
+{
+public:
+
+    /**
+     * @brief create
+     *
+     * Creates the socket.  This must be called before you can bind it.
+     */
+    bool create()
+    {
+        return socket_base::create(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    }
+
+    bool bind(socket_address const & addr)
+    {
+        int ret = ::bind(m_fd ,(struct sockaddr const*)&addr.m_address , sizeof(addr.m_address));
+
+        if( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            //exit(EXIT_FAILURE);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief send
+     * @param data - the data packet to send
+     * @param length - number of bytes in the packet to send
+     * @param addr - the address to send the data to
+     * @return Returns socket::error if an error occurs or returns the number
+     *         of bytes sent if success
+     *
+     *
+     */
+    std::size_t  send(char const * data, size_t length, socket_address const & addr)
+    {
+        int ret = sendto(m_fd, data, length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
+        if ( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Send failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Send failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            return error;
+        }
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief recv
+     * @param buf - buffer to write the data into
+     * @param length - maximum length of the buffer
+     * @param addr -  reference to a address struct where the ip/port of teh
+     *                client will be stored
+     * @return returns udp_socket::error if error or the number of bytes recieved
+     *
+     * Recieves data from the socket
+     */
+    std::size_t recv(char * buf, int length, socket_address & addr)
+    {
+#if defined _MSVER
+        int slen =  sizeof(struct sockaddr_in);
+#else
+        socklen_t slen = sizeof(struct sockaddr_in);
+#endif
+        int ret  = recvfrom( m_fd, buf, length, 0, (struct sockaddr *) &addr.m_address, &slen);
+
+        if (ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Recv failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            exit(EXIT_FAILURE);
+
+            return std::size_t(-1);
+        }
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE);
+    }
+
+};
+
+
+
+class tcp_socket : public socket_base
+{
+public:
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE);
+    }
+
+
+    void listen()
+    {
+
+    }
+
+    tcp_socket accept()
+    {
+
+    }
+
+    std::size_t send( )
+    {
+
+    }
+
+    std::size_t recv()
+    {
+
+    }
+
+};
+
+
 }
 
 #endif
