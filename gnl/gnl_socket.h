@@ -58,6 +58,8 @@
     #include <netdb.h>
     #include <pthread.h>
     #include <sys/select.h>
+    #include <sys/socket.h>
+    #include <sys/un.h>
 #endif
 
 #if !defined(SOCKET_ERROR)
@@ -1055,7 +1057,6 @@ public:
 
         client.m_fd = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
 
-
         int res = ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
 
         return client;
@@ -1114,6 +1115,173 @@ protected:
     socket_address m_address;
 };
 
+
+#if defined __linux__
+
+class domain_tcp_socket : public socket_base
+{
+public:
+    /**
+     * @brief operator bool
+     *
+     * Conversion to bool. Converts to false if the socket is
+     * not created or if it has an error
+     */
+    operator bool()
+    {
+        return !( ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE) );
+    }
+
+    /**
+     * @brief bind
+     * @param port
+     * @return
+     *
+     * Bind the socket to a port so it can start listening for incoming
+     * tcp connections.
+     */
+    bool bind( const char * path )
+    {
+        struct sockaddr_un d_name;
+        memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
+        d_name.sun_family = AF_UNIX;
+        strcpy(d_name.sun_path, path);
+
+        int ret = ::bind(m_fd, (const struct sockaddr *) &d_name,
+                       sizeof(struct sockaddr_un));
+
+        if( ret == SOCKET_ERROR)
+        {
+            #ifdef _MSC_VER
+            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            #else
+            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            #endif
+            //exit(EXIT_FAILURE);
+            return false;
+        }
+        return true;
+    }
+
+
+    bool unlink(const char * path)
+    {
+        return ::unlink( path ) == 0;
+    }
+
+    /**
+     * @brief connect
+     * @param server - the server ip address/host name
+     * @param port - the port number
+     * @return
+     *
+     * Connect to a server
+     */
+    bool connect( const char * path)
+    {
+        struct sockaddr_un d_name;
+        memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
+        d_name.sun_family = AF_UNIX;
+        strcpy(d_name.sun_path, path);
+
+        auto ret = ::connect( m_fd, (struct sockaddr*)&d_name, sizeof( d_name));
+
+        if( ret == SOCKET_ERROR)
+            return false;
+
+        return true;
+    }
+
+    /**
+     * @brief create
+     * @return
+     *
+     * Create the socket. THis must be called before you do any actions on
+     * the socket.
+     */
+    bool create()
+    {
+        return socket_base::create(AF_UNIX, SOCK_STREAM, 0 );
+    }
+
+    /**
+     * @brief listen
+     * @param max_connections
+     * @return
+     *
+     * Puts the socket into listening mode so that it can accept client
+     * connections
+     */
+    bool listen( std::size_t max_connections = 10)
+    {
+        auto code = ::listen( m_fd, (int)max_connections);
+
+        if( code == error)
+        {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * @brief accept
+     * @return
+     *
+     * Accept a new connected client. This function blocks until
+     * a client connects.
+     */
+    domain_tcp_socket accept()
+    {
+        domain_tcp_socket client;
+
+        client.m_fd = ::accept(m_fd, NULL, NULL);
+
+        return client;
+
+    }
+
+    /**
+     * @brief send
+     * @param data
+     * @param size
+     * @return returns 0 if the client disconnected, otherwise returns the
+     *         number of bytes sent
+     *
+     * Sends data to this socket.
+     */
+    std::size_t send( char const * data, size_t size)
+    {
+        auto ret = ::send(m_fd, static_cast<const char*>(data), size, 0);
+        return std::size_t(ret);
+    }
+
+    /**
+     * @brief recv
+     * @param data
+     * @param size
+     * @return  the number of bytes read, or zero if the client disconnected.
+     *          returns tcp_socket::error if an error occoured
+     *
+     * Recieves data from the socket. This function blocks until the total
+     * number of bytes have been recieved.
+     */
+    std::size_t recv(char * data, size_t size)
+    {
+
+
+        auto t = ::recv( m_fd, (char*)data, size, 0 );
+
+        if( t == 0 && size != 0 )
+        {
+            m_fd = INVALID_SOCKET;
+        }
+        return std::size_t(t);
+    }
+
+
+
+};
+#endif
 
 }
 
