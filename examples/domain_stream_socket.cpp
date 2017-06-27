@@ -15,7 +15,7 @@
 
 int client(void)
 {
-    gnl::domain_tcp_socket     S;                           // The socket
+    gnl::domain_stream_socket     S;                           // The socket
 
     // Create the socket
     S.create();
@@ -59,7 +59,7 @@ int client(void)
 
 int server()
 {
-    gnl::domain_tcp_socket      S;           // The socket class
+    gnl::domain_stream_socket      S;           // The socket class
 
     char buf[BUFLEN];            // Buffer to store data
 
@@ -92,7 +92,7 @@ int server()
             break;
         }
 
-        if( message_size != gnl::domain_tcp_socket::error)
+        if( message_size != gnl::domain_stream_socket::error)
         {
             auto r = client.recv( &buf[1], buf[0]);
 
