@@ -808,8 +808,8 @@ public:
         WSADATA wsa;
         if (WSAStartup(MAKEWORD(2,2),&wsa) != 0)
         {
-            printf("Failed. Error Code : %d",WSAGetLastError());
-            exit(EXIT_FAILURE);
+            //printf("Failed. Error Code : %d",WSAGetLastError());
+            return false;
         }
     #endif
         if ( (m_fd=socket(__domain, __type, __protocol)) == SOCKET_ERROR)
@@ -835,7 +835,6 @@ public:
             #else
             printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
-            //exit(EXIT_FAILURE);
             return false;
         }
         return true;
@@ -945,8 +944,6 @@ public:
             #else
             printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
-            exit(EXIT_FAILURE);
-
             return std::size_t(-1);
         }
         return std::size_t(ret);
@@ -1103,6 +1100,24 @@ public:
             m_fd = INVALID_SOCKET;
         }
         return std::size_t(t);
+    }
+
+    /**
+     * @brief size
+     * @return
+     *
+     * Returns the number of bytes waiting in the buffer.
+     */
+    std::size_t size() const
+    {
+        #ifdef _MSC_VER
+            u_long bytes_available;
+            auto ret = ioctlsocket(m_fd, FIONREAD , &bytes_available);
+        #else
+            int bytes_available;
+            auto ret = ioctl(m_fd,FIONREAD, &bytes_available);
+        #endif
+        return std::size_t(bytes_available);
     }
 
     /**

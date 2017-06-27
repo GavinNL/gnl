@@ -90,6 +90,7 @@ int server()
 
         if( message_size != gnl::tcp_socket::error)
         {
+            std::cout << "size: " << client.size() << std::endl;
             auto r = client.recv( &buf[1], buf[0]);
 
             if( r == 0)
