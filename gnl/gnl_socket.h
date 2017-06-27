@@ -38,7 +38,6 @@
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
-#include <iostream>
 #include <cstdint>
 
 #ifdef _MSC_VER
@@ -345,8 +344,8 @@ class Socket
 
             if(ret == -1)
             {
-                std::cout << "Error collecting byte information" << std::endl;
-                exit(1);
+              //  std::cout << "Error collecting byte information" << std::endl;
+              //  exit(1);
             }
 
             return bytes_available;
@@ -657,7 +656,7 @@ inline int Socket::recv(void * buffer, int size , bool wait_for_all)
     auto t = ::recv( sock, (char*)buffer, size, wait_for_all ? MSG_WAITALL : 0 );
     if( t == 0)
     {
-        std::cout << "Socket error" << std::endl;
+        //std::cout << "Socket error" << std::endl;
         sock = INVALID_SOCKET;
         __state = SocketState::Disconnected;
     }
@@ -705,7 +704,12 @@ inline int Socket::send(const void* data, int dataSize)
 class socket_address
 {
 public:
+
+#if defined _MSC_VER
+    using address_t = struct ::sockaddr_in;
+#else
     using address_t = struct sockaddr_in;
+#endif
 
     socket_address()
     {
@@ -729,7 +733,7 @@ public:
 
 
         #if defined _MSC_VER
-        si_other.sin_addr.S_un.S_addr = inet_addr(ip_address);
+        m_address.sin_addr.S_un.S_addr = inet_addr(ip_address);
         #else
         m_address.sin_addr.s_addr = inet_addr(ip_address);
 
@@ -781,7 +785,7 @@ public:
         return ntohs(m_address.sin_port);
     }
 
-    struct sockaddr_in m_address;
+    address_t m_address;
 };
 
 
@@ -902,7 +906,7 @@ public:
      */
     std::size_t  send(char const * data, size_t length, socket_address const & addr)
     {
-        int ret = sendto(m_fd, data, length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
+        int ret = sendto(m_fd, data, (int)length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
         if ( ret == SOCKET_ERROR)
         {
             #ifdef _MSC_VER
@@ -1074,7 +1078,7 @@ public:
      */
     std::size_t send( char const * data, size_t size)
     {
-        auto ret = ::send(m_fd, static_cast<const char*>(data), size, 0);
+        auto ret = ::send(m_fd, static_cast<const char*>(data), (int)size, 0);
         return std::size_t(ret);
     }
 
@@ -1092,7 +1096,7 @@ public:
     {
         bool wait_for_all = true; // default for now.
 
-        auto t = ::recv( m_fd, (char*)data, size, wait_for_all ? MSG_WAITALL : 0 );
+        auto t = ::recv( m_fd, (char*)data, (int)size, wait_for_all ? MSG_WAITALL : 0 );
 
         if( t == 0 && size != 0 )
         {
@@ -1118,7 +1122,7 @@ protected:
 
 #if defined __linux__
 
-class domain_tcp_socket : public socket_base
+class domain_stream_socket : public socket_base
 {
 public:
     /**
@@ -1230,9 +1234,9 @@ public:
      * Accept a new connected client. This function blocks until
      * a client connects.
      */
-    domain_tcp_socket accept()
+    domain_stream_socket accept()
     {
-        domain_tcp_socket client;
+        domain_stream_socket client;
 
         client.m_fd = ::accept(m_fd, NULL, NULL);
 
