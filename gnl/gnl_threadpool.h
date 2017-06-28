@@ -20,16 +20,45 @@ class thread_pool
 
     public:
         thread_pool(size_t num_threads);
+        thread_pool();
 
 
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
-        void clear_tasks() { while(m_tasks.size()) m_tasks.pop(); }
+        /**
+         * @brief clear_tasks
+         *
+         * Clears all the current tasks in the queue
+         */
+        void clear_tasks();
+
+        /**
+         * @brief num_tasks
+         * @return
+         *
+         * Returns the number of tasks still in the queue
+         */
         std::size_t num_tasks() { return m_tasks.size(); }
 
+        /**
+         * @brief num_workers
+         * @return
+         *
+         * Returns the number of workers in this thread pool
+         */
         std::size_t num_workers() { return m_worker_count; }
+
+        /**
+         * @brief add_thread
+         * Add a new worker to the thread pool
+         */
         void add_thread();
+
+        /**
+         * @brief remove_thread
+         * Remove a worker from the thread pool
+         */
         void remove_thread();
 
         ~thread_pool();
@@ -46,7 +75,7 @@ class thread_pool
         std::condition_variable m_cv;
         uint32_t                m_worker_count=0; // number of currently active workers
         uint32_t                m_thread_count=0;
-        bool stop;
+       // bool stop;
 
 };
 
@@ -61,7 +90,6 @@ inline void thread_pool::add_thread()
     ++m_thread_count;
     ++m_worker_count;
 
-
     workers.emplace_back(
         [this]
         {
@@ -72,11 +100,16 @@ inline void thread_pool::add_thread()
                 {
                     std::unique_lock<std::mutex> lock(this->m_mutex);
 
-                    this->m_cv.wait(lock, [this]{ return this->stop || !this->m_tasks.empty(); });
+                    // Wait for someone to trigger the condition variable.
+                    // But do not wait if the task list is empty
+                    //this->m_cv.wait(lock, [this]{ return this->stop || !this->m_tasks.empty(); });
+                    this->m_cv.wait(lock, [this]{ return (m_thread_count < m_worker_count) || !this->m_tasks.empty(); });
 
                     //  ========== Start Safe Zone =========================
-                    if( (this->stop && this->m_tasks.empty()) || (m_thread_count < m_worker_count) )
+                    //if( (this->stop && this->m_tasks.empty()) || (m_thread_count < m_worker_count) )
+                    if( m_thread_count < m_worker_count )
                     {
+                        // We do not need this thread anymore, so we can exit.
                         --m_worker_count;
                         std::cout << std::this_thread::get_id() << " shutting down" << std::endl;
                         return;
@@ -95,12 +128,24 @@ inline void thread_pool::add_thread()
 
 // The constructor just launches some amount of workers
 inline thread_pool::thread_pool(size_t threads)
-    :   stop(false)
+    : m_worker_count(0), m_thread_count(0)
+//    :   stop(false)
 {
     for(size_t i = 0;i<threads;++i)
     {
         add_thread();
     }
+}
+
+inline thread_pool::thread_pool()  : m_worker_count(0), m_thread_count(0)
+{
+
+}
+
+inline void thread_pool::clear_tasks()
+{
+    std::unique_lock<std::mutex> lock(m_mutex);
+    while(m_tasks.size()) m_tasks.pop();
 }
 
 // add new work item to the pool
@@ -121,8 +166,8 @@ std::future< RETURN_TYPE > thread_pool::push(F&& f, Args&&... args)
         std::unique_lock<std::mutex> lock(m_mutex);
 
         // don't allow enqueueing after stopping the pool
-        if(stop)
-            throw std::runtime_error("enqueue on stopped ThreadPool");
+        //if(stop)
+        //    throw std::runtime_error("enqueue on stopped ThreadPool");
 
         m_tasks.emplace([task](){ (*task)(); });
     }
@@ -135,7 +180,8 @@ inline thread_pool::~thread_pool()
 {
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-        stop = true;
+       // stop = true;
+        m_thread_count = 0;
     }
 
     m_cv.notify_all();
