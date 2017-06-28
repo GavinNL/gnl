@@ -10,6 +10,7 @@
 #include <future>
 #include <functional>
 #include <stdexcept>
+#include <iostream>
 
 namespace gnl
 {
@@ -24,22 +25,73 @@ class thread_pool
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
+        void clear_tasks() { while(m_tasks.size()) m_tasks.pop(); }
+        std::size_t num_tasks() { return m_tasks.size(); }
+
+        std::size_t num_workers() { return m_worker_count; }
+        void add_thread();
+        void remove_thread();
 
         ~thread_pool();
 
     private:
         // need to keep track of threads so we can join them
         std::vector< std::thread > workers;
+
         // the task queue
-        std::queue< std::function<void()> > tasks;
+        std::queue< std::function<void()> > m_tasks;
 
         // synchronization
-        std::mutex              queue_mutex;
-        std::condition_variable condition;
-
+        std::mutex              m_mutex;
+        std::condition_variable m_cv;
+        uint32_t                m_worker_count=0; // number of currently active workers
+        uint32_t                m_thread_count=0;
         bool stop;
 
 };
+
+
+inline void thread_pool::remove_thread()
+{
+    --m_thread_count;
+}
+
+inline void thread_pool::add_thread()
+{
+    ++m_thread_count;
+    ++m_worker_count;
+
+
+    workers.emplace_back(
+        [this]
+        {
+            for(;;)
+            {
+                std::function<void()> task;
+
+                {
+                    std::unique_lock<std::mutex> lock(this->m_mutex);
+
+                    this->m_cv.wait(lock, [this]{ return this->stop || !this->m_tasks.empty(); });
+
+                    //  ========== Start Safe Zone =========================
+                    if( (this->stop && this->m_tasks.empty()) || (m_thread_count < m_worker_count) )
+                    {
+                        --m_worker_count;
+                        std::cout << std::this_thread::get_id() << " shutting down" << std::endl;
+                        return;
+                    }
+
+                    task = std::move(this->m_tasks.front());
+                    this->m_tasks.pop();
+                    std::cout << std::this_thread::get_id() << " Starting Task! " << m_tasks.size() << " tasks left" << std::endl;
+                    //  ========== End Safe Zone =========================
+                }
+                task();
+            }
+        }
+    );
+}
 
 // The constructor just launches some amount of workers
 inline thread_pool::thread_pool(size_t threads)
@@ -47,28 +99,7 @@ inline thread_pool::thread_pool(size_t threads)
 {
     for(size_t i = 0;i<threads;++i)
     {
-        workers.emplace_back(
-            [this]
-            {
-                for(;;)
-                {
-                    std::function<void()> task;
-
-                    {
-                        std::unique_lock<std::mutex> lock(this->queue_mutex);
-
-                        this->condition.wait(lock, [this]{ return this->stop || !this->tasks.empty(); });
-
-                        if(this->stop && this->tasks.empty())
-                            return;
-                        task = std::move(this->tasks.front());
-                        this->tasks.pop();
-                    }
-
-                    task();
-                }
-            }
-        );
+        add_thread();
     }
 }
 
@@ -87,15 +118,15 @@ std::future< RETURN_TYPE > thread_pool::push(F&& f, Args&&... args)
 
     std::future<return_type> res = task->get_future();
     {
-        std::unique_lock<std::mutex> lock(queue_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
 
         // don't allow enqueueing after stopping the pool
         if(stop)
             throw std::runtime_error("enqueue on stopped ThreadPool");
 
-        tasks.emplace([task](){ (*task)(); });
+        m_tasks.emplace([task](){ (*task)(); });
     }
-    condition.notify_one();
+    m_cv.notify_one();
     return res;
 }
 
@@ -103,15 +134,19 @@ std::future< RETURN_TYPE > thread_pool::push(F&& f, Args&&... args)
 inline thread_pool::~thread_pool()
 {
     {
-        std::unique_lock<std::mutex> lock(queue_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         stop = true;
     }
 
-    condition.notify_all();
+    m_cv.notify_all();
 
     for(std::thread &worker: workers)
-        worker.join();
+    {
+        if( worker.joinable())
+            worker.join();
+    }
 }
 
 }
 #endif
+
