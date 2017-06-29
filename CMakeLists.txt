@@ -25,6 +25,7 @@ ELSE()
       -Werror=shadow
       -Wpointer-arith
       -Wcast-align
+      -Wunused-variable
   #    -Wstrict-prototypes
       -Wstrict-overflow=5
       -Wwrite-strings

@@ -122,45 +122,45 @@ class Periodic
 
     private:
 
-        bool                      __stop         = false;
-        std::chrono::microseconds __interval     = std::chrono::microseconds(1000000);
-        std::uint64_t             __count        = std::numeric_limits<std::uint64_t>::max();
+        bool                      m_stop         = false;
+        std::chrono::microseconds m_interval     = std::chrono::microseconds(1000000);
+        std::uint64_t             m_count        = std::numeric_limits<std::uint64_t>::max();
 
-        std::future<bool>         __timerfuture;
-        std::mutex                __data_mutex;
+        std::future<bool>         m_future;
+        std::mutex                m_mutex;
 
-        std::condition_variable   __condition;
+        std::condition_variable   m_condition;
 };
 
 
 
 inline Periodic::~Periodic()
 {
-    if( __timerfuture.valid() )
+    if( m_future.valid() )
     {
-        this->__stop = true;
-        this->__condition.notify_all();
-        __timerfuture.get();
+        this->m_stop = true;
+        this->m_condition.notify_all();
+        m_future.get();
     }
 }
 
 inline Periodic& Periodic::count( std::uint64_t count)
 {
-    std::lock_guard<std::mutex> L(__data_mutex);
-    __count = count;
+    std::lock_guard<std::mutex> L(m_mutex);
+    m_count = count;
     return *this;
 }
 
 inline void Periodic::stop()
 {
-    std::lock_guard<std::mutex> L(__data_mutex);
-    __stop = true;
+    std::lock_guard<std::mutex> L(m_mutex);
+    m_stop = true;
 }
 
 
 inline Periodic & Periodic::interval(const std::chrono::microseconds & interval )
 {
-    __interval = interval;
+    m_interval = interval;
     return *this;
 }
 
@@ -171,38 +171,38 @@ inline Periodic& Periodic::start(F&& f, Args&&... args)
 {
     using return_type = typename std::result_of< F(Args...) >::type;
 
-    if( __timerfuture.valid() )
+    if( m_future.valid() )
     {
-        this->__stop = true;
-        __timerfuture.get();
+        this->m_stop = true;
+        m_future.get();
     }
 
 
-    this->__stop     = false;
+    this->m_stop     = false;
 
     std::function< void() > fun = std::bind( std::forward<F>(f), std::forward<Args>(args)... );
 
     auto Main_Loop = [this, fun]()
     {
 
-        decltype(__interval) dt(0);
+        decltype(m_interval) dt(0);
 
-        while( __count)
+        while( m_count)
         {
-            decltype(__interval) wait_time = __interval - dt;
+            decltype(m_interval) wait_time = m_interval - dt;
 
-            std::unique_lock<std::mutex> Lock( this->__data_mutex );
+            std::unique_lock<std::mutex> Lock( this->m_mutex );
 
-            if( std::cv_status::no_timeout == this->__condition.wait_for( Lock, wait_time ) )
+            if( std::cv_status::no_timeout == this->m_condition.wait_for( Lock, wait_time ) )
             {
                 //std::cout << "Wait didn't time out, Attempting to exit" << std::endl;
             }
 
-            wait_time = this->__interval;
-            --__count;
+            wait_time = this->m_interval;
+            --m_count;
             Lock.unlock();
 
-            if( this->__stop ) // checking this condition after the condition variable has been triggered so we
+            if( this->m_stop ) // checking this condition after the condition variable has been triggered so we
             {                  // so we do not call the function if we have forced the periodic to stop during
                 break;         // the wait period
             }
@@ -215,7 +215,7 @@ inline Periodic& Periodic::start(F&& f, Args&&... args)
     };
 
 
-    __timerfuture = std::async( std::launch::async,
+    m_future = std::async( std::launch::async,
                               Main_Loop
                               );
 

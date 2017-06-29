@@ -26,6 +26,9 @@ class thread_pool
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
+
+        void create_workers(std::size_t num);
+
         /**
          * @brief clear_tasks
          *
@@ -83,6 +86,16 @@ class thread_pool
 inline void thread_pool::remove_thread()
 {
     --m_thread_count;
+}
+
+inline void thread_pool::create_workers(std::size_t num)
+{
+    for(int i=0;i<num;++i)
+    {
+        add_thread();
+    }
+    if( m_tasks.size())
+        m_cv.notify_all();
 }
 
 inline void thread_pool::add_thread()
@@ -180,7 +193,6 @@ inline thread_pool::~thread_pool()
 {
     {
         std::unique_lock<std::mutex> lock(m_mutex);
-       // stop = true;
         m_thread_count = 0;
     }
 
