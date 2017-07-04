@@ -1058,7 +1058,7 @@ public:
 
         client.m_fd = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
 
-        int res = ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
+        ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
 
         return client;
 
@@ -1116,6 +1116,8 @@ public:
         #else
             int bytes_available;
             auto ret = ioctl(m_fd,FIONREAD, &bytes_available);
+            if( ret == -1)
+                return 0;
         #endif
         return std::size_t(bytes_available);
     }
@@ -1137,6 +1139,12 @@ protected:
 
 #if defined __linux__
 
+/**
+ * @brief The domain_stream_socket class
+ *
+ * Unix domain stream socket.  A unix domain socket exists as a file on the
+ * filesystem. This can be opened as a file descriptor in Unix.
+ */
 class domain_stream_socket : public socket_base
 {
 public:
@@ -1156,11 +1164,15 @@ public:
      * @param port
      * @return
      *
-     * Bind the socket to a port so it can start listening for incoming
-     * tcp connections.
+     * Bind the socket to a path so it can start listening for incoming
+     * connections.
      */
     bool bind( const char * path )
     {
+
+        if( !(*this) )
+            create();
+
         struct sockaddr_un d_name;
         memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
         d_name.sun_family = AF_UNIX;
@@ -1183,6 +1195,13 @@ public:
     }
 
 
+    /**
+     * @brief unlink
+     * @param path
+     * @return
+     *
+     * Unlinks the path from the filesystem.
+     */
     bool unlink(const char * path)
     {
         return ::unlink( path ) == 0;

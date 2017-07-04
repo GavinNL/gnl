@@ -29,7 +29,6 @@ int client(void)
         return 0;
     }
     std::cout << "[Client] CONNECTED" << std::endl;
-    static char d = '0';
 
 
     char message[] = "XHello";
@@ -40,7 +39,7 @@ int client(void)
     int i=10;
     while( i-- )
     {
-        if( S.send(message, 7) == gnl::udp_socket::error)
+        if( S.send(message, size) == gnl::udp_socket::error)
         {
             std::cout << "[Client] Could not send data! Closing Socket" << std::endl;
             break;
@@ -63,11 +62,13 @@ int server()
 
     char buf[BUFLEN];            // Buffer to store data
 
-    S.create();
+    //S.create();
 
     S.unlink(SERVER);
     S.bind(SERVER);
     S.listen(5);
+
+
     std::cout << "[Server] Waiting for clients" << std::endl;
 
     auto client = S.accept();

@@ -26,7 +26,7 @@ int client(void)
         return 0;
     }
     std::cout << "[Client] CONNECTED to " << S.get_address().ip()  << std::endl;
-    static char d = '0';
+
 
 
     char message[] = "XHello";
@@ -37,7 +37,7 @@ int client(void)
     int i=10;
     while( i-- )
     {
-        if( S.send(message, 7) == gnl::udp_socket::error)
+        if( S.send(message, size) == gnl::udp_socket::error)
         {
             std::cout << "[Client] Could not send data! Closing Socket" << std::endl;
             break;
