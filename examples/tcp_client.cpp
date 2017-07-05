@@ -11,7 +11,7 @@ std::mutex m_Mutex;
  *
  * Thread called for each client connected.
  */
-void Listen(gnl::Socket & C)
+void Listen(gnl::tcp_socket & C)
 {
   // Note! Socket will close() if it's destructor is called.
   // so be careful when making copies of a socket.
@@ -28,7 +28,7 @@ void Listen(gnl::Socket & C)
   {
     // read the first byte indicating the
     // length of the next messsage
-    int bytes = C.recv(&message_size, 1, true);
+    std::size_t bytes = C.recv( (char*)&message_size, 1);
     if( bytes != 1) // client closed connetion
     {
       C.close();
@@ -36,7 +36,7 @@ void Listen(gnl::Socket & C)
     }
 
     // read the message
-    bytes = C.recv( message , message_size, true);
+    bytes = C.recv( (char*)message , message_size);
     if( bytes != message_size ) // client closed connetion
     {
       C.close();
@@ -53,9 +53,9 @@ void Listen(gnl::Socket & C)
 int main(int argc, char *argv[])
 {
 
-  gnl::Socket C;
+  gnl::tcp_socket C;
 
-  C.create( gnl::Socket::Protocol::TCP);
+  C.create();
   C.connect("127.0.0.1", 30000);
 
   std::thread ListenThread( Listen , std::ref( C ) );

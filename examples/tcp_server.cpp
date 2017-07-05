@@ -11,7 +11,7 @@ std::mutex m_Mutex;
  *
  * Thread called for each client connected.
  */
-void Client_Thread(gnl::Socket & C)
+void Client_Thread(gnl::tcp_socket & C)
 {
   static int i=0;
   i++;
@@ -30,7 +30,7 @@ void Client_Thread(gnl::Socket & C)
   {
     // read the first byte indicating the
     // length of the next messsage
-    int bytes = C.recv(&message_size, 1, true);
+    std::size_t bytes = C.recv( &message_size, 1);
     if( bytes != 1) // client closed connetion
     {
       C.close();
@@ -38,7 +38,7 @@ void Client_Thread(gnl::Socket & C)
     }
 
     // read the message
-    bytes = C.recv(message, message_size, true);
+    bytes = C.recv(message, message_size);
     if( bytes != message_size ) // client closed connetion
     {
       C.close();
@@ -49,7 +49,7 @@ void Client_Thread(gnl::Socket & C)
     std::cout << "Message Recieved (" << I << ") :" << message << std::endl;
 
     // Send the message back to the client.
-    C.send( buffer, message_size+1 );
+    C.send( (const char*) buffer, message_size+1 );
   }
 
   C.close();
@@ -58,20 +58,20 @@ void Client_Thread(gnl::Socket & C)
 
 int main(int argc, char *argv[])
 {
-  gnl::Socket S;
+  gnl::tcp_socket S;
 
-  S.create( gnl::Socket::Protocol::TCP ); // no arguemts = TCP by default
+  S.create() ; // no arguemts = TCP by default
 
   while( !S.bind(30000) )
   {
     std::cout << "Cannot bind. Retrying in 3 seconds" << std::endl;
     std::this_thread::sleep_for( std::chrono::seconds(3) );
   }
-  S.listen();
+  S.listen(10);
 
 
   // Each client needs a socket and a thread
-  using Client_Data_t = std::pair<gnl::Socket, std::thread>;
+  using Client_Data_t = std::pair<gnl::tcp_socket, std::thread>;
 
   std::vector<Client_Data_t> m_Clients(10);
 

@@ -76,7 +76,7 @@
 namespace gnl
 {
 
-
+#if 0
 enum class SocketState
 {
     Disconnected = 0,
@@ -677,7 +677,7 @@ inline int Socket::send(const void* data, int dataSize)
     return ::send(sock, static_cast<const char*>(data), dataSize, 0);
 }
 
-
+#endif
 
 
 
@@ -1009,6 +1009,7 @@ public:
     {
         m_fd      = other.m_fd;
         memcpy(&m_address, &other.m_address, sizeof(m_address));
+        return *this;
     }
 
     tcp_socket& operator=( tcp_socket && other)
@@ -1020,6 +1021,7 @@ public:
             memset(&other.m_address,0,sizeof(other.m_address));
             other.m_fd = SOCKET_ERROR;
         }
+        return *this;
     }
 
     /**
@@ -1128,7 +1130,7 @@ public:
      *
      * Sends data to this socket.
      */
-    std::size_t send( char const * data, size_t size)
+    std::size_t send( void const * data, size_t size)
     {
         auto ret = ::send(m_fd, static_cast<const char*>(data), (int)size, 0);
         return std::size_t(ret);
@@ -1144,7 +1146,7 @@ public:
      * Recieves data from the socket. This function blocks until the total
      * number of bytes have been recieved.
      */
-    std::size_t recv(char * data, size_t size)
+    std::size_t recv(void * data, size_t size)
     {
         bool wait_for_all = true; // default for now.
 
