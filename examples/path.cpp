@@ -26,16 +26,16 @@ int main()
     std::cout << ( gnl::path2::temp_dir() / "test" ) << std::endl;
 
     std::cout << gnl::path2::mkdir(  gnl::path2::temp_dir()/"test" ) << std::endl;
-    return 0;
+
     gnl::path2 paths[] = {
         gnl::path2(),
-        //gnl::path2("/home/gavin/"),
-        //gnl::path2("file.txt"),
-        //gnl::path2("/home/file.txt"),
-        //gnl::path2("home/file.txt"),
-        //gnl::path2("./home/file.txt"),
-        //gnl::path2("C:/home/file.txt"),
-        //gnl::path2("C:\\home\\file.txt")
+        gnl::path2("/home/gavin/"),
+        gnl::path2("file.txt"),
+        gnl::path2("/home/file.txt"),
+        gnl::path2("home/file.txt"),
+        gnl::path2("./home/file.txt"),
+        gnl::path2("C:/home/file.txt"),
+        gnl::path2("C:\\home\\file.txt")
     };
 
     for(auto & p : paths)
@@ -63,8 +63,6 @@ int main()
     y = y+2;
     std::cout << *y << std::endl;
 
-    std::cout << gnl::Path::Home() << std::endl;
-    std::cout << gnl::Path::Temp() << std::endl;
 
 
     gnl::path2 P("/home/gavin/tempfile.txt/");
