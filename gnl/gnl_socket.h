@@ -801,6 +801,25 @@ public:
     static const std::size_t error = std::size_t(-1);
     static const std::size_t none  = std::size_t(0);
 
+    socket_base() : m_fd(SOCKET_ERROR)
+    {
+    }
+
+    socket_base(socket_base const & other) : m_fd(other.m_fd)
+    {
+    }
+    socket_base(socket_base && other) : m_fd(other.m_fd)
+    {
+        other.m_fd=SOCKET_ERROR;
+    }
+    socket_base & operator=(socket_base && other)
+    {
+        if( this != &other)
+        {
+            m_fd = other.m_fd;
+            other.m_fd=SOCKET_ERROR;
+        }
+    }
 
     bool create(int __domain, int __type, int __protocol)
     {
@@ -967,6 +986,42 @@ public:
 class tcp_socket : public socket_base
 {
 public:
+
+    tcp_socket() : socket_base()
+    {
+    }
+
+    tcp_socket( tcp_socket && other)
+    {
+        m_fd       = other.m_fd;
+        m_address  = other.m_address;
+        other.m_fd = SOCKET_ERROR;
+        memset(&other.m_address,0,sizeof(other.m_address));
+    }
+
+    tcp_socket( const tcp_socket & other)
+    {
+        m_fd = other.m_fd;
+        memcpy(&m_address, &other.m_address, sizeof(m_address) );
+    }
+
+    tcp_socket& operator=( tcp_socket const & other)
+    {
+        m_fd      = other.m_fd;
+        memcpy(&m_address, &other.m_address, sizeof(m_address));
+    }
+
+    tcp_socket& operator=( tcp_socket && other)
+    {
+        if( this != &other)
+        {
+            m_fd      = other.m_fd;
+            m_address = other.m_address;
+            memset(&other.m_address,0,sizeof(other.m_address));
+            other.m_fd = SOCKET_ERROR;
+        }
+    }
+
     /**
      * @brief operator bool
      *
@@ -1056,7 +1111,7 @@ public:
 
         int length   = sizeof( m_address.native_address() );
 
-        client.m_fd = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
+        client.m_fd  = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
 
         ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
 

@@ -29,9 +29,9 @@ int client(void)
 
 
 
-    char message[] = "XHello";
-    auto size = strlen(message);
-    message[0] = 6;
+    char message[10] = "XHello";
+    auto size  = 6;
+    message[0] = 5;
 
     std::this_thread::sleep_for(std::chrono::seconds(1));
     int i=10;
@@ -76,11 +76,17 @@ int server()
         return 0;
     }
 
+
     while( client )
     {
+        buf[0] = 0;
         buf[1] = 0;
+
         // try to recieve some data. This is a blocking call
-        auto message_size = client.recv( buf, 1);
+        // Recieve the first byte, which indicates the total number
+        // of bytes in the next message
+        char msg_length=0;
+        auto message_size = client.recv( &msg_length, 1);
 
         if( message_size == 0)
         {
@@ -90,21 +96,24 @@ int server()
 
         if( message_size != gnl::tcp_socket::error)
         {
-            std::cout << "size: " << client.size() << std::endl;
-            auto r = client.recv( &buf[1], buf[0]);
+            // recieve the remaining bytes
+            auto r = client.recv( buf, msg_length);
 
             if( r == 0)
             {
                 std::cout << "[Server] Client closed the connection! \n";
                 break;
             }
+            buf[r] = 0; // make sure we terminate the string
         } else {
             client.close();
+            break;
         }
 
-        //print details of the client/peer and the data received
+        //print details of the client / peer and the data received
+
         std::cout << "[Server] Received Message from " << client.get_address().ip();
-        std::cout << "  Data: " << &buf[1] << std::endl;;
+        std::cout << "  Data: " << buf << std::endl;;
 
 
     }
