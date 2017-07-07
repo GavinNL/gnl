@@ -55,6 +55,7 @@
 
 namespace gnl
 {
+#if 0
     class Path;
 
     Path operator+(const Path & P1, const Path & P2);
@@ -573,7 +574,7 @@ namespace gnl
         return P;
     }
 
-
+#endif
 
 
     class path2
@@ -1066,6 +1067,7 @@ namespace gnl
             }
     };
 
+    using path = gnl::path2;
 
 }
 
@@ -1075,11 +1077,13 @@ inline std::ostream & operator<<(std::ostream &os, const gnl::path2 & p)
     return os;
 }
 
+#if 0
 inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
 {
     os <<  p.ToString();
     return os;
 }
+#endif
 
 //inline bool operator==( const gnl::path2 & lhs, const gnl::path2 & rhs )
 //{

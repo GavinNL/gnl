@@ -76,7 +76,7 @@
 namespace gnl
 {
 
-
+#if 0
 enum class SocketState
 {
     Disconnected = 0,
@@ -677,7 +677,7 @@ inline int Socket::send(const void* data, int dataSize)
     return ::send(sock, static_cast<const char*>(data), dataSize, 0);
 }
 
-
+#endif
 
 
 
@@ -703,7 +703,7 @@ inline int Socket::send(const void* data, int dataSize)
  */
 class socket_address
 {
-public:
+protected:
 
 #if defined _MSC_VER
     using address_t = struct ::sockaddr_in;
@@ -711,6 +711,7 @@ public:
     using address_t = struct sockaddr_in;
 #endif
 
+public:
     socket_address()
     {
         memset((char *) &m_address, 0, sizeof(m_address));
@@ -801,6 +802,26 @@ public:
     static const std::size_t error = std::size_t(-1);
     static const std::size_t none  = std::size_t(0);
 
+    socket_base() : m_fd(SOCKET_ERROR)
+    {
+    }
+
+    socket_base(socket_base const & other) : m_fd(other.m_fd)
+    {
+    }
+    socket_base(socket_base && other) : m_fd(other.m_fd)
+    {
+        other.m_fd=SOCKET_ERROR;
+    }
+    socket_base & operator=(socket_base && other)
+    {
+        if( this != &other)
+        {
+            m_fd = other.m_fd;
+            other.m_fd=SOCKET_ERROR;
+        }
+        return *this;
+    }
 
     bool create(int __domain, int __type, int __protocol)
     {
@@ -815,7 +836,7 @@ public:
         if ( (m_fd=socket(__domain, __type, __protocol)) == SOCKET_ERROR)
         {
             #ifdef _MSC_VER
-            printf("Create failed with error code : %d\n" , WSAGetLastError() );
+          //  printf("Create failed with error code : %d\n" , WSAGetLastError() );
             #else
             printf("Create failed with error code : %d : %s\n" , errno,  strerror(errno) );
             #endif
@@ -967,6 +988,44 @@ public:
 class tcp_socket : public socket_base
 {
 public:
+
+    tcp_socket() : socket_base()
+    {
+    }
+
+    tcp_socket( tcp_socket && other)
+    {
+        m_fd       = other.m_fd;
+        m_address  = other.m_address;
+        other.m_fd = SOCKET_ERROR;
+        memset(&other.m_address,0,sizeof(other.m_address));
+    }
+
+    tcp_socket( const tcp_socket & other)
+    {
+        m_fd = other.m_fd;
+        memcpy(&m_address, &other.m_address, sizeof(m_address) );
+    }
+
+    tcp_socket& operator=( tcp_socket const & other)
+    {
+        m_fd      = other.m_fd;
+        memcpy(&m_address, &other.m_address, sizeof(m_address));
+        return *this;
+    }
+
+    tcp_socket& operator=( tcp_socket && other)
+    {
+        if( this != &other)
+        {
+            m_fd      = other.m_fd;
+            m_address = other.m_address;
+            memset(&other.m_address,0,sizeof(other.m_address));
+            other.m_fd = SOCKET_ERROR;
+        }
+        return *this;
+    }
+
     /**
      * @brief operator bool
      *
@@ -1056,7 +1115,7 @@ public:
 
         int length   = sizeof( m_address.native_address() );
 
-        client.m_fd = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
+        client.m_fd  = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
 
         ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
 
@@ -1073,7 +1132,7 @@ public:
      *
      * Sends data to this socket.
      */
-    std::size_t send( char const * data, size_t size)
+    std::size_t send( void const * data, size_t size)
     {
         auto ret = ::send(m_fd, static_cast<const char*>(data), (int)size, 0);
         return std::size_t(ret);
@@ -1089,7 +1148,7 @@ public:
      * Recieves data from the socket. This function blocks until the total
      * number of bytes have been recieved.
      */
-    std::size_t recv(char * data, size_t size)
+    std::size_t recv(void * data, size_t size)
     {
         bool wait_for_all = true; // default for now.
 
