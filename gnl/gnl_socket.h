@@ -703,7 +703,7 @@ inline int Socket::send(const void* data, int dataSize)
  */
 class socket_address
 {
-public:
+protected:
 
 #if defined _MSC_VER
     using address_t = struct ::sockaddr_in;
@@ -711,6 +711,7 @@ public:
     using address_t = struct sockaddr_in;
 #endif
 
+public:
     socket_address()
     {
         memset((char *) &m_address, 0, sizeof(m_address));
@@ -819,6 +820,7 @@ public:
             m_fd = other.m_fd;
             other.m_fd=SOCKET_ERROR;
         }
+        return *this;
     }
 
     bool create(int __domain, int __type, int __protocol)
@@ -834,7 +836,7 @@ public:
         if ( (m_fd=socket(__domain, __type, __protocol)) == SOCKET_ERROR)
         {
             #ifdef _MSC_VER
-            printf("Create failed with error code : %d\n" , WSAGetLastError() );
+          //  printf("Create failed with error code : %d\n" , WSAGetLastError() );
             #else
             printf("Create failed with error code : %d : %s\n" , errno,  strerror(errno) );
             #endif
