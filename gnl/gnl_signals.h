@@ -34,7 +34,10 @@
 #include <tuple>
 #include <future>
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
 
 class base_slot

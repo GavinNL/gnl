@@ -30,7 +30,7 @@ TEST_CASE( "Testing Parsing of Unquoted Keys" )
     REQUIRE( fabs(L2(1.5) -  1.5) < 0.0001 );
     REQUIRE( fabs(L2(2.5) -  2.5) < 0.0001 );
 
-    REQUIRE( fabs(L2.at(5.0) -  5.0) < 0.0001 );W
+    REQUIRE( fabs(L2.at(5.0) -  5.0) < 0.0001 );
 
 
 }

@@ -2,7 +2,6 @@
 #include <gnl/gnl_periodic.h>
 
 using namespace std;
-using namespace gnl;
 
 void process(int x )
 {

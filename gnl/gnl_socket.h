@@ -73,7 +73,10 @@
     #define INVALID_SOCKET -1
 #endif
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
 
 #if 0
