@@ -22,7 +22,7 @@ int main(int argc, char ** argv)
     y[0] = 0.0;
     y[1] = V0;
 
-    auto U = []( Solver::vec_type       & dU,  // output change vector
+    auto u = []( Solver::vec_type       & dU,  // output change vector
                  Solver::time_type         t,  // time value
                  Solver::vec_type const &  U)  // input vector
     {
@@ -48,7 +48,7 @@ int main(int argc, char ** argv)
 
     while(t < TOTAL_TIME)
     {
-        R.update(y, t, DT, U);
+        R.update(y, t, DT, u);
         t += DT;
     }
     std::cout << "RK4: " <<  FFORMAT(12,6,y[0]) << "   Actual: " << FFORMAT(12,6,Y(t)) << "       error: " << FFORMAT(16,18, y[0]-Y(t) ) << std::endl;
