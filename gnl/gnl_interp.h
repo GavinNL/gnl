@@ -30,8 +30,13 @@
 
 #include <cassert>
 #include <vector>
+#include <cmath>
+#include <stdexcept>
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
 
 template<typename T, typename FloatingType=float>
@@ -157,10 +162,71 @@ struct linear_spline
     _T           const * y;
     FloatingType const * t;
     std::size_t       size;
-    //std::vector< std::pair<FloatingType,_T> >   nodes;
-
 };
 
+
+template<typename _T, typename FloatingType=float>
+/**
+ * @brief The linear_spline2 struct
+ *
+ * Newer implementation testing this out.
+ */
+struct linear_spline2
+{
+    linear_spline2(std::vector<FloatingType> const & time, std::vector<_T> const & x) : linear_spline2( time.data(), x.data(), std::min(time.size(),x.size()))
+    {
+    }
+
+    linear_spline2( FloatingType const * time, _T const * x, std::size_t length) :
+        t0(time), t1(time+1), y0(x),y1(x+1), last(t0+length)
+    {
+    }
+
+    _T  operator()(FloatingType time)
+    {
+        return get(time);
+    }
+
+    _T at(FloatingType time)
+    {
+        if( time>*last)
+            throw std::runtime_error("Parameter out of range");
+
+        return get(time);
+    }
+
+    _T get(FloatingType time)
+    {
+        auto old = t0;
+        while(time > *t1)
+        {
+            ++t0;++t1;
+            ++y0;++y1;
+        }
+        while(time < *t0)
+        {
+            --t0;--t1;
+            --y0;--y1;
+        }
+
+        if(!(old-t0)) invT = static_cast<FloatingType>(1.0) / ( *t1 - *t0 );
+
+        time = (time-*t0) * invT;
+
+        return std::fma(time, *y1, fma(-time, *y0, *y0));
+
+    }
+
+    FloatingType invT = 1.0f;
+    _T           const * y0;
+    FloatingType const * t0;
+
+    _T           const * y1;
+    FloatingType const * t1;
+
+    _T const * last;
+
+};
 
 template<typename _T>
 /**

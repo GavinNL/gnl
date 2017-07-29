@@ -53,531 +53,12 @@
 #endif
 
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
-#if 0
-    class Path;
-
-    Path operator+(const Path & P1, const Path & P2);
-
-    class Path
-    {
-        public:
-            enum Style
-            {
-                UNIX_STYLE,
-                WINDOWS_STYLE
-            };
-
-            /**
-             * @brief Path
-             * Construct a blank path
-             */
-            Path() : Path(std::string("/")) { }
-
-            /**
-             * @brief Path
-             * @param path
-             * Construct a path from a raw string
-             */
-            Path(const char * path) : Path( std::string(path) )
-            {
-
-            }
-
-            /**
-             * @brief Path
-             * @param path - path name as a string.
-             *
-             * Construct a path from a std::string
-             */
-            Path(const std::string & path)
-            {
-
-                if(path=="")
-                {
-                  isfolder = false;
-                  relative = true;
-                  return;
-                }
-
-                dirs = Tokenize(path, "/\\");
-
-
-                if( path[ path.size()-1] == '/' || path[ path.size()-1] == '\\')
-                {
-                    isfolder = true;
-                } else {
-                    isfolder = false;
-                    filename = dirs[ dirs.size()-1];
-                    dirs.pop_back();
-                }
-
-
-                if(path[0] == '/')
-                {
-                    relative = false;
-                }
-                if( path[0] != '/')
-                {
-                    relative = true;
-                }
-
-                if( std::isalpha(path[0]) && path[1] == ':' && (path[2] == '/' || path[2] == '\\') )
-                {
-                    device   = path[0];
-                    relative = false;
-                    dirs.erase( dirs.begin(), dirs.begin()+1);
-                }
-
-            }
-
-            Path(const Path & P) : isfolder(P.isfolder), relative(P.relative), device(P.device), filename(P.filename), dirs(P.dirs)
-            {
-
-            }
-
-            Path & operator=(const Path & P)
-            {
-              if( this == &P ) return *this;
-
-              isfolder = P.isfolder;
-              relative = P.relative;
-              device   = P.device;
-              filename = P.filename;
-              dirs     = P.dirs;
-
-              return *this;
-
-            }
-
-            /**
-             * @brief ToString
-             * @param s - the string style for teh path (forward slashes to separate directories on UNIX)
-             * @return A string representation of the path
-             *
-             */
-            std::string ToString( Style s = UNIX_STYLE ) const
-            {
-                std::string out;
-
-                if(IsAbsolute() )
-                {
-                    if( device.length() )
-                    {
-                        out += device + ":" + (s==WINDOWS_STYLE? '\\' : '/');
-                    }
-                    else
-                    {
-                        out += (s==Style::WINDOWS_STYLE? '\\' : '/');
-                    }
-                }
-
-
-                for(auto & d : dirs)
-                {
-                    out += d +  (s==Style::WINDOWS_STYLE? '\\' : '/');
-                }
-                return out + filename;
-            }
-
-
-            /**
-             * @brief operator std::string
-             * Casting operator to string.
-             */
-            inline operator std::string()  const
-            {
-                return ToString();
-            }
-
-
-            /**
-             * @brief ParentPath
-             * @return The parent folder of the current directory. If the path is a file, it will give the
-             * parent directry of the base path
-             *
-             */
-            Path ParentPath() const
-            {
-                Path base = *this;
-
-                base.filename="";
-
-                base.dirs.pop_back();
-
-                return base;
-
-            }
-
-            /**
-             * @brief BasePath
-             * @return The base path of the file. If the path is a folder, it will return the path to the same folder
-             */
-            Path BasePath() const
-            {
-                Path base = *this;
-
-                if( base.IsFile() )
-                {
-                    base.isfolder = true;
-                    base.filename = "";
-                }
-
-                return base;
-            }
-
-
-
-
-            void Report() const
-            {
-                std::cout << "-----------------------------------" << std::endl;
-                std::cout << "Is Folder: "   << isfolder << std::endl;
-                std::cout << "Is Relative: " << relative << std::endl;
-                std::cout << "Directories: " <<  std::endl;
-
-                for(auto d : dirs)
-                {
-                    std::cout <<  "    " << d << std::endl;
-                }
-
-                std::cout << "filename: " << filename << std::endl;
-
-                std::cout << ToString() << std::endl;
-
-            }
-
-
-            /**
-             * @brief IsFolder
-             * @return True if the path represents a folder.
-             */
-            bool IsFolder()   const { return isfolder;  }
-
-            /**
-             * @brief IsFile
-             * @return True if the path represents a file
-             */
-            bool IsFile()     const { return !isfolder; }
-
-            /**
-             * @brief IsAbsolute
-             * @return true if the path is an abolute path
-             */
-            bool IsAbsolute() const { return !relative; }
-
-            /**
-             * @brief IsRelative
-             * @return True if teh path is a relative path
-             */
-            bool IsRelative() const { return relative;  }
-
-            /**
-             * @brief FileName
-             * @return Returns the filename as a string path.
-             */
-            std::string FileName() const { return filename; }
-
-            /**
-             * @brief Device
-             * @return Returns the device of the path (windows only), the device is the drive letter, eg C:
-             */
-            std::string Device()   const { return device;   }
-
-            /**
-             * @brief FileBaseName
-             * @return Returns the file's basename, the basepath is the name of the file, without the extension
-             */
-            std::string FileBaseName() const
-            {
-                auto end = filename.find_last_of('.');
-
-                return filename.substr( 0, end);
-            }
-
-            /**
-             * @brief FileExtension
-             * @return The file's extention. The extension is the characters after the last . in the file name
-             */
-            std::string FileExtension() const
-            {
-               // std::cout << filename << std::endl;
-
-                auto end = filename.find_last_of('.');
-
-                return filename.substr( end+1, filename.size()-end);
-            }
-
-
-            /**
-             * @brief operator +=
-             * @param P - relative path to add to the current path
-             * @return
-             */
-            Path & operator+=(const Path & P)
-            {
-                if( !IsFile() )
-                {
-                    if( !P.IsAbsolute() )
-                    {
-                        for(auto & d : P.dirs )
-                        {
-                            if( d == "..")
-                            {
-                                dirs.pop_back();
-                            } else {
-                                dirs.push_back( d );
-                            }
-                        }
-                        filename = P.filename;
-                        isfolder = P.isfolder;
-                    } else {
-                        throw std::runtime_error("Second Path operand must not be an absolute path");
-                    }
-                }
-                else {
-                    throw std::runtime_error("First Path operand must not be a file");
-                }
-
-                return *this;
-            }
-
-            bool operator == ( const Path & P)
-            {
-                return
-                        isfolder == P.isfolder &&
-                        relative == P.relative &&
-                        device   == P.device &&
-                        std::equal( dirs.begin(), dirs.end(), P.dirs.begin() );
-            }
-            bool operator != ( const Path & P)
-            {
-                return !(*this == P);
-            }
-
-            #define OPERATOR(op)                      \
-            bool operator op (const Path & P)         \
-            {                                         \
-                return ToString() op P.ToString();    \
-            }
-
-            OPERATOR(<)
-            OPERATOR(>)
-            OPERATOR(<=)
-            OPERATOR(>=)
-
-            #undef OPERATOR
-            /**
-             * @brief GetDirectoryList
-             * @param P
-             * @return
-             *
-             * Returns a vector of files in a path
-             */
-            static std::vector<Path> GetFileList( const gnl::Path & dir_path)
-            {
-                std::vector<Path> files;
-
-#ifndef _MSC_VER
-
-                DIR           *d;
-                struct dirent *dir;
-
-                d   = opendir(  dir_path.BasePath().ToString(UNIX_STYLE).c_str() );
-
-                if( d )
-                {
-                    while ( (dir = readdir(d)) != NULL)
-                    {
-                        //printf("%s\n", dir->d_name);
-
-                       // std::cout << std::string(dir->d_name) << std::endl;
-
-                        if (dir->d_type != DT_DIR)
-                        {
-                            //std::cout << "(File)";
-                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name) ) );
-                        } else {
-                            files.push_back( dir_path.BasePath() + Path(std::string(dir->d_name)+std::string("/") ) );
-                        }
-
-                        //std::cout << "File found: " << dir->d_name << "    Flags: " << dir->d_ino       << std::endl;
-                    }
-
-                    closedir(d);
-                }
-
-              return files;
-#else
-                using namespace std;
-
-               // struct dirent *dir;
-                string search_path = dir_path.BasePath().ToString(UNIX_STYLE) + "*.*";
-
-                //std::cout << "Searching: " << search_path << std::endl;
-
-                WIN32_FIND_DATA fd;
-                HANDLE hFind = ::FindFirstFile( search_path.c_str(), &fd);
-
-                if(hFind != INVALID_HANDLE_VALUE) {
-                    do {
-                        // read all (real) files in current folder
-                        // , delete '!' read other 2 default folder . and ..
-//                        std::cout << std::string(fd.cFileName) << std::endl;
-                        if( std::string(fd.cFileName) != std::string("..") && std::string(fd.cFileName) != std::string("."))
-                        {
-                            if(! (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) )
-                            {
-                                    files.push_back( dir_path.BasePath() + Path(fd.cFileName) );
-                            } else {
-                                files.push_back( dir_path.BasePath() + Path(std::string(fd.cFileName)+std::string("/") ) );
-                            }
-                        }
-                        //std::cout << fd.cFileName << std::endl;
-                        //names.push_back(fd.cFileName);
-                    }while(::FindNextFile(hFind, &fd));
-                    ::FindClose(hFind);
-                }
-                return files;
-
-#endif
-            }
-
-
-         static std::string get_env_var(const std::string & var_name)
-         {
-#ifdef _WIN32
-             char * buf = nullptr;
-             size_t sz = 0;
-             if (_dupenv_s(&buf, &sz, var_name.c_str()) == 0 && buf != nullptr)
-             {
-                 std::string s(buf);
-                 free(buf);
-                 return s;
-             }
-#else
-             auto * p = std::getenv(var_name.c_str());
-             return std::string(p);
-#endif
-             return std::string();
-
-         }
-
-         /**
-         * @brief Home
-         * @return  The home path of the current user
-         */
-        static Path Home()
-        {
-#ifdef _WIN32
-            auto p = get_env_var("USERPROFILE");
-#else
-            auto p = get_env_var("HOME");
-#endif
-            return Path( p + "/");
-        }
-
-        /**
-         * @brief Temp
-         * @return A path used for temporary files.
-         */
-        static Path Temp()
-        {
-#ifdef _WIN32
-            auto p = get_env_var("TMP");
-            return Path(p + "/");
-#else
-            return Path( "/tmp/");
-#endif
-        }
-
-        static std::FILE* fopen(const Path & P, const std::string & open_flags)
-        {
-          mkdir( P.BasePath() );
-#ifdef _WIN32
-          FILE * F;
-          ::fopen_s(&F, P.ToString().c_str(), open_flags.c_str() );
-          return F;
-#else
-          return std::fopen(P.ToString().c_str(), open_flags.c_str() );
-#endif
-        }
-
-        static inline bool mkdir(const Path & P, std::uint32_t chmod=0766)
-        {
-          if( P.IsRelative() )
-            throw std::runtime_error("Path must be absolute, not relative");
-
-          gnl::Path p("/");
-
-          bool success = false;
-
-          for( auto & d : P.dirs)
-          {
-            p = p.ToString() + std::string("/") + d;
-          #if defined(_WIN32)
-          #else
-
-                success = (::mkdir(p.ToString().c_str(), chmod) == 0);
-                if( success )
-                {
-               //   std::cout << "Directory Created: " << p.ToString() << std::endl;
-                } else {
-               //   std::cout << "Error Creating Directory: " << p.ToString() << std::endl;
-                }
-          #endif
-          }
-
-          return success;
-        }
-
-
-        private:
-            bool                       isfolder;   // does this point to a folder or a file?
-            bool                       relative;
-
-            std::string                device;
-            std::string                filename;
-            std::vector<std::string>   dirs;
-
-
-            std::vector<std::string> Tokenize(const std::string& str,
-
-                                  const std::string& delimiters = " ")
-            {
-                std::vector<std::string> tokens;
-
-                auto lastPos = str.find_first_not_of(delimiters, 0);
-
-                auto pos     = str.find_first_of(delimiters, lastPos);
-
-                while (std::string::npos != pos || std::string::npos != lastPos)
-                {
-                    // Found a token, add it to the vector.
-                    tokens.push_back(str.substr(lastPos, pos - lastPos));
-                    // Skip delimiters.  Note the "not_of"
-                    lastPos = str.find_first_not_of(delimiters, pos);
-                    // Find next "non-delimiter"
-                    pos = str.find_first_of(delimiters, lastPos);
-                }
-
-                return tokens;
-            }
-    };
-
-
-    inline Path operator+(const Path & P1, const Path & P2)
-    {
-        Path P = P1;
-        P += P2;
-        return P;
-    }
-
-#endif
-
-
-    class path2
+    class path
     {
         public:
 
@@ -593,24 +74,24 @@ namespace gnl
 
             static const char separator = '/';
 
-            path2()
+            path()
             {
 
             }
 
 #if defined _WIN32
-            path2(const std::string & p) : path2( string_type(p.begin(), p.end()))
+            path(const std::string & p) : path( string_type(p.begin(), p.end()))
             {
 
             }
-            path2(const char * s) : path2( std::string(s) )
+            path(const char * s) : path( std::string(s) )
             {
 
             }
 #endif
 
 
-            explicit  path2(const string_type & p)
+            explicit  path(const string_type & p)
             {
                 string_type::size_type s = 0;
 
@@ -633,20 +114,20 @@ namespace gnl
                 //m_path = p;
             }
 
-            path2(const value_type * x) : path2( string_type(x) )
+            path(const value_type * x) : path( string_type(x) )
             {
 
             }
 
-            path2(const path2 & other) : m_path_elements(other.m_path_elements)
+            path(const path & other) : m_path_elements(other.m_path_elements)
             {
             }
 
-            path2(path2 && other) : m_path_elements( std::move(other.m_path_elements) )
+            path(path && other) : m_path_elements( std::move(other.m_path_elements) )
             {
             }
 
-            path2 & operator=(const path2 & other)
+            path & operator=(const path & other)
             {
                 if(&other != this)
                 {
@@ -655,7 +136,7 @@ namespace gnl
                 return *this;
             }
 
-            path2 & operator=( path2 && other)
+            path & operator=( path && other)
             {
                 if(&other != this)
                 {
@@ -664,23 +145,23 @@ namespace gnl
                 return *this;
             }
 
-            ~path2()
+            ~path()
             {
 
             }
 
-            path2 filename() const
+            path filename() const
             {
                 if( is_file() )
                 {
-                    return path2(m_path_elements.back());
+                    return path(m_path_elements.back());
                 }
 
-                return path2(strlit("."));
+                return path(strlit("."));
 
             }
 
-            path2 root_name() const
+            path root_name() const
             {
                 if( m_path_elements.size()
                         &&
@@ -688,36 +169,36 @@ namespace gnl
                     (( m_path_elements[0].size()   && m_path_elements[0][0]=='/' ) ||
                     ( m_path_elements[0].size()>1 && m_path_elements[0][1]==':' )))
                 {
-                    return path2( m_path_elements[0].substr(0, m_path_elements[0].size()-1) );
+                    return path( m_path_elements[0].substr(0, m_path_elements[0].size()-1) );
                 }
                 else
                 {
-                    return path2("");
+                    return path("");
                 }
 
 
-                return path2(std::string(""));
+                return path(std::string(""));
             }
 
-            path2 root_directory() const
+            path root_directory() const
             {
                 return root_path();
             }
-            path2 root_path() const // tested
+            path root_path() const // tested
             {
                 if( is_relative() )
                 {
-                    return path2("");
+                    return path("");
                 } else {
-                    return path2(m_path_elements.front());
+                    return path(m_path_elements.front());
                 }
             }
 
-            path2 relative_path() const // tested
+            path relative_path() const // tested
             {
                 if( is_absolute() )
                 {
-                    path2 p;
+                    path p;
 
                     for(auto e = m_path_elements.begin()+1;
                         e != m_path_elements.end();++e)
@@ -729,40 +210,40 @@ namespace gnl
 
             }
 
-            path2 parent_path() const
+            path parent_path() const
             {
                 if( m_path_elements.size() )
                 {
-                    path2 ret;
+                    path ret;
                     ret.m_path_elements = m_path_elements;
                     ret.m_path_elements.pop_back();
                     return ret;
                 }
-                return path2();
+                return path();
             }
 
-            path2 stem() const // tested
+            path stem() const // tested
             {
                 if( size() > 0)
                 {
                     auto p = m_path_elements.back().find_last_of('.');
-                    return path2(m_path_elements.back().substr(0, p));
+                    return path(m_path_elements.back().substr(0, p));
                 }
-                return path2("");
+                return path("");
             }
 
-            path2 extension() const // tested
+            path extension() const // tested
             {
                 if( is_file() )
                 {
 
                     auto p = m_path_elements.back().find_last_of('.');
                     if( p == string_type::npos)
-                        return path2("");
-                    return path2(m_path_elements.back().substr(p));
+                        return path("");
+                    return path(m_path_elements.back().substr(p));
                 }
 
-                return path2("");
+                return path("");
             }
 
             size_t size() const
@@ -840,7 +321,7 @@ namespace gnl
                 return to_string()==other;
             }
 
-            void append(const path2 & other)
+            void append(const path & other)
             {
                 for(auto & e: other.m_path_elements)
                 {
@@ -851,29 +332,46 @@ namespace gnl
                 }
             }
 
-            void concat(const path2 & other)
+            void concat(const path & other)
             {
                 auto S = to_string() + other.to_string();
-                *this = path2(S);
+                *this = path(S);
             }
 
-//            path2 operator / (const std::string & other) const
-//            {
-//                path2 p(*this);
-//                p.append( path2(other) );
-//                return p;
-//            }
-
-            path2 operator / (const path2 & other) const
+            path& operator /= (const string_type & other)
             {
-                path2 p(*this);
+                append( path(other) );
+                return *this;
+            }
+
+            path& operator /= (const path & other)
+            {
+                append( other );
+                return *this;
+            }
+
+            path operator / (const path & other) const
+            {
+                path p(*this);
                 p.append(other);
                 return p;
             }
 
-            path2 operator + (const path2 & other) const
+            path& operator += (const string_type & other)
             {
-                path2 p(*this);
+                concat( path(other) );
+                return *this;
+            }
+
+            path& operator += (const path& other)
+            {
+                concat( other );
+                return *this;
+            }
+
+            path operator+(const path & other) const
+            {
+                path p(*this);
                 p.concat(other);
                 return p;
             }
@@ -883,7 +381,7 @@ namespace gnl
                 m_path_elements.clear();
             }
 
-            path2 & remove_filename()
+            path & remove_filename()
             {
                 if( is_file() )
                 {
@@ -892,14 +390,14 @@ namespace gnl
                 return *this;
             }
 
-            path2 & replace_filename(const path2 & filename)
+            path & replace_filename(const path & filename)
             {
                 remove_filename();
                 append(filename);
                 return *this;
             }
 
-            path2 & replace_extension(const path2 & ext)
+            path & replace_extension(const path & ext)
             {
                 if( is_file() )
                 {
@@ -911,19 +409,19 @@ namespace gnl
 
                     remove_filename();
 
-                    append( gnl::path2(S) );
+                    append( gnl::path(S) );
                 }
                 return *this;
             }
 
 
-            void swap( path2 & other)
+            void swap( path & other)
             {
                 std::swap(m_path_elements, other.m_path_elements);
             }
 
 
-            static std::FILE* fopen(const path2 & P, const char * open_flags, bool create_dirs = false)
+            static std::FILE* fopen(const path & P, const char * open_flags, bool create_dirs = false)
             {
 
                if( create_dirs )
@@ -946,7 +444,7 @@ namespace gnl
 
 
 
-            static inline bool mkdir(const path2 & P, std::uint32_t chmod=0766)
+            static inline bool mkdir(const path & P, std::uint32_t chmod=0766)
             {
                 if( P.empty() ) return false;
 
@@ -971,27 +469,27 @@ namespace gnl
             * @brief Home
             * @return  The home path of the current user
             */
-           static path2 home_dir()
+           static path home_dir()
            {
    #ifdef _WIN32
                auto p = get_env_var("USERPROFILE");
    #else
                auto p = get_env_var("HOME");
    #endif
-               return path2( p + strlit("/") );
+               return path( p + strlit("/") );
            }
 
            /**
             * @brief Temp
             * @return A path used for temporary files.
             */
-           static path2 temp_dir()
+           static path temp_dir()
            {
    #ifdef _WIN32
                auto p = get_env_var("TMP");
-               return path2(p + strlit("/"));
+               return path(p + strlit("/"));
    #else
-               return path2( "/tmp/");
+               return path( "/tmp/");
    #endif
            }
 
@@ -1067,11 +565,9 @@ namespace gnl
             }
     };
 
-    using path = gnl::path2;
-
 }
 
-inline std::ostream & operator<<(std::ostream &os, const gnl::path2 & p)
+inline std::ostream & operator<<(std::ostream &os, const gnl::path & p)
 {
     os <<  p.string();
     return os;
@@ -1085,21 +581,21 @@ inline std::ostream & operator<<(std::ostream &os, const gnl::Path & p)
 }
 #endif
 
-//inline bool operator==( const gnl::path2 & lhs, const gnl::path2 & rhs )
+//inline bool operator==( const gnl::path & lhs, const gnl::path & rhs )
 //{
 //}
 
-//inline bool operator!=( const gnl::path2& lhs, const gnl::path2 & rhs );
+//inline bool operator!=( const gnl::path& lhs, const gnl::path & rhs );
 
-//inline bool operator<( const gnl::path2& lhs, const gnl::path2& rhs )
+//inline bool operator<( const gnl::path& lhs, const gnl::path& rhs )
 //{
 //}
 
-//inline bool operator<=( const gnl::path2& lhs, const gnl::path2& rhs );
+//inline bool operator<=( const gnl::path& lhs, const gnl::path& rhs );
 
-//inline bool operator>( const gnl::path2& lhs, const gnl::path2& rhs );
+//inline bool operator>( const gnl::path& lhs, const gnl::path& rhs );
 
-//inline bool operator>=( const gnl::path2& lhs, const gnl::path2& rhs );
+//inline bool operator>=( const gnl::path& lhs, const gnl::path& rhs );
 
 
 #endif

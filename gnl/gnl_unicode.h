@@ -5,7 +5,10 @@
 #include <string>
 #include <locale>
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
     namespace Unicode
     {

@@ -12,7 +12,10 @@ struct vec3
 };
 
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
 
 template<>

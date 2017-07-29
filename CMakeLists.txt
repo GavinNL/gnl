@@ -7,7 +7,7 @@ FILE(GLOB_RECURSE HeaderFiles    "./*.h"
                                  "./*.md"
                                  ".gitignore")
 
-add_custom_target(headers    SOURCES ${HeaderFiles})
+add_custom_target(__SOURCE_FILES    SOURCES ${HeaderFiles})
 
 include_directories ("${PROJECT_SOURCE_DIR}")
 

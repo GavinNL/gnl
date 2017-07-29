@@ -35,7 +35,10 @@
 #include <type_traits>
 #include <iostream>
 
-namespace gnl
+#ifndef GNL_NAMESPACE
+    #define GNL_NAMESPACE gnl
+#endif
+namespace GNL_NAMESPACE
 {
 
 namespace detail
