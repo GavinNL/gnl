@@ -431,7 +431,7 @@ public:
         memset(&other.m_address,0,sizeof(other.m_address));
     }
 
-    tcp_socket( const tcp_socket & other)
+    tcp_socket( const tcp_socket & other) : socket_base( other)
     {
         m_fd = other.m_fd;
         memcpy(&m_address, &other.m_address, sizeof(m_address) );
@@ -523,7 +523,7 @@ public:
      */
     bool listen( std::size_t max_connections)
     {
-        auto code = ::listen( m_fd, (int)max_connections);
+        decltype(error) code = ::listen( m_fd, (int)max_connections);
 
         if( code == error)
         {
@@ -741,7 +741,7 @@ public:
      */
     bool listen( std::size_t max_connections = 10)
     {
-        auto code = ::listen( m_fd, (int)max_connections);
+        decltype(error) code = ::listen( m_fd, (int)max_connections);
 
         if( code == error)
         {

@@ -6,8 +6,7 @@
 
 int process(int * x)
 {
-    *x++;
-    std::cout << *x << std::endl;
+    std::cout << *x++ << std::endl;
     return 0;
 }
 

@@ -144,7 +144,7 @@ TEST_CASE( "Implicit casting to base types" )
     std::string s = json["string"];
 
     REQUIRE( s == std::string("hello") );
-    REQUIRE( x == 3.0f );
+    REQUIRE( fabs(x-3.0f) <= 1e-6 );
     REQUIRE( y == 3 );
 
 }

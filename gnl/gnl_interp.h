@@ -151,7 +151,7 @@ struct linear_spline
 
     void __UpdateInterpolant(int j)
     {
-        assert( j < size - 1 );
+        assert( j < (int)size - 1 );
         i = j;
         invT   = 1.0f / ( t[i+1] - t[i] );
     }
@@ -159,8 +159,8 @@ struct linear_spline
     FloatingType invT = 1.0f;
     int          i    = 0;
 
-    _T           const * y;
     FloatingType const * t;
+    _T           const * y;
     std::size_t       size;
 };
 
@@ -218,11 +218,11 @@ struct linear_spline2
     }
 
     FloatingType invT = 1.0f;
-    _T           const * y0;
-    FloatingType const * t0;
 
-    _T           const * y1;
+    FloatingType const * t0;
     FloatingType const * t1;
+    _T           const * y0;
+    _T           const * y1;
 
     _T const * last;
 

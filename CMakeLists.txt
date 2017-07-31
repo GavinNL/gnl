@@ -21,25 +21,21 @@ ELSE()
   ADD_DEFINITIONS(
       -std=c++11
       -Wfloat-equal
-  #    -Wundef
       -Werror=shadow
       -Wpointer-arith
       -Wcast-align
       -Wunused-variable
-  #    -Wstrict-prototypes
       -Wstrict-overflow=5
       -Wwrite-strings
-  #    -Waggregate-return
       -Wcast-qual
       -Werror=switch-default
-  #    -Wswitch-enum
-  #    -Wconversion
       -Wunreachable-code
-     # -Werror
-      #-Werror=unused-function
+      -Werror
+      -Wall
+      -Wextra
+      -Wno-unused-parameter
       -Werror=return-type
       -Werror=cast-qual
-
       -pedantic-errors
       -Wfatal-errors
   )
