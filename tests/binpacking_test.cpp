@@ -3,7 +3,6 @@
 
 int main(int argc, char ** argv)
 {
-
     gnl::Bin<int> B(100,100);
 
     {
@@ -27,5 +26,5 @@ int main(int argc, char ** argv)
                       << r.h << std::endl;
         }
     }
-
+    return 0;
 }

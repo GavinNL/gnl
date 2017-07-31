@@ -25,8 +25,7 @@
  * For more information, please refer to <http://unlicense.org>
  */
 
-// In progress, no testing done yet
-// Do not use yet.
+
 
 #ifndef GNL_VARIANT_H
 #define GNL_VARIANT_H

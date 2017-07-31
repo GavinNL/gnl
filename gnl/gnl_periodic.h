@@ -172,7 +172,7 @@ inline Periodic & Periodic::interval(const std::chrono::microseconds & interval 
 template<class F, class... Args>
 inline Periodic& Periodic::start(F&& f, Args&&... args)
 {
-    using return_type = typename std::result_of< F(Args...) >::type;
+    //using return_type = typename std::result_of< F(Args...) >::type;
 
     if( m_future.valid() )
     {

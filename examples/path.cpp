@@ -13,9 +13,8 @@ int x[] ={1,2,3,4,5};
 
 int main()
 {
-
     std::cout << "Home Directory: " << gnl::path::home_dir() << std::endl;
-    std::cout << "Temp Directory: " << gnl::path::temp_dir()  << std::endl;
+    std::cout << "Temp Directory: " << gnl::path::temp_dir() << std::endl;
 
     auto temp_dir = gnl::path::temp_dir() / "test_dir_123456789/";
 
