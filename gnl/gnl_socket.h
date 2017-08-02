@@ -429,7 +429,7 @@ public:
     {
         m_fd       = other.m_fd;
         m_address  = other.m_address;
-        other.m_fd = socket_error;
+        other.m_fd = invalid_socket;
         memset(&other.m_address,0,sizeof(other.m_address));
     }
 
@@ -453,7 +453,7 @@ public:
             m_fd      = other.m_fd;
             m_address = other.m_address;
             memset(&other.m_address,0,sizeof(other.m_address));
-            other.m_fd = socket_error;
+            other.m_fd = invalid_socket;
         }
         return *this;
     }
