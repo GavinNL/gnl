@@ -212,7 +212,7 @@ public:
                 return get();
             }
             t = F2.f(t);
-            return F2.v*t + F1.v*( static_cast<p>(1.0) - t ); //F.tween( F.start_value, F.end_value, t);
+            return static_cast<T>(F2.v*t + F1.v*( static_cast<p>(1.0) - t )); //F.tween( F.start_value, F.end_value, t);
         }
 
     }

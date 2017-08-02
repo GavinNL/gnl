@@ -15,6 +15,7 @@ IF (WIN32)
   # set stuff for windows
   add_definitions(
       /W3
+      /wd4100
       )
 ELSE()
   # set stuff for other systems
