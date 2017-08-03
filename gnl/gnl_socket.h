@@ -32,9 +32,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
 #include <cstdio>
-#include <stdio.h>
-#include <sstream>
-#include <vector>
 #include <fcntl.h>
 #include <ctype.h>
 #include <errno.h>
@@ -47,15 +44,15 @@
     typedef int socklen_t;
 
 #else
-    #include <cstring>
-    #include <netinet/in.h>
+//  #include <cstring>
+//  #include <netinet/in.h>
     #include <sys/ioctl.h>
-    #include <sys/time.h>
-    #include <sys/types.h>
+//  #include <sys/time.h>
+//  #include <sys/types.h>
     #include <unistd.h>
     #include <arpa/inet.h>
-    #include <netdb.h>
-    #include <pthread.h>
+//  #include <netdb.h>
+//  #include <pthread.h>
     #include <sys/select.h>
     #include <sys/socket.h>
     #include <sys/un.h>
@@ -79,6 +76,8 @@
 namespace GNL_NAMESPACE
 {
 
+// for future use
+#if 0
 #ifdef _MSC_VER
 enum class SocketError
 {
@@ -117,6 +116,7 @@ enum class SocketError
     NOTSOCK     =  ENOTSOCK  ,
     TIMEDOUT    =  ETIMEDOUT
 };
+#endif
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -226,11 +226,11 @@ public:
 #if defined _WIN32
     using socket_t = SOCKET;
     static const socket_t     invalid_socket = INVALID_SOCKET;
-    static const std::size_t  socket_error   = SOCKET_ERROR;
+    static const int          socket_error   = SOCKET_ERROR;
 #else
     using socket_t                           = int;
     static const socket_t     invalid_socket = -1;
-    static const std::size_t  socket_error   = -1;
+    static const int          socket_error   = -1;
 #endif
 
     static const std::size_t error          = std::size_t(-1);
@@ -362,9 +362,9 @@ public:
         if ( ret == socket_error)
         {
             #ifdef _MSC_VER
-            printf("Send failed with error code : %d" , WSAGetLastError() );
+            //printf("Send failed with error code : %d" , WSAGetLastError() );
             #else
-            printf("Send failed with error code : %d : %s" , errno,  strerror(errno) );
+            //printf("Send failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
             return error;
         }
@@ -393,9 +393,9 @@ public:
         if (ret == socket_error)
         {
             #ifdef _MSC_VER
-            printf("Recv failed with error code : %d" , WSAGetLastError() );
+            //printf("Recv failed with error code : %d" , WSAGetLastError() );
             #else
-            printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
+            //printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
             return std::size_t(-1);
         }
@@ -410,7 +410,7 @@ public:
      */
     operator bool()
     {
-        return !( ( m_fd == invalid_socket ) || (m_fd == SOCKET_NONE) );
+        return !( ( m_fd == invalid_socket ) );
     }
 
 };
@@ -466,7 +466,7 @@ public:
      */
     operator bool()
     {
-        return !( ( m_fd == invalid_socket ) || (m_fd == SOCKET_NONE) );
+        return !( ( m_fd == invalid_socket )  );
     }
 
     /**
@@ -525,9 +525,9 @@ public:
      */
     bool listen( std::size_t max_connections)
     {
-        decltype(error) code = ::listen( m_fd, (int)max_connections);
+        decltype(socket_error) code = ::listen( m_fd, (int)max_connections);
 
-        if( code == error)
+        if( code == socket_error)
         {
             return false;
         }
@@ -604,6 +604,8 @@ public:
         #ifdef _MSC_VER
             u_long bytes_available;
             auto ret = ioctlsocket(m_fd, FIONREAD , &bytes_available);
+            if( ret == socket_error)
+                    return 0;
         #else
             int bytes_available;
             auto ret = ioctl(m_fd,FIONREAD, &bytes_available);
@@ -647,7 +649,7 @@ public:
      */
     operator bool()
     {
-        return !( ( m_fd == SOCKET_ERROR ) || (m_fd == SOCKET_NONE) );
+        return !( ( m_fd == invalid_socket ) );
     }
 
     /**
@@ -675,9 +677,9 @@ public:
         if( ret == SOCKET_ERROR)
         {
             #ifdef _MSC_VER
-            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            //printf("Bind failed with error code : %d" , WSAGetLastError() );
             #else
-            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            //printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
             //exit(EXIT_FAILURE);
             return false;
@@ -715,7 +717,7 @@ public:
 
         auto ret = ::connect( m_fd, (struct sockaddr*)&d_name, sizeof( d_name));
 
-        if( ret == SOCKET_ERROR)
+        if( ret == socket_error)
             return false;
 
         return true;
@@ -802,7 +804,7 @@ public:
 
         if( t == 0 && size != 0 )
         {
-            m_fd = INVALID_SOCKET;
+            m_fd = invalid_socket;
         }
         return std::size_t(t);
     }
