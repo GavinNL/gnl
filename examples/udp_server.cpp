@@ -102,6 +102,11 @@ int server()
 
 int main()
 {
+    std::size_t d(-1);
+    std::size_t D = -1;
+
+    std::cout << d << "  " << D << std::endl;
+
     for(int i=0;i<10;i++)
     {
         std::thread C( client);

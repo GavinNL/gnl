@@ -13,7 +13,7 @@
 namespace GNL_NAMESPACE
 {
 
-template<typename T, int N, typename Time_T>
+template<typename T, size_t N, typename Time_T>
 class rk4
 {
     public:
@@ -48,23 +48,23 @@ class rk4
             F(k1,t,y);
 
             //for(int i=0;i<N;++i) kt[i] = y[i] + delta_t * static_cast<time_type>(0.5) * k1[i];
-            for(int i=0;i<N;++i) kt[i] = std::fma(delta_t*0.5, k1[i] , y[i]);
+            for(size_t i=0;i<N;++i) kt[i] = std::fma(delta_t*0.5, k1[i] , y[i]);
 
             F(k2, t+delta_t * static_cast<time_type>(0.5), kt );
 
             //for(int i=0;i<N;++i) kt[i] = y[i] + delta_t * static_cast<time_type>(0.5 )*k2[i];
-            for(int i=0;i<N;++i) kt[i] = std::fma( 0.5*delta_t, k2[i], y[i]);
+            for(size_t i=0;i<N;++i) kt[i] = std::fma( 0.5*delta_t, k2[i], y[i]);
 
             F(k3 , t+delta_t * static_cast<time_type>(0.5), kt );
 
             //for(int i=0;i<N;++i) kt[i] = y[i] + delta_t*k3[i];
-            for(int i=0;i<N;++i) kt[i] = std::fma( delta_t, k3[i], y[i] );
+            for(size_t i=0;i<N;++i) kt[i] = std::fma( delta_t, k3[i], y[i] );
 
             F(k4 , t+delta_t    , kt );
 
            // for(int i=0;i<N;++i) y[i] += (delta_t/static_cast<time_type>(6.0)) * ( k1[i] + 2*k2[i] + 2*k3[i] + k4[i]);
 
-            for(int i=0;i<N;++i) y[i] = std::fma( (delta_t/static_cast<time_type>(6.0)) , ( std::fma(2,k2[i],k1[i]) + std::fma( 2, k3[i] , k4[i]) ), y[i]);
+            for(size_t i=0;i<N;++i) y[i] = std::fma( (delta_t/static_cast<time_type>(6.0)) , ( std::fma(2,k2[i],k1[i]) + std::fma( 2, k3[i] , k4[i]) ), y[i]);
         }
 };
 
