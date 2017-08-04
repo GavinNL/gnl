@@ -29,9 +29,17 @@ class thread_pool
         template<class F, class... Args>
         std::future<typename std::result_of<F(Args...)>::type> push( F && f, Args &&... args);
 
-
+        /**
+         * @brief create_workers
+         * @param num
+         * Creates a new worker to work the threadpool
+         */
         void create_workers(std::size_t num);
-
+        /**
+         * @brief remove_thread
+         * Remove a worker from the thread pool
+         */
+        void remove_worker();
         /**
          * @brief clear_tasks
          *
@@ -55,21 +63,19 @@ class thread_pool
          */
         std::size_t num_workers() { return m_worker_count; }
 
+
+
+
+        ~thread_pool();
+
+    protected:
         /**
          * @brief add_thread
          * Add a new worker to the thread pool
          */
         void add_thread();
 
-        /**
-         * @brief remove_thread
-         * Remove a worker from the thread pool
-         */
-        void remove_thread();
 
-        ~thread_pool();
-
-    private:
         // need to keep track of threads so we can join them
         std::vector< std::thread > workers;
 
@@ -86,7 +92,7 @@ class thread_pool
 };
 
 
-inline void thread_pool::remove_thread()
+inline void thread_pool::remove_worker()
 {
     --m_thread_count;
 }
@@ -127,13 +133,13 @@ inline void thread_pool::add_thread()
                     {
                         // We do not need this thread anymore, so we can exit.
                         --m_worker_count;
-                        std::cout << std::this_thread::get_id() << " shutting down" << std::endl;
+                       // std::cout << std::this_thread::get_id() << " shutting down" << std::endl;
                         return;
                     }
 
                     task = std::move(this->m_tasks.front());
                     this->m_tasks.pop();
-                    std::cout << std::this_thread::get_id() << " Starting Task! " << m_tasks.size() << " tasks left" << std::endl;
+                    //std::cout << std::this_thread::get_id() << " Starting Task! " << m_tasks.size() << " tasks left" << std::endl;
                     //  ========== End Safe Zone =========================
                 }
                 task();
