@@ -199,9 +199,13 @@ void MutexTests()
     };
     // Save the slots, they are disconnected
     // when their destructor is called.
-    *s1 = std::move( Signal.connect( L1 ) );
-    *s2 = std::move( Signal.connect( L2 ) );
-    *s3 = std::move( Signal.connect( L3 ) );
+    //*s1 = std::move( Signal.connect( L1 ) );
+    //*s2 = std::move( Signal.connect( L2 ) );
+    //*s3 = std::move( Signal.connect( L3 ) );
+
+    *s1 = Signal.connect( L1 );
+    *s2 = Signal.connect( L2 );
+    *s3 = Signal.connect( L3 );
 
     for(int i=0; i < 10; i++)
     {

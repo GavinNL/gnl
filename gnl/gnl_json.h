@@ -900,11 +900,19 @@ inline void json::parse(std::istringstream &S )
             break;
         case '{': // object
             init( json::OBJECT );
+#if defined __clang__
+            *_jsons._object = json::parseObject(S);//new Object();
+#else
             *_jsons._object = std::move( json::parseObject(S));//new Object();
+#endif
             break;
         case '[': // array
             init( json::ARRAY );
+#if defined __clang__
+            *_jsons._array = json::parseArray(S);
+#else
             *_jsons._array = std::move( json::parseArray(S) );
+#endif
             break;
         default: // number
 
@@ -999,10 +1007,7 @@ inline std::vector<json>  json::parseArray(std::istringstream &S)
     {
       //  std::cout << "=====" << a.to<float>() << std::endl;
     }
-
-
-
-    return( std::move(A) );
+    return A;
 }
 
 
@@ -1132,7 +1137,7 @@ inline std::map<std::string, json> json::parseObject(std::istringstream &S)
 
     }
 
-    return std::move(vMap);
+    return vMap;
 
 }
 
