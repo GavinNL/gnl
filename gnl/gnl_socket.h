@@ -28,8 +28,11 @@
 #ifndef GNL_SOCKET_H
 #define GNL_SOCKET_H
 
+#ifdef _MSC_VER
 #define _WINSOCKAPI_
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif
+
 
 #include <cstdio>
 #include <fcntl.h>
@@ -37,26 +40,22 @@
 #include <errno.h>
 #include <cstdint>
 
-#ifdef _MSC_VER
+
+#if defined _MSC_VER
 
     #include <winsock2.h>
     #pragma comment(lib,"wsock32.lib")
-    typedef int socklen_t;
 
+    //typedef int socklen_t;
 #else
-//  #include <cstring>
-//  #include <netinet/in.h>
     #include <sys/ioctl.h>
-//  #include <sys/time.h>
-//  #include <sys/types.h>
     #include <unistd.h>
     #include <arpa/inet.h>
-//  #include <netdb.h>
-//  #include <pthread.h>
     #include <sys/select.h>
     #include <sys/socket.h>
     #include <sys/un.h>
 #endif
+
 
 #if !defined(SOCKET_ERROR)
     #define SOCKET_ERROR -1
@@ -144,12 +143,12 @@ protected:
 public:
     socket_address()
     {
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char*>(&m_address), 0, sizeof(m_address));
     }
 
     socket_address(uint16_t _port)
     {
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char *>(&m_address), 0, sizeof(m_address));
         m_address.sin_family = AF_INET;
         m_address.sin_port = htons(_port);
         m_address.sin_addr.s_addr = INADDR_ANY;
@@ -158,7 +157,7 @@ public:
     socket_address(char const * ip_address, uint16_t _port)
     {
         //setup address structure
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char *>(&m_address), 0, sizeof(m_address));
         m_address.sin_family = AF_INET;
         m_address.sin_port = htons(_port);
 
@@ -216,6 +215,12 @@ public:
         return ntohs(m_address.sin_port);
     }
 
+    operator address_t()
+    {
+        return m_address;
+        static_assert( sizeof(address_t) == sizeof(socket_address), "struct sizes are not the same");
+    }
+protected:
     address_t m_address;
 };
 
@@ -280,7 +285,7 @@ public:
 
     bool bind(socket_address const & addr)
     {
-        decltype(socket_error) ret = ::bind(m_fd ,(struct sockaddr const*)&addr.m_address , sizeof(addr.m_address));
+        decltype(socket_error) ret = ::bind(m_fd, reinterpret_cast<struct sockaddr const*>(&addr.native_address()) , sizeof(socket_address));
 
         if( ret == socket_error)
         {
@@ -358,7 +363,7 @@ public:
      */
     std::size_t  send(char const * data, size_t length, socket_address const & addr)
     {
-        decltype(socket_error) ret = sendto(m_fd, data, (int)length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
+        decltype(socket_error) ret = sendto(m_fd, data, (int)length , 0 , reinterpret_cast<struct sockaddr const *>(&addr.native_address()), sizeof(struct sockaddr_in ));
         if ( ret == socket_error)
         {
             #ifdef _MSC_VER
@@ -388,7 +393,7 @@ public:
 #else
         socklen_t slen = sizeof(struct sockaddr_in);
 #endif
-        decltype(socket_error) ret  = recvfrom( m_fd, buf, length, 0, (struct sockaddr *) &addr.m_address, &slen);
+        decltype(socket_error) ret  = recvfrom( m_fd, buf, length, 0, reinterpret_cast<struct sockaddr *>(&addr.native_address()), &slen);
 
         if (ret == socket_error)
         {
@@ -494,7 +499,7 @@ public:
     {
         socket_address addr(server, port);
 
-        decltype(socket_error) ret = ::connect( m_fd, (struct sockaddr*)&addr.native_address(), sizeof( addr.native_address()));
+        decltype(socket_error) ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&addr.native_address()), sizeof( addr.native_address()));
 
         m_address = addr;
         if( ret == socket_error)
@@ -525,7 +530,7 @@ public:
      */
     bool listen( std::size_t max_connections)
     {
-        decltype(socket_error) code = ::listen( m_fd, (int)max_connections);
+        decltype(socket_error) code = ::listen( m_fd, static_cast<int>(max_connections));
 
         if( code == socket_error)
         {
@@ -547,9 +552,9 @@ public:
 
         int length   = sizeof( m_address.native_address() );
 
-        client.m_fd  = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
+        client.m_fd  = ::accept(m_fd, reinterpret_cast<struct sockaddr*>(&m_address.native_address()), reinterpret_cast<socklen_t*>(&length));
 
-        ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
+        ::getpeername(client.m_fd , reinterpret_cast<struct sockaddr *>(&client.get_address().native_address()), reinterpret_cast<socklen_t*>(&length) );
 
         return client;
 
@@ -566,7 +571,7 @@ public:
      */
     std::size_t send( void const * data, size_t _size)
     {
-        auto ret = ::send(m_fd, static_cast<const char*>(data), (int)_size, 0);
+        auto ret = ::send(m_fd, reinterpret_cast<const char*>(data), _size, 0);
         return std::size_t(ret);
     }
 
@@ -584,7 +589,7 @@ public:
     {
         bool wait_for_all = true; // default for now.
 
-        auto t = ::recv( m_fd, (char*)data, (int)_size, wait_for_all ? MSG_WAITALL : 0 );
+        auto t = ::recv( m_fd, reinterpret_cast<char*>(data), _size, wait_for_all ? MSG_WAITALL : 0 );
 
         if( t == 0 && _size != 0 ) // gracefully closed
         {
@@ -671,7 +676,7 @@ public:
         d_name.sun_family = AF_UNIX;
         strcpy(d_name.sun_path, path);
 
-        int ret = ::bind(m_fd, (const struct sockaddr *) &d_name,
+        int ret = ::bind(m_fd, reinterpret_cast<const struct sockaddr *>(&d_name),
                        sizeof(struct sockaddr_un));
 
         if( ret == SOCKET_ERROR)
@@ -715,7 +720,7 @@ public:
         d_name.sun_family = AF_UNIX;
         strcpy(d_name.sun_path, path);
 
-        auto ret = ::connect( m_fd, (struct sockaddr*)&d_name, sizeof( d_name));
+        auto ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&d_name), sizeof( d_name));
 
         if( ret == socket_error)
             return false;
@@ -745,7 +750,7 @@ public:
      */
     bool listen( std::size_t max_connections = 10)
     {
-        decltype(error) code = ::listen( m_fd, (int)max_connections);
+        decltype(error) code = ::listen( m_fd, static_cast<int>(max_connections));
 
         if( code == error)
         {
@@ -800,7 +805,7 @@ public:
     {
 
 
-        auto t = ::recv( m_fd, (char*)data, size, 0 );
+        auto t = ::recv( m_fd, reinterpret_cast<char*>(data), size, 0 );
 
         if( t == 0 && size != 0 )
         {
