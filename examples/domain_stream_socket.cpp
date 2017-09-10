@@ -95,7 +95,7 @@ int server()
 
         if( message_size != gnl::domain_stream_socket::error)
         {
-            auto r = client.recv( &buf[1], buf[0]);
+            auto r = client.recv( &buf[1], static_cast<size_t>(buf[0]));
 
             if( r == 0)
             {
