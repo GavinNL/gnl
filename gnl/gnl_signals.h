@@ -180,7 +180,7 @@ class signal
             {
                 if( (*it).first == SlotID )
                 {
-                    std::cout << "Disconnecting slot: " << SlotID << std::endl;
+                   // std::cout << "Disconnecting slot: " << SlotID << std::endl;
                     it = get_container().erase(it);
                     return;
                 }

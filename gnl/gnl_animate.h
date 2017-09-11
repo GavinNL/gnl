@@ -62,7 +62,7 @@ public:
     {
         T            v = static_cast<T>(0);
         timepoint    t = clock::now();
-        tween_func   f = [](p t) {return t;};
+        tween_func   f = [](p t0) {return t0;};
 
         bool operator==(queue_elem const & other)
         {

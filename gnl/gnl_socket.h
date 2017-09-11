@@ -28,8 +28,11 @@
 #ifndef GNL_SOCKET_H
 #define GNL_SOCKET_H
 
+#ifdef _MSC_VER
 #define _WINSOCKAPI_
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#endif
+
 
 #include <cstdio>
 #include <fcntl.h>
@@ -37,38 +40,33 @@
 #include <errno.h>
 #include <cstdint>
 
-#ifdef _MSC_VER
+
+#if defined _MSC_VER
 
     #include <winsock2.h>
     #pragma comment(lib,"wsock32.lib")
-    typedef int socklen_t;
 
 #else
-//  #include <cstring>
-//  #include <netinet/in.h>
     #include <sys/ioctl.h>
-//  #include <sys/time.h>
-//  #include <sys/types.h>
     #include <unistd.h>
     #include <arpa/inet.h>
-//  #include <netdb.h>
-//  #include <pthread.h>
     #include <sys/select.h>
     #include <sys/socket.h>
     #include <sys/un.h>
 #endif
 
-#if !defined(SOCKET_ERROR)
-    #define SOCKET_ERROR -1
-#endif
 
-#if !defined(SOCKET_NONE)
-    #define SOCKET_NONE 0
-#endif
-
-#if !defined(INVALID_SOCKET)
-    #define INVALID_SOCKET -1
-#endif
+//#if !defined(SOCKET_ERROR)
+//    #define SOCKET_ERROR -1
+//#endif
+//
+//#if !defined(SOCKET_NONE)
+//    #define SOCKET_NONE 0
+//#endif
+//
+//#if !defined(INVALID_SOCKET)
+//    #define INVALID_SOCKET -1
+//#endif
 
 #ifndef GNL_NAMESPACE
     #define GNL_NAMESPACE gnl
@@ -144,12 +142,12 @@ protected:
 public:
     socket_address()
     {
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char*>(&m_address), 0, sizeof(m_address));
     }
 
     socket_address(uint16_t _port)
     {
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char *>(&m_address), 0, sizeof(m_address));
         m_address.sin_family = AF_INET;
         m_address.sin_port = htons(_port);
         m_address.sin_addr.s_addr = INADDR_ANY;
@@ -158,7 +156,7 @@ public:
     socket_address(char const * ip_address, uint16_t _port)
     {
         //setup address structure
-        memset((char *) &m_address, 0, sizeof(m_address));
+        memset( reinterpret_cast<char *>(&m_address), 0, sizeof(m_address));
         m_address.sin_family = AF_INET;
         m_address.sin_port = htons(_port);
 
@@ -216,6 +214,12 @@ public:
         return ntohs(m_address.sin_port);
     }
 
+    operator address_t()
+    {
+        return m_address;
+        static_assert( sizeof(address_t) == sizeof(socket_address), "struct sizes are not the same");
+    }
+protected:
     address_t m_address;
 };
 
@@ -225,15 +229,28 @@ class socket_base
 public:
 #if defined _WIN32
     using socket_t = SOCKET;
+    using native_msg_size_input_t        = int;// the input message length type for send/recv/sendto/recvfrom
+    using native_msg_size_return_t = int;// the return type for send/recv/sendto/recvfrom
     static const socket_t     invalid_socket = INVALID_SOCKET;
     static const int          socket_error   = SOCKET_ERROR;
+    static const int          msg_error      = -1;
 #else
-    using socket_t                           = int;
+    using socket_t                 = int;    //
+    using native_msg_size_input_t        = size_t; // the input message length type for send/recv/sendto/recvfrom
+    using native_msg_size_return_t = ssize_t;// the return type for send/recv/sendto/recvfrom
     static const socket_t     invalid_socket = -1;
     static const int          socket_error   = -1;
+    static const ssize_t      msg_error      = -1;
 #endif
 
-    static const std::size_t error          = std::size_t(-1);
+    static const int          bind_error     = -1;
+    static const int          listen_error   = -1;
+    static const int          connect_error   = -1;
+
+    typedef std::int32_t   msg_size_t;
+
+
+    static const msg_size_t error = -1;
 
     socket_base() : m_fd( invalid_socket )
     {
@@ -280,14 +297,14 @@ public:
 
     bool bind(socket_address const & addr)
     {
-        decltype(socket_error) ret = ::bind(m_fd ,(struct sockaddr const*)&addr.m_address , sizeof(addr.m_address));
+        auto ret = ::bind(m_fd, reinterpret_cast<struct sockaddr const*>(&addr.native_address()) , sizeof(socket_address));
 
-        if( ret == socket_error)
+        if( ret == bind_error)
         {
             #ifdef _MSC_VER
-            printf("Bind failed with error code : %d" , WSAGetLastError() );
+            //printf("Bind failed with error code : %d" , WSAGetLastError() );
             #else
-            printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
+            //printf("Bind failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
             return false;
         }
@@ -356,19 +373,19 @@ public:
      *
      *
      */
-    std::size_t  send(char const * data, size_t length, socket_address const & addr)
+    msg_size_t  send(char const * data, size_t length, socket_address const & addr)
     {
-        decltype(socket_error) ret = sendto(m_fd, data, (int)length , 0 , (struct sockaddr const *)&addr.native_address(), sizeof(struct sockaddr_in ));
-        if ( ret == socket_error)
+        native_msg_size_return_t ret = ::sendto(m_fd, data, static_cast<native_msg_size_input_t>(length&0xFFFFFFFF) , 0 , reinterpret_cast<struct sockaddr const *>(&addr.native_address()), sizeof(struct sockaddr_in ));
+        if ( ret == msg_error)
         {
             #ifdef _MSC_VER
             //printf("Send failed with error code : %d" , WSAGetLastError() );
             #else
             //printf("Send failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
-            return error;
+            return msg_size_t(ret);
         }
-        return std::size_t(ret);
+        return msg_size_t(ret);
     }
 
     /**
@@ -381,25 +398,25 @@ public:
      *
      * Recieves data from the socket
      */
-    std::size_t recv(char * buf, int length, socket_address & addr)
+    msg_size_t recv(char * buf, size_t length, socket_address & addr)
     {
-#if defined _MSVER
+#if defined _MSC_VER
         int slen =  sizeof(struct sockaddr_in);
 #else
         socklen_t slen = sizeof(struct sockaddr_in);
 #endif
-        decltype(socket_error) ret  = recvfrom( m_fd, buf, length, 0, (struct sockaddr *) &addr.m_address, &slen);
+        native_msg_size_return_t ret  = ::recvfrom( m_fd, buf, static_cast<native_msg_size_input_t>(length&0xFFFFFFFF), 0, reinterpret_cast<struct sockaddr *>(&addr.native_address()), &slen);
 
-        if (ret == socket_error)
+        if (ret == msg_error)
         {
             #ifdef _MSC_VER
             //printf("Recv failed with error code : %d" , WSAGetLastError() );
             #else
             //printf("Recv failed with error code : %d : %s" , errno,  strerror(errno) );
             #endif
-            return std::size_t(-1);
+            //return msg_error;
         }
-        return std::size_t(ret);
+        return msg_size_t(ret);
     }
 
     /**
@@ -494,7 +511,7 @@ public:
     {
         socket_address addr(server, port);
 
-        decltype(socket_error) ret = ::connect( m_fd, (struct sockaddr*)&addr.native_address(), sizeof( addr.native_address()));
+        decltype(socket_error) ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&addr.native_address()), sizeof( addr.native_address()));
 
         m_address = addr;
         if( ret == socket_error)
@@ -525,7 +542,7 @@ public:
      */
     bool listen( std::size_t max_connections)
     {
-        decltype(socket_error) code = ::listen( m_fd, (int)max_connections);
+        decltype(socket_error) code = ::listen( m_fd, static_cast<int>(max_connections));
 
         if( code == socket_error)
         {
@@ -547,9 +564,12 @@ public:
 
         int length   = sizeof( m_address.native_address() );
 
-        client.m_fd  = ::accept(m_fd, (struct sockaddr*)&m_address.native_address(), (socklen_t*)&length);
+#if defined _MSC_VER
+        using socklen_t = int;
+#endif
+        client.m_fd  = ::accept(m_fd, reinterpret_cast<struct sockaddr*>(&m_address.native_address()), reinterpret_cast<socklen_t*>(&length));
 
-        ::getpeername(client.m_fd , (struct sockaddr *)&client.get_address().native_address(), (socklen_t*)&length );
+        ::getpeername(client.m_fd , reinterpret_cast<struct sockaddr *>(&client.get_address().native_address()), reinterpret_cast<socklen_t*>(&length) );
 
         return client;
 
@@ -564,10 +584,12 @@ public:
      *
      * Sends data to this socket.
      */
-    std::size_t send( void const * data, size_t _size)
+    msg_size_t send( void const * data, size_t _size)
     {
-        auto ret = ::send(m_fd, static_cast<const char*>(data), (int)_size, 0);
-        return std::size_t(ret);
+
+        native_msg_size_return_t ret = ::send(m_fd, reinterpret_cast<const char*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), 0);
+
+        return msg_size_t(ret);
     }
 
     /**
@@ -580,17 +602,17 @@ public:
      * Recieves data from the socket. This function blocks until the total
      * number of bytes have been recieved.
      */
-    std::size_t recv(void * data, size_t _size)
+    msg_size_t recv(void * data, size_t _size)
     {
         bool wait_for_all = true; // default for now.
 
-        auto t = ::recv( m_fd, (char*)data, (int)_size, wait_for_all ? MSG_WAITALL : 0 );
+        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<char*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), wait_for_all ? MSG_WAITALL : 0 );
 
         if( t == 0 && _size != 0 ) // gracefully closed
         {
             m_fd = invalid_socket;
         }
-        return std::size_t(t);
+        return msg_size_t(t);
     }
 
     /**
@@ -671,10 +693,10 @@ public:
         d_name.sun_family = AF_UNIX;
         strcpy(d_name.sun_path, path);
 
-        int ret = ::bind(m_fd, (const struct sockaddr *) &d_name,
+        int ret = ::bind(m_fd, reinterpret_cast<const struct sockaddr *>(&d_name),
                        sizeof(struct sockaddr_un));
 
-        if( ret == SOCKET_ERROR)
+        if( ret == bind_error)
         {
             #ifdef _MSC_VER
             //printf("Bind failed with error code : %d" , WSAGetLastError() );
@@ -715,9 +737,9 @@ public:
         d_name.sun_family = AF_UNIX;
         strcpy(d_name.sun_path, path);
 
-        auto ret = ::connect( m_fd, (struct sockaddr*)&d_name, sizeof( d_name));
+        int ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&d_name), sizeof( d_name));
 
-        if( ret == socket_error)
+        if( ret == connect_error)
             return false;
 
         return true;
@@ -745,9 +767,9 @@ public:
      */
     bool listen( std::size_t max_connections = 10)
     {
-        decltype(error) code = ::listen( m_fd, (int)max_connections);
+        int code = ::listen( m_fd, static_cast<int>(max_connections) );
 
-        if( code == error)
+        if( code == listen_error)
         {
             return false;
         }
@@ -780,10 +802,10 @@ public:
      *
      * Sends data to this socket.
      */
-    std::size_t send( char const * data, size_t size)
+    msg_size_t send( char const * data, size_t _size)
     {
-        auto ret = ::send(m_fd, static_cast<const char*>(data), size, 0);
-        return std::size_t(ret);
+        native_msg_size_return_t ret = ::send(m_fd, static_cast<const char*>(data), static_cast<native_msg_size_input_t>(_size), 0);
+        return msg_size_t(ret);
     }
 
     /**
@@ -796,17 +818,17 @@ public:
      * Recieves data from the socket. This function blocks until the total
      * number of bytes have been recieved.
      */
-    std::size_t recv(char * data, size_t size)
+    msg_size_t recv(char * data, size_t _size)
     {
 
 
-        auto t = ::recv( m_fd, (char*)data, size, 0 );
+        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<char*>(data), static_cast<native_msg_size_input_t>(_size), 0 );
 
-        if( t == 0 && size != 0 )
+        if( t == 0 && _size != 0 )
         {
             m_fd = invalid_socket;
         }
-        return std::size_t(t);
+        return msg_size_t(t);
     }
 
 

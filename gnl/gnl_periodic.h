@@ -109,7 +109,7 @@ class Periodic
          * @brief SetInterval
          * @param interval - the interval between function calls
          */
-        Periodic& interval(const std::chrono::microseconds & interval );
+        Periodic& interval(const std::chrono::microseconds & _interval );
 
 
         /**
@@ -147,10 +147,11 @@ inline Periodic::~Periodic()
     }
 }
 
-inline Periodic& Periodic::count( std::uint64_t count)
+inline Periodic& Periodic::count( std::uint64_t _count)
 {
     std::lock_guard<std::mutex> L(m_mutex);
-    m_count = count;
+    m_count = _count;
+
     return *this;
 }
 
@@ -161,9 +162,9 @@ inline void Periodic::stop()
 }
 
 
-inline Periodic & Periodic::interval(const std::chrono::microseconds & interval )
+inline Periodic & Periodic::interval(const std::chrono::microseconds & _interval )
 {
-    m_interval = interval;
+    m_interval = _interval;
     return *this;
 }
 
