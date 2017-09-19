@@ -54,106 +54,7 @@ TEST_CASE( "Copy constructor" )
 
 }
 
-TEST_CASE( "json strings" )
-{
 
-//    auto A = "hellp";
-//    static_assert(std::is_convertible< decltype(A), std::string>::value, "");
-//    static_assert(NUMERIC(decltype(A)), "");
-
-    gnl::json Js(std::string("hello"));
-    gnl::json Jc("hello");
-
-    REQUIRE( Js.type() == gnl::json::STRING);
-    REQUIRE( Jc.type() == gnl::json::STRING);
-
-    REQUIRE( Js.as<gnl::json::string>()  == "hello");
-    REQUIRE( Jc.as<gnl::json::string>()  == "hello");
-
-    REQUIRE( Js.as<gnl::json::string>()  == std::string("hello") );
-    REQUIRE( Jc.as<gnl::json::string>()  == std::string("hello") );
-
-    static_assert( std::is_convertible<char*, std::string>::value, "");
-
-    Js = std::string("hello");
-    Jc = "hello";
-
-    REQUIRE( Js.as<gnl::json::string>()  == std::string("hello") );
-    REQUIRE( Jc.as<gnl::json::string>()  == std::string("hello") );
-
-    REQUIRE( Js == std::string("hello") );
-    REQUIRE( Jc == std::string("hello") );
-
-    REQUIRE( Js == "hello" );
-    REQUIRE( Jc == "hello" );
-}
-
-TEST_CASE("json numbers")
-{
-    gnl::json Ji(3);
-    gnl::json Jd(3.0);
-    gnl::json Jf(3.0f);
-
-    REQUIRE( Ji.as<gnl::json::number>()  == 3);
-    REQUIRE( Jd.as<gnl::json::number>()  == 3.0);
-    REQUIRE( Jf.as<gnl::json::number>()  == 3.0f);
-
-    Ji = 4;
-    Jd = 4.0;
-    Jf = 4.0f;
-
-    REQUIRE( Ji.as<gnl::json::number>()  == 4);
-    REQUIRE( Jd.as<gnl::json::number>()  == 4.0);
-    REQUIRE( Jf.as<gnl::json::number>()  == 4.0f);
-
-    REQUIRE( Ji == 4);
-    REQUIRE( Jd == 4.0);
-    REQUIRE( Jf == 4.0f);
-
-    float  f = Jf;
-    double d = Jf;
-    int    i = Ji;
-
-    REQUIRE( i == 4);
-    REQUIRE( d == 4.0);
-    REQUIRE( f == 4.0f);
-
-    REQUIRE( Jf.as<gnl::json::number>() == 4.0f);
-}
-
-TEST_CASE("json arrays")
-{
-    gnl::json J;
-    J[0] = 3;
-
-    REQUIRE( J[0] == 3);
-
-    J[4] = "hello";
-    REQUIRE( J[4] == "hello");
-    REQUIRE( J.size() == 5);
-
-    REQUIRE( J.get(10, 88) == 88 );
-}
-
-TEST_CASE("json objects")
-{
-    gnl::json J;
-
-    J["first_name"] = "Gavin";
-    J["last_name"]  = "Wolf";
-    J["height"] = 182;
-
-    REQUIRE( J["height"] == 182);
-    REQUIRE( J["first_name"] == "Gavin");
-    REQUIRE( J["last_name"] == "Wolf");
-    REQUIRE( J.get("middle_name", std::string("bob")) == "bob");
-    REQUIRE( J.get("age", 33) == 33);
-    REQUIRE( J.get("height", 5000) == 182);
-
-    gnl::json::print(J["first_name"]);
-    gnl::json::print(J["height"]);
-    std::cout << std::endl;
-}
 
 TEST_CASE("Move operator")
 {
@@ -162,7 +63,171 @@ TEST_CASE("Move operator")
     std::string name("Gavin");
 
     J = std::move(name);
-    REQUIRE( J == "Gavin");
-    REQUIRE( name == "");
+    REQUIRE( (J == "Gavin"));
+    REQUIRE(( name == "") );
+}
 
+SCENARIO("Number Types")
+{
+    GIVEN("A JSON constructed with an int")
+    {
+        gnl::json J(3);
+
+        THEN("size == 0")
+        {
+            REQUIRE( J.size() == 0);
+        }
+
+        THEN("The type is number (double)")
+        {
+            REQUIRE( J.type() == gnl::json::NUMBER );
+        }
+
+        THEN("Can be accessed using as()")
+        {
+            REQUIRE( J.as<gnl::json::number>() == 3.0 );
+        }
+
+        THEN("Can be converted into an int using get")
+        {
+            REQUIRE( J.get<int>() == 3 );
+        }
+
+        THEN("Can be converted into an unsigned int using get")
+        {
+            REQUIRE( J.get<unsigned int>() == 3u );
+        }
+
+        THEN("Can be compared to an integer")
+        {
+            REQUIRE( (J == 3) );
+            REQUIRE( (J >= 3) );
+            REQUIRE( (J <= 3) );
+            REQUIRE( (J != 4) );
+            REQUIRE( (J <  4) );
+            REQUIRE( (J >  2) );
+        }
+
+        THEN("Can be compared to a double")
+        {
+            REQUIRE( (J == 3.0)  );
+            REQUIRE( (J >= 3.0)  );
+            REQUIRE( (J <= 3.0)  );
+            REQUIRE( (J != 4.0)  );
+            REQUIRE( (J <  4.0)  );
+            REQUIRE( (J >  2.0)  );
+        }
+
+        THEN("Can be cast to an int")
+        {
+            int j = J;
+            REQUIRE( j == 3  );
+        }
+        THEN("Can be casted to an unsigned int")
+        {
+            unsigned int j = J;
+            REQUIRE( j == 3u  );
+        }
+
+    }
+}
+
+SCENARIO("String Types")
+{
+    GIVEN("A JSON constructed with a raw string")
+    {
+        gnl::json J("hello");
+
+        THEN("size == 0")
+        {
+            REQUIRE( J.size() == 5);
+        }
+
+        THEN("The type is string")
+        {
+            REQUIRE( J.type() == gnl::json::STRING );
+        }
+
+        THEN("Can be accessed using as()")
+        {
+            REQUIRE( J.as<gnl::json::string>() == std::string("hello") );
+            REQUIRE( J.as<gnl::json::string>() == gnl::json::string("hello") );
+            REQUIRE( J.as<gnl::json::string>() == "hello" );
+        }
+
+        THEN("accessing using a non-string type will throw expcetions")
+        {
+            CHECK_THROWS( J.as<gnl::json::number>()  );//== gnl::json::number() );
+            CHECK_THROWS( J.as<gnl::json::boolean>() );//== gnl::json::boolean() );
+            CHECK_THROWS( J.as<gnl::json::array>()   );//== gnl::json::array() );
+            CHECK_THROWS( J.as<gnl::json::object>()   );//== gnl::json::array() );
+        }
+
+        THEN("Can be converted into an int using get, but returns a default constructed int")
+        {
+            REQUIRE( J.get<int>() == int() );
+        }
+
+        THEN("Can be converted into an unsigned int using get")
+        {
+            REQUIRE( J.get<unsigned int>() == unsigned int() );
+        }
+
+        THEN("Can be compared to string types")
+        {
+            REQUIRE( ( J == std::string("hello") ));
+            REQUIRE( ( J == gnl::json::string("hello") ));
+            REQUIRE( ( J == "hello" ));
+            REQUIRE( ( J <= std::string("hello") ));
+            REQUIRE( ( J <= gnl::json::string("hello") ));
+            REQUIRE( ( J <= "hello" ));
+            REQUIRE( ( J >= std::string("hello") ));
+            REQUIRE( ( J >= gnl::json::string("hello") ));
+            REQUIRE( ( J >= "hello" ));
+            REQUIRE( ( J <= std::string("zello") ));
+            REQUIRE( ( J <= gnl::json::string("zello") ));
+            REQUIRE( ( J <= "zello" ));
+            REQUIRE( ( J >= std::string("aello") ));
+            REQUIRE( ( J >= gnl::json::string("aello") ));
+            REQUIRE( ( J >= "aello" ));
+        }
+        THEN("Comparing to non-string types will throw an exception")
+        {
+            CHECK_THROWS(J == 3  );
+            CHECK_THROWS(J == 3.0);
+            CHECK_THROWS(J == true);
+            CHECK_THROWS(J == false);
+        }
+    }
+}
+SCENARIO("ARRAYS")
+{
+    GIVEN("A uninitialized json type")
+    {
+        gnl::json J;
+
+        THEN("Accessing an elemnt converts it into an array")
+        {
+            J[0];
+            REQUIRE( J.type() == gnl::json::ARRAY);
+        }
+    }
+
+    GIVEN("A json Array type")
+    {
+        gnl::json J;
+        J[0] = 3;
+        J[1] = "gavin";
+
+        THEN( "size == 2")
+        {
+            REQUIRE( J.size() == 2 );
+        }
+
+        THEN("using get with incorrect types")
+        {
+            REQUIRE( J.get(1, std::string("wolf") ) == "gavin");
+            REQUIRE( J.get(2, std::string("wolf") ) == "wolf");
+        }
+    }
 }

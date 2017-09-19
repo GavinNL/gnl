@@ -34,19 +34,20 @@ SCENARIO( "Standard Densely-packed array_view of a raw array" ) {
             REQUIRE( A.back()  == 11 );
         }
         THEN("Each element [i] == i")
-        REQUIRE( A[0]  == 0 );
-        REQUIRE( A[1]  == 1 );
-        REQUIRE( A[2]  == 2 );
-        REQUIRE( A[3]  == 3 );
-        REQUIRE( A[4]  == 4 );
-        REQUIRE( A[5]  == 5 );
-        REQUIRE( A[6]  == 6 );
-        REQUIRE( A[7]  == 7 );
-        REQUIRE( A[8]  == 8 );
-        REQUIRE( A[9]  == 9 );
-        REQUIRE( A[10] == 10);
-        REQUIRE( A[11] == 11);
-
+        {
+            REQUIRE( A[0]  == 0 );
+            REQUIRE( A[1]  == 1 );
+            REQUIRE( A[2]  == 2 );
+            REQUIRE( A[3]  == 3 );
+            REQUIRE( A[4]  == 4 );
+            REQUIRE( A[5]  == 5 );
+            REQUIRE( A[6]  == 6 );
+            REQUIRE( A[7]  == 7 );
+            REQUIRE( A[8]  == 8 );
+            REQUIRE( A[9]  == 9 );
+            REQUIRE( A[10] == 10);
+            REQUIRE( A[11] == 11);
+        }
         THEN( "Skip size == 1")
         {
             REQUIRE( A.skip() == 1);

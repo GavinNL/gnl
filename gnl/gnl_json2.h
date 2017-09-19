@@ -181,16 +181,35 @@ public:
 
     //=======================================================================
 
+    /**
+     * @brief type
+     * @return
+     *
+     * Returns the type stored in the json class
+     */
     type_t type() const
     {
         return m_type;
     }
 
+    /**
+     * @brief as
+     * @return
+     *
+     * Gets a reference to the object. the template paramter must be
+     * the one of the string json types (json::number, json::boolean, json::string, json::array, json::object)
+     *
+     * If the underlying object is not the type specified in the templater parameter. It will throw an exception.
+     */
     template<typename T>
     T & as()
     {
         static_assert( STRICT_TYPES(T) , "incorrect types");
-        switch(m_type)
+
+        if( type() != type_from_template<T>() )
+            throw std::runtime_error("Json is not the correct type");
+
+        switch( type() )
         {
             case BOOLEAN:
             case NUMBER:
@@ -200,6 +219,19 @@ public:
             default:
                 throw std::runtime_error("Bad cast");
         }
+    }
+
+    template<typename T>
+    T get() const
+    {
+        if( convertable_to<T>() )
+        {
+            using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
+
+            return static_cast<T>( __as<proper_json_type>() );
+        }
+
+        return T();
     }
 
 
@@ -259,6 +291,16 @@ public:
         return __as<array>()[i];
     }
 
+    /**
+     * @brief get
+     * @param i
+     * @param default_value
+     * @return
+     *
+     * Gets the i'th element in the array, if the item does not exist, or is not of type T, it will
+     * return default_value
+     */
+
     template<typename T>
     T get( size_t i, T const & default_value) const
     {
@@ -269,9 +311,14 @@ public:
 
         if( i < __as<array>().size() )
         {
-            using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
-            return static_cast<T>( __as<array>()[i].__as<proper_json_type>() );//  *reinterpret_cast<proper_json_type const*>( __as<array>()[i].m_data) );
+            if( type_from_template<T>() == __as<array>()[i].type() )
+            {
+                using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
+
+                return static_cast<T>( __as<array>()[i].__as<proper_json_type>() );//  *reinterpret_cast<proper_json_type const*>( __as<array>()[i].m_data) );
+            }
         }
+
 
         return default_value;
     }
@@ -361,6 +408,8 @@ public:
                 return __as<object>().size();
             case ARRAY:
                 return __as<array>().size();
+            case STRING:
+                return __as<string>().size();
             default:
                 return 0;
         }
@@ -369,7 +418,7 @@ public:
     bool is_string() const { return type() == STRING; }
     bool is_number() const { return type() == NUMBER; }
     bool is_array()  const { return type() == ARRAY;  }
-    bool is_null()   const { return type() == null;  }
+    bool is_null()   const { return type() == null;   }
     bool is_boolean()  const { return type() == BOOLEAN;  }
 
     template<typename T>
@@ -381,6 +430,8 @@ public:
         {
             return __as<proper_json_type>() == other;
         }
+
+        throw std::runtime_error("JSON item is not the proper type.");
         return false;
     }
 
@@ -393,11 +444,30 @@ public:
         {
             return __as<proper_json_type>() != other;
         }
+        throw std::runtime_error("JSON item is not the proper type.");
         return false;
     }
 
+#define CMP_OPERATOR(op) \
+    template<typename T> \
+    bool operator op (T const & other) const \
+    { \
+        using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) ); \
+        if( type() == type_from_template<proper_json_type>() ) \
+        { \
+            return __as<proper_json_type>() op other; \
+        } \
+        throw std::runtime_error("JSON item is not the proper type.");\
+    }
+
+    CMP_OPERATOR(<)
+    CMP_OPERATOR(>)
+    CMP_OPERATOR(<=)
+    CMP_OPERATOR(>=)
+
+
     template<typename T>
-    operator T()
+    operator T() const
     {
         static_assert( EXTENDED_TYPES(T), "Cannot convert");
 
@@ -424,9 +494,9 @@ private:
         switch(m_type)
         {
             case NUMBER:
-                return std::is_convertable<T, number>::value;
+                return std::is_convertible<T, number>::value;
             default:
-                return false;
+                return type() == type_from_template<T>();
         }
     }
 
@@ -470,7 +540,7 @@ private:
     }
     void construct(type_t t)
     {
-        // make sure to destroy if the current type is different
+        // Make sure to destroy if the current type is different
         if( t != m_type)
         {
             destroy();
@@ -544,7 +614,7 @@ public:
             //case OBJECT:  std::cout << destroy<object>(); break;
         }
     }
-
+#if 0
     static json parse_json(std::istringstream & S)
     {
 
@@ -612,7 +682,14 @@ public:
 
         }
     }
+#endif
 };
 }
+
+std::ostream & operator<<(std::ostream & out, const gnl::json & J)
+{
+    return out;
+}
+
 #endif
 
