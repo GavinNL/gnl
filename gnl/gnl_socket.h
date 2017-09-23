@@ -214,20 +214,25 @@ protected:
 
 class socket_base
 {
-public:
+protected:
 #if defined _WIN32
-    using socket_t = SOCKET;
     using native_msg_size_input_t  = int;// the input message length type for send/recv/sendto/recvfrom
     using native_msg_size_return_t = int;// the return type for send/recv/sendto/recvfrom
     using native_raw_buffer_t      = char;
+    using socket_t                 = SOCKET;
+#else
+    using native_msg_size_input_t  = size_t; // the input message length type for send/recv/sendto/recvfrom
+    using native_msg_size_return_t = ssize_t;// the return type for send/recv/sendto/recvfrom
+    using native_raw_buffer_t      = void;
+    using socket_t                 = int;    //
+#endif
+
+public:
+#if defined _WIN32
     static const socket_t     invalid_socket = INVALID_SOCKET;
     static const int          socket_error   = SOCKET_ERROR;
     static const int          msg_error      = -1;
 #else
-    using socket_t                 = int;    //
-    using native_msg_size_input_t  = size_t; // the input message length type for send/recv/sendto/recvfrom
-    using native_msg_size_return_t = ssize_t;// the return type for send/recv/sendto/recvfrom
-    using native_raw_buffer_t      = void;
     static const socket_t     invalid_socket = -1;
     static const int          socket_error   = -1;
     static const ssize_t      msg_error      = -1;
