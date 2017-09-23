@@ -56,18 +56,6 @@
 #endif
 
 
-//#if !defined(SOCKET_ERROR)
-//    #define SOCKET_ERROR -1
-//#endif
-//
-//#if !defined(SOCKET_NONE)
-//    #define SOCKET_NONE 0
-//#endif
-//
-//#if !defined(INVALID_SOCKET)
-//    #define INVALID_SOCKET -1
-//#endif
-
 #ifndef GNL_NAMESPACE
     #define GNL_NAMESPACE gnl
 #endif
@@ -229,15 +217,17 @@ class socket_base
 public:
 #if defined _WIN32
     using socket_t = SOCKET;
-    using native_msg_size_input_t        = int;// the input message length type for send/recv/sendto/recvfrom
+    using native_msg_size_input_t  = int;// the input message length type for send/recv/sendto/recvfrom
     using native_msg_size_return_t = int;// the return type for send/recv/sendto/recvfrom
+    using native_raw_buffer_t      = char;
     static const socket_t     invalid_socket = INVALID_SOCKET;
     static const int          socket_error   = SOCKET_ERROR;
     static const int          msg_error      = -1;
 #else
     using socket_t                 = int;    //
-    using native_msg_size_input_t        = size_t; // the input message length type for send/recv/sendto/recvfrom
+    using native_msg_size_input_t  = size_t; // the input message length type for send/recv/sendto/recvfrom
     using native_msg_size_return_t = ssize_t;// the return type for send/recv/sendto/recvfrom
+    using native_raw_buffer_t      = void;
     static const socket_t     invalid_socket = -1;
     static const int          socket_error   = -1;
     static const ssize_t      msg_error      = -1;
@@ -248,7 +238,6 @@ public:
     static const int          connect_error   = -1;
 
     typedef std::int32_t   msg_size_t;
-
 
     static const msg_size_t error = -1;
 
@@ -373,9 +362,14 @@ public:
      *
      *
      */
-    msg_size_t  send(char const * data, size_t length, socket_address const & addr)
+    msg_size_t  send(void const * data, size_t length, socket_address const & addr)
     {
-        native_msg_size_return_t ret = ::sendto(m_fd, data, static_cast<native_msg_size_input_t>(length&0xFFFFFFFF) , 0 , reinterpret_cast<struct sockaddr const *>(&addr.native_address()), sizeof(struct sockaddr_in ));
+        native_msg_size_return_t ret = ::sendto(m_fd,
+                                                reinterpret_cast<native_raw_buffer_t const*>(data),
+                                                static_cast<native_msg_size_input_t>(length&0xFFFFFFFF) ,
+                                                0 ,
+                                                reinterpret_cast<struct sockaddr const *>(&addr.native_address()),
+                                                sizeof(struct sockaddr_in ));
         if ( ret == msg_error)
         {
             #ifdef _MSC_VER
@@ -398,14 +392,14 @@ public:
      *
      * Recieves data from the socket
      */
-    msg_size_t recv(char * buf, size_t length, socket_address & addr)
+    msg_size_t recv(void * buf, size_t length, socket_address & addr)
     {
 #if defined _MSC_VER
         int slen =  sizeof(struct sockaddr_in);
 #else
         socklen_t slen = sizeof(struct sockaddr_in);
 #endif
-        native_msg_size_return_t ret  = ::recvfrom( m_fd, buf, static_cast<native_msg_size_input_t>(length&0xFFFFFFFF), 0, reinterpret_cast<struct sockaddr *>(&addr.native_address()), &slen);
+        native_msg_size_return_t ret  = ::recvfrom( m_fd, reinterpret_cast<native_raw_buffer_t*>(buf), static_cast<native_msg_size_input_t>(length&0xFFFFFFFF), 0, reinterpret_cast<struct sockaddr *>(&addr.native_address()), &slen);
 
         if (ret == msg_error)
         {
@@ -587,7 +581,7 @@ public:
     msg_size_t send( void const * data, size_t _size)
     {
 
-        native_msg_size_return_t ret = ::send(m_fd, reinterpret_cast<const char*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), 0);
+        native_msg_size_return_t ret = ::send(m_fd, reinterpret_cast<const native_raw_buffer_t*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), 0);
 
         return msg_size_t(ret);
     }
@@ -606,7 +600,7 @@ public:
     {
         bool wait_for_all = true; // default for now.
 
-        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<char*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), wait_for_all ? MSG_WAITALL : 0 );
+        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<native_raw_buffer_t*>(data), static_cast<native_msg_size_input_t>(_size&0xFFFFFFFF), wait_for_all ? MSG_WAITALL : 0 );
 
         if( t == 0 && _size != 0 ) // gracefully closed
         {
@@ -802,9 +796,9 @@ public:
      *
      * Sends data to this socket.
      */
-    msg_size_t send( char const * data, size_t _size)
+    msg_size_t send( void const * data, size_t _size)
     {
-        native_msg_size_return_t ret = ::send(m_fd, static_cast<const char*>(data), static_cast<native_msg_size_input_t>(_size), 0);
+        native_msg_size_return_t ret = ::send(m_fd, static_cast<const native_raw_buffer_t*>(data), static_cast<native_msg_size_input_t>(_size), 0);
         return msg_size_t(ret);
     }
 
@@ -818,11 +812,11 @@ public:
      * Recieves data from the socket. This function blocks until the total
      * number of bytes have been recieved.
      */
-    msg_size_t recv(char * data, size_t _size)
+    msg_size_t recv(void * data, size_t _size)
     {
 
 
-        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<char*>(data), static_cast<native_msg_size_input_t>(_size), 0 );
+        native_msg_size_return_t t = ::recv( m_fd, reinterpret_cast<native_raw_buffer_t*>(data), static_cast<native_msg_size_input_t>(_size), 0 );
 
         if( t == 0 && _size != 0 )
         {
