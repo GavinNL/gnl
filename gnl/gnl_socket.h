@@ -457,8 +457,11 @@ public:
 
     tcp_socket& operator=( tcp_socket const & other)
     {
-        m_fd      = other.m_fd;
-        memcpy(&m_address, &other.m_address, sizeof(m_address));
+        if( this != &other)
+        {
+            m_fd      = other.m_fd;
+            memcpy(&m_address, &other.m_address, sizeof(m_address));
+        }
         return *this;
     }
 
