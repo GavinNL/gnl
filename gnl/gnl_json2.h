@@ -6,6 +6,7 @@
 #include <cassert>
 #include <type_traits>
 #include <iostream>
+#include <cstring>
 
 namespace gnl
 {
@@ -38,7 +39,8 @@ public:
 #undef MAX_
 
 
-#define CONDITIONAL_TYPE(c, T1, T2) std::conditional< c, T1, T2 >::type
+
+#define CONDITIONAL_TYPE(c, T1, T2) typename std::conditional< c, T1, T2 >::type
 
 #define STRICT_TYPES(T) \
     (std::is_same<T,object>::value  | std::is_same<T,array>::value   | \
@@ -60,16 +62,18 @@ public:
     {
     }
 
-    json(json const & other) : m_type(null)
+    explicit json(json const & other) : m_type(null)
     {
         construct(other.type());
         switch(type())
         {
-            case BOOLEAN: *reinterpret_cast<boolean*>(m_data) = other.__as<boolean> (); return;
-            case NUMBER:  *reinterpret_cast<number* >(m_data) = other.__as<number > (); return;
-            case ARRAY:   *reinterpret_cast<array*  >(m_data) = other.__as<array  > (); return;
-            case OBJECT:  *reinterpret_cast<object* >(m_data) = other.__as<object > (); return;
-            case STRING:  *reinterpret_cast<string* >(m_data) = other.__as<string > (); return;
+            case BOOLEAN: __as<boolean>() = other.__as<boolean> (); return;
+            case NUMBER:  __as<number >() = other.__as<number > (); return;
+            case ARRAY:   __as<array  >() = other.__as<array  > (); return;
+            case OBJECT:  __as<object >() = other.__as<object > (); return;
+            case STRING:  __as<string >() = other.__as<string > (); return;
+            case null:
+            break;
             default:
                 throw std::runtime_error("Bad cast");
         }
@@ -112,13 +116,15 @@ public:
 
             switch(type())
             {
-                case BOOLEAN: *reinterpret_cast<boolean*>(m_data) = other.__as<boolean> (); return *this;
-                case NUMBER:  *reinterpret_cast<number* >(m_data) = other.__as<number > (); return *this;
-                case ARRAY:   *reinterpret_cast<array*  >(m_data) = other.__as<array  > (); return *this;
-                case OBJECT:  *reinterpret_cast<object* >(m_data) = other.__as<object > (); return *this;
-                case STRING:  *reinterpret_cast<string* >(m_data) = other.__as<string > (); return *this;
+                case BOOLEAN: __as<boolean>() = other.__as<boolean> (); return *this;
+                case NUMBER:  __as<number >() = other.__as<number > (); return *this;
+                case ARRAY:   __as<array  >() = other.__as<array  > (); return *this;
+                case OBJECT:  __as<object >() = other.__as<object > (); return *this;
+                case STRING:  __as<string >() = other.__as<string > (); return *this;
+                case null:
+                    break;
                 default:
-                    throw std::runtime_error("Bad cast");
+                    throw std::runtime_error("Bad cast on operator=");
             }
         }
         return *this;
@@ -216,6 +222,26 @@ public:
             case ARRAY:
             case OBJECT:
             case STRING:  return *reinterpret_cast<T*>(m_data);
+            default:
+                throw std::runtime_error("Bad cast");
+        }
+    }
+
+    template<typename T>
+    T const & as() const
+    {
+        static_assert( STRICT_TYPES(T) , "incorrect types");
+
+        if( type() != type_from_template<T>() )
+            throw std::runtime_error("Json is not the correct type");
+
+        switch( type() )
+        {
+            case BOOLEAN:
+            case NUMBER:
+            case ARRAY:
+            case OBJECT:
+            case STRING:  return *reinterpret_cast<T const*>(m_data);
             default:
                 throw std::runtime_error("Bad cast");
         }
@@ -610,8 +636,9 @@ public:
             case BOOLEAN: std::cout << J.__as<boolean>(); break;
             case NUMBER:  std::cout << J.__as<number>();  break;
             case STRING:  std::cout << J.__as<string>().c_str();  break;
-            //case ARRAY:   std::cout << destroy<array> (); break;
-            //case OBJECT:  std::cout << destroy<object>(); break;
+            case ARRAY:   break;//std::cout << destroy<array> (); break;
+            case OBJECT:  break;//std::cout << destroy<object>(); break;
+            default: break;
         }
     }
 #if 0

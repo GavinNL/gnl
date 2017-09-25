@@ -231,3 +231,31 @@ SCENARIO("ARRAYS")
         }
     }
 }
+
+SCENARIO("OBJECT")
+{
+    GIVEN("A Given a json object type")
+    {
+        gnl::json J;
+        J[ "firstname" ] = "Gavin";
+        J[ "age" ]       = 33;
+
+        THEN("Accessing an element converts it into an array")
+        {
+            REQUIRE( J.type() == gnl::json::OBJECT);
+        }
+        THEN( "size == 2")
+        {
+            REQUIRE( J.size() == 2 );
+        }
+        THEN("Using get with default values")
+        {
+            REQUIRE( J.get("firstname", std::string("nigel") ) == "Gavin");
+            REQUIRE( J.get("age"      , 100 )                  == 33);
+            REQUIRE( J.get("lastname" , std::string("Wolf")  ) == "Wolf");
+
+        }
+    }
+
+
+}
