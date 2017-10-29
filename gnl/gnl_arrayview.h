@@ -13,6 +13,7 @@ public:
     using value_type           = T;
     using pointer_type         = value_type*;
     using reference_type       = value_type&;
+    using const_reference_type       = value_type const&;
     using size_type            = size_t;
     using array_view_type      = array_view<value_type>;
     using difference_type      = std::ptrdiff_t;
@@ -45,14 +46,14 @@ public:
     reference_type       at(int64_t i)
     {
         if( i>=size() )
-            throw std::out_of_range( std::string("Attempting to access element") + std:to_string(i) + std::string(". Last index: ") + std::to_string(size()-1) );
+            throw std::out_of_range( std::string("Attempting to access element") + std::to_string(i) + std::string(". Last index: ") + std::to_string(size()-1) );
         return *(m_first+i*m_skip);
 
     }
     const reference_type       at(int64_t i) const
     {
         if( i>=size() )
-            throw std::out_of_range( std::string("Attempting to access element") + std:to_string(i) + std::string(". Last index: ") + std::to_string(size()-1) );
+            throw std::out_of_range( std::string("Attempting to access element") + std::to_string(i) + std::string(". Last index: ") + std::to_string(size()-1) );
         return *(m_first+i*m_skip);
     }
 
