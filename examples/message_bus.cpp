@@ -14,8 +14,8 @@ struct Msg_B
 };
 
 class Node1 :
-        public gnl::message_bus_2::node<Msg_A>,
-        public gnl::message_bus_2::node<Msg_B>
+        public gnl::queue_message_bus::node<Msg_A>,
+        public gnl::queue_message_bus::node<Msg_B>
 {
 public:
     virtual void onNotify(const Msg_A & m) override
@@ -28,7 +28,7 @@ public:
     }
 };
 
-class Node2 : public gnl::message_bus_2::node<Msg_A>
+class Node2 : public gnl::queue_message_bus::node<Msg_A>
 {
 public:
 
@@ -38,21 +38,11 @@ public:
     }
 };
 
-using func_t = std::function<void(void)>;
-
-std::queue<func_t> messages;
-
-template<typename T>
-void push_msg(T const & msg)
-{
-
-}
-
 int main(int argc, char ** argv)
 {
 
 
-    gnl::message_bus_2 B;
+    gnl::queue_message_bus B;
 
     Node1 n1;
     Node2 n2;
@@ -63,15 +53,15 @@ int main(int argc, char ** argv)
 
 
     std::cout << "----- Sending Msg_A ---- " << std::endl;
-    B.send_message( Msg_A() );
+    B.send( Msg_A() );
     std::cout << "----- Sending Msg_B ---- " << std::endl;
-    B.send_message( Msg_B() );
+    B.send( Msg_B() );
 
     std::cout << "----- Unregistering Node1 from Msg_A ---- " << std::endl;
     B.unregister_node<Msg_A>(&n1);
 
     std::cout << "----- Sending Msg_B ---- " << std::endl;
-    B.send_message( Msg_A() );
+    B.send( Msg_A() );
 
     B.dispatch();
     //Node3 n3;

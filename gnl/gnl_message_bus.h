@@ -46,7 +46,7 @@ public:
      * Send a message to the message bus.
      */
     template<typename Msg_t>
-    void send_message(Msg_t const & f)
+    void send(Msg_t const & f)
     {
         static const std::type_index id = std::type_index( typeid(Msg_t) );
 
@@ -103,7 +103,13 @@ public:
 };
 
 
-class message_bus_2
+/**
+ * @brief The queue_message_bus class
+ *
+ * queue_message_bus is the same as message_bus execept message calls
+ * are differred until dispatch() is called.
+ */
+class queue_message_bus
 {
 public:
 
@@ -128,7 +134,7 @@ public:
      * Send a message to the message bus.
      */
     template<typename Msg_t>
-    void send_message(Msg_t const & f)
+    void send(Msg_t const & f)
     {
         static const std::type_index id = std::type_index( typeid(Msg_t) );
 
