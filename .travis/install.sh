@@ -1,4 +1,5 @@
 #!/bin/bash
+exit 0
 
 if [[ "$(uname -s)" == 'Darwin' ]]; then
     brew update || brew update

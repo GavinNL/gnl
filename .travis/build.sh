@@ -5,15 +5,15 @@ set -x
 
 
 # INSTALLATION
-if [[ "$(uname -s)" == 'Darwin' ]]; then
-
-    if which pyenv > /dev/null; then
-        eval "$(pyenv init -)"
-    fi
-    pyenv activate conan
-fi
-
-conan user
+# if [[ "$(uname -s)" == 'Darwin' ]]; then
+#
+#     if which pyenv > /dev/null; then
+#         eval "$(pyenv init -)"
+#     fi
+#     pyenv activate conan
+# fi
+#
+# conan user
 
 mkdir build
 cd build
@@ -24,16 +24,16 @@ echo ################################################
 echo $LIBS
 echo ################################################
 
-conan install .. --build
+# conan install .. --build
 
 # compile and execute unit tests
 if [ "${RUN_CODECOV}" = "TRUE" ]; then 
     echo "Building with Code Coverage"
-    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=TRUE -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
+    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=FALSE -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
     cmake --build . -- -j2
 else
     echo "Building without Code Coverage"
-    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE  ..
+    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=FALSE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE  ..
     cmake --build . -- -j2
 fi
 
