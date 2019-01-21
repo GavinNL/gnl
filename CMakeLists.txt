@@ -26,7 +26,7 @@ option(GNL_BUILD_TESTS "Build Tests" ON)
 
 #########################################################
 FILE(GLOB TEXT_FILES  "*.yml" )
-add_custom_target(ci_files    SOURCES ${TEXT_FILES} .travis/install.sh .travis/build.sh conanfile.txt)
+add_custom_target(ci_files    SOURCES ${TEXT_FILES} .travis/install.sh .travis/build.sh )
 
 FILE(GLOB README_FILES  "*.md" )
 add_custom_target(readme    SOURCES ${README_FILES})
@@ -290,7 +290,7 @@ ENDMACRO()
 # Get a list of all the subdirectories in the src folder. Each of
 # these subdirectories is compiled into its own library
 # which will be linked with all unit tests
-SUBDIRLIST(GNL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/src)
+#SUBDIRLIST(GNL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 
 if(GNL_ENABLE_COVERAGE)
@@ -307,7 +307,7 @@ enable_testing()
 # Add the src sub directory. Each subdirectory within
 # the src folder will be compiled into its own library
 #########################################################
-add_subdirectory(src)
+#add_subdirectory(src)
 #########################################################
 
 

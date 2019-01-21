@@ -1,8 +1,11 @@
 #include <gnl/gnl_binpacking.h>
 #include <iostream>
+#include <catch2/catch.hpp>
 
-int main(int argc, char ** argv)
+TEST_CASE( "Testing Period class" )
 {
+    int y = 0;
+
     gnl::Bin<int> B(100,100);
 
     {
@@ -26,5 +29,7 @@ int main(int argc, char ** argv)
                       << r.h << std::endl;
         }
     }
-    return 0;
+
+    REQUIRE( y==4 );
+
 }
