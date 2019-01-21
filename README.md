@@ -1,78 +1,69 @@
-# LICENSE: UNLICENSE #
+# GNL
 
-This is free and unencumbered software released into the public domain.
+Master:
+[![Build Status](https://travis-ci.org/GavinNL/gnl.svg?branch=master)](https://travis-ci.org/GavinNL/gnl)
+[![Build status](https://ci.appveyor.com/api/projects/status/rqtobdpie4t8fe62/branch/master?svg=true)](https://ci.appveyor.com/project/GavinNL/gnl/branch/master)
+[![codecov](https://codecov.io/gh/GavinNL/gnl/branch/master/graph/badge.svg)](https://codecov.io/gh/GavinNL/gnl)
+![Codacy branch grade](https://img.shields.io/codacy/grade/4fe50de6102e4d678bacdd292c949310/master.svg)
 
-Anyone is free to copy, modify, publish, use, compile, sell, or
-distribute this software, either in source code form or as a compiled
-binary, for any purpose, commercial or non-commercial, and by any
-means.
+Dev:
+[![Build Status](https://travis-ci.org/GavinNL/gnl.svg?branch=dev)](https://travis-ci.org/GavinNL/gnl)
+[![Build status](https://ci.appveyor.com/api/projects/status/rqtobdpie4t8fe62/branch/dev?svg=true)](https://ci.appveyor.com/project/GavinNL/gnl/branch/dev)
+[![codecov](https://codecov.io/gh/GavinNL/gnl/branch/dev/graph/badge.svg)](https://codecov.io/gh/GavinNL/gnl)
+![Codacy branch grade](https://img.shields.io/codacy/grade/4fe50de6102e4d678bacdd292c949310/dev.svg)
 
-In jurisdictions that recognize copyright laws, the author or authors
-of this software dedicate any and all copyright interest in the
-software to the public domain. We make this dedication for the benefit
-of the public at large and to the detriment of our heirs and
-successors. We intend this dedication to be an overt act of
-relinquishment in perpetuity of all present and future rights to this
-software under copyright law.
+A set of header-only utility libraries I have built to assist in various projects.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
-MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
-IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
-OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
-ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+# animate
 
-For more information, please refer to <http://unlicense.org/>
+Animate numerical variables based off wall-clock time.
 
+# array_view
 
+Create views into arrays.
 
-# gnl #
+# base64
 
-A collection of cross-platform header only/single file libraries designed to
-be easily dropped into any project.
+Convert to and from base64
 
-The following are a list of classes provided by gnl.
+# interp
 
-## gnl_path ##
-Provides a way to represent paths to files/folders. Also gives some
-limited access to known paths such as the user's home directory
-and temp folders.
+Interpolate variables using linear or cubic splines
 
-## gnl_animate ##
-A library to represent time-varying variables. Variables are animated
-based on the real time clock and can be animated using different
-easing functions.
+# json
 
-## gnl_base64 ##
-Encode and decode base64 strings
+# meta
 
-## gnl_binpacking ##
-Tool for packing smaller rectangles into a bigger rectangle. Useful for
-texture atlas' and fonts
+Some template meta-helpers
 
-## gnl_interp ##
-A library for various interpolation schemes such as bezier curves and splines
+# path
 
-## gnl_json ##
-A library for reading and manipulating json files
+Create and manipulate filesystem paths.
 
-## gnl_periodic ##
-A libray used for calling functions at a particular intervals.
+# periodic
 
-## gnl_socket ##
-A wrapper around unix sockets and winsock based on what OS you are compiling on.
+Call functions at periodic intervals
 
-## gnl_threadpool ##
-A thread pool implementation. Push tasks onto the queue and the threadpool will
-automatically run the tasks in order.
+# rk4
 
-## gnl_unicode ##
-A library for working with unicode conversions. Still in testing.
+4th order Runge-Kutta
 
-## gnl_variant ##
-An implementation of a variant. Probably not the best way to do it.  It can be
-used if you don't want to include the massive Boost library and can't wait
-till C++17 becomes more standard.
+# signal
 
+Signal-slot interface.
 
+# socket
+
+Cross-platform sockets
+
+# threadpool
+
+Thread Pool class, push tasks into the pool and have them run on separate threads.
+
+# unicode
+
+Convert to and from unicode
+
+# variant.
+
+Simple variant implementation. C++17's variant class deprecates this.
