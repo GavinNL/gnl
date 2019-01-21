@@ -39,7 +39,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <cstdint>
-
+#include <string.h>
 
 #if defined _MSC_VER
 
