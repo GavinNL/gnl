@@ -13,23 +13,25 @@ TEST_CASE( "Testing Parsing of Unquoted Keys" )
     gnl::linear_spline<float> L(t,y);
     gnl::linear_spline2<float> L2(t,y);
 
-    REQUIRE( fabs(L(0.0) -  0.0) < 0.0001 );
-    REQUIRE( fabs(L(1.0) -  1.0) < 0.0001 );
-    REQUIRE( fabs(L(2.0) -  2.0) < 0.0001 );
-    REQUIRE( fabs(L(3.0) -  3.0) < 0.0001 );
+    REQUIRE( L(0.0) == Approx(0.0L));
 
-    REQUIRE( fabs(L(1.5) -  1.5) < 0.0001 );
-    REQUIRE( fabs(L(2.5) -  2.5) < 0.0001 );
+    REQUIRE( L(0.0)  == Approx( 0.0 )  );
+    REQUIRE( L(1.0)  == Approx( 1.0 )  );
+    REQUIRE( L(2.0)  == Approx( 2.0 )  );
+    REQUIRE( L(3.0)  == Approx( 3.0 )  );
 
-    REQUIRE( fabs(L2(0.0) -  0.0) < 0.0001 );
-    REQUIRE( fabs(L2(1.0) -  1.0) < 0.0001 );
-    REQUIRE( fabs(L2(2.0) -  2.0) < 0.0001 );
-    REQUIRE( fabs(L2(3.0) -  3.0) < 0.0001 );
+    REQUIRE( L(1.5)  == Approx( 1.5 )  );
+    REQUIRE( L(2.5)  == Approx( 2.5 )  );
+                                        ;
+    REQUIRE( L2(0.0) == Approx( 0.0 )  );
+    REQUIRE( L2(1.0) == Approx( 1.0 )  );
+    REQUIRE( L2(2.0) == Approx( 2.0 )  );
+    REQUIRE( L2(3.0) == Approx( 3.0 )  );
 
-    REQUIRE( fabs(L2(1.5) -  1.5) < 0.0001 );
-    REQUIRE( fabs(L2(2.5) -  2.5) < 0.0001 );
+    REQUIRE( L2(1.5) == Approx( 1.5 )  );
+    REQUIRE( L2(2.5) == Approx( 2.5 )  );
 
-    REQUIRE( fabs(L2.at(5.0) -  5.0) < 0.0001 );
+    REQUIRE_THROWS( L2.at(5.0) == Approx(5.0) );
 
 
 }
