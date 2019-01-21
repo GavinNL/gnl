@@ -17,6 +17,7 @@ cmake_minimum_required(VERSION 3.8)
 #GNL
 set (CMAKE_CXX_STANDARD 11)
 
+project(gnl)
 
 option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
 

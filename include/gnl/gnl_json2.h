@@ -299,7 +299,7 @@ public:
      * If the index is out of bounds, it will resize appropriately.
      *
      */
-    json & operator[] (size_t i)
+    json & operator[] (int i)
     {
         if(m_type!=ARRAY)
             construct<array>();
@@ -309,7 +309,7 @@ public:
 
         return __as<array>()[i];
     }
-    json const & operator[] (size_t i) const
+    json const & operator[] (int i) const
     {
         if(m_type!=ARRAY)
             throw std::runtime_error("Not an array");
@@ -390,6 +390,15 @@ public:
      * Access the json object's key identified by, i. If it is not
      * a json object, it will be converted into one.
      */
+    json & operator[](char const * i)
+    {
+        return operator[](string(i));
+    }
+    json const & operator[] (char const * i) const
+    {
+        return operator[](string(i));
+    }
+
     json & operator[](string const & i)
     {
         if(m_type!=OBJECT)

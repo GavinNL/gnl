@@ -1,9 +1,6 @@
-
-
-#include <gnl/gnl_json2.h>
-
 #include<catch2/catch.hpp>
 
+#include <gnl/gnl_json2.h>
 
 TEST_CASE( "Copy assignment" )
 {

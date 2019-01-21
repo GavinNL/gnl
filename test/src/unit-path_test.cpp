@@ -1,7 +1,6 @@
+#include<catch2/catch.hpp>
 #include <gnl/gnl_path.h>
 
-
-#include<catch2/catch.hpp>
 
 
 TEST_CASE( "is_absolute" )

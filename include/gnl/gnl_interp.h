@@ -178,7 +178,7 @@ struct linear_spline2
     }
 
     linear_spline2( FloatingType const * time, _T const * x, std::size_t length) :
-        t0(time), t1(time+1), y0(x),y1(x+1), last(t0+length)
+        t0(time), t1(time+1), y0(x),y1(x+1), last(time +(length-1))
     {
     }
 
@@ -189,7 +189,7 @@ struct linear_spline2
 
     _T at(FloatingType time)
     {
-        if( time>*last)
+        if( time > *last)
             throw std::runtime_error("Parameter out of range");
 
         return get(time);

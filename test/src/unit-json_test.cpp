@@ -1,8 +1,6 @@
-
+#include<catch2/catch.hpp>
 
 #include <gnl/gnl_json.h>
-
-#include<catch2/catch.hpp>
 #include <string>
 
 TEST_CASE( "Testing Parsing of Unquoted Keys" )

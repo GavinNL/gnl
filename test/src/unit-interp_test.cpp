@@ -31,7 +31,7 @@ TEST_CASE( "Testing Parsing of Unquoted Keys" )
     REQUIRE( L2(1.5) == Approx( 1.5 )  );
     REQUIRE( L2(2.5) == Approx( 2.5 )  );
 
-    REQUIRE_THROWS( L2.at(5.0) == Approx(5.0) );
+    REQUIRE_THROWS( L2.at(8.0) );
 
 
 }
