@@ -291,6 +291,7 @@ ENDMACRO()
 # these subdirectories is compiled into its own library
 # which will be linked with all unit tests
 #SUBDIRLIST(GNL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/src)
+#SET(GNL_LIBS pthread)
 
 
 if(GNL_ENABLE_COVERAGE)
