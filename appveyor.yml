@@ -22,15 +22,7 @@ build_script:
 
     cd build
 
-    pip install --user conan
-
-    set PATH=%PATH%;C:\Users\appveyor\AppData\Roaming\Python\Scripts
-
-    conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-
-    conan install c:\projects\source --build
-
-    cmake c:\projects\source -G "%GENERATOR%" -DCMAKE_BUILD_TYPE:STRING=Release -DGNL_USE_CONAN:BOOL=TRUE
+    cmake c:\projects\source -G "%GENERATOR%" -DCMAKE_BUILD_TYPE:STRING=Release -DGNL_USE_CONAN:BOOL=FALSE
 
     cmake --build . --config "Release"
 
