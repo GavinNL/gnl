@@ -62,12 +62,12 @@ namespace GNL_NAMESPACE
     {
         public:
 
-#if defined __linux__
-        using value_type	= char;
-#define strlit(A) A
-#elif defined _WIN32
+#if defined _WIN32
         using value_type    = wchar_t;
-#define strlit(A) L ## A
+        #define strlit(A) L ## A
+#else
+        using value_type	= char;
+        #define strlit(A) A
 #endif
         using string_type = std::basic_string<value_type>;
 
