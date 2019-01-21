@@ -29,15 +29,15 @@ echo ################################################
 # compile and execute unit tests
 if [ "${RUN_CODECOV}" = "TRUE" ]; then 
     echo "Building with Code Coverage"
-    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=FALSE -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
+    cmake ${CMAKE_OPTIONS} -GNinja -D GNL_USE_CONAN:BOOL=FALSE -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
     cmake --build . -- -j2
 else
     echo "Building without Code Coverage"
-    cmake ${CMAKE_OPTIONS} -GNinja -D CPPBOILERPLATE_USE_CONAN:BOOL=FALSE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE  ..
+    cmake ${CMAKE_OPTIONS} -GNinja -D GNL_USE_CONAN:BOOL=FALSE -D GNL_BUILD_TESTS:BOOL=TRUE  ..
     cmake --build . -- -j2
 fi
 
-#   - CXX=/usr/bin/g++-7 CC=/usr/bin/gcc-7 cmake -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
+#   - CXX=/usr/bin/g++-7 CC=/usr/bin/gcc-7 cmake -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
 #   - cmake --build . -- -j2
 
 #ctest -C Release -V -j
