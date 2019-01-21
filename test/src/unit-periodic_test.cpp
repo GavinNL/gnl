@@ -22,6 +22,6 @@ TEST_CASE( "Testing Period class" )
         ///y = x;
     }
 
-    REQUIRE( y==4 );
+    REQUIRE( y == 0 );
 
 }

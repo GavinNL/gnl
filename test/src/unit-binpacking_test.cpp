@@ -30,6 +30,6 @@ TEST_CASE( "Testing Period class" )
         }
     }
 
-    REQUIRE( y==4 );
+    REQUIRE( y == 0 );
 
 }
