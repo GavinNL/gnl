@@ -17,12 +17,12 @@ FOREACH(subdir ${SUBDIRS})
 
         MESSAGE("Compiling Module ${subdir} into executable" )
 
-        include_directories( ${CPPBOILERPLATE_INCLUDE} )
+        include_directories( ${GNL_INCLUDE} )
 
         FILE(GLOB_RECURSE  SRC_FILES  "${subdir}/*.cpp" )
 
         add_executable(${subdir} ${SRC_FILES})
-        target_link_libraries( ${subdir} ${CPPBOILERPLATE_LIBS} ${CPPBOILERPLATE_COVERAGE_FLAGS})
+        target_link_libraries( ${subdir} ${GNL_LIBS} ${GNL_COVERAGE_FLAGS})
 
     endif()
 

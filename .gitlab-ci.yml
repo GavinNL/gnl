@@ -31,7 +31,7 @@ cppcheck:
       - mkdir -p build && cd build
       #- conan install --build missing ..
       - if [ -f ../conanfile.txt ]; then conan install --build missing ..; fi
-      - cmake -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
+      - cmake -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
       - cmake --build .
       - ctest
       - mkdir coverage
@@ -68,7 +68,7 @@ build-gcc7:
       - mkdir -p build && cd build
       #- conan install --build missing ..
       - if [ -f ../conanfile.txt ]; then conan install --build missing ..; fi
-      - cmake -D CPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE -D CPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE ..
+      - cmake -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
       - cmake --build .
       - ctest
 

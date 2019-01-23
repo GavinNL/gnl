@@ -79,12 +79,12 @@ foreach(file ${files})
         $<$<CXX_COMPILER_ID:GNU>:-Wno-deprecated-declarations>
     )
     target_include_directories(${testcase} PRIVATE
-        "${CPPBOILERPLATE_INCLUDE}"
+        "${GNL_INCLUDE}"
         third_party/Catch2
     )
 
-    MESSAGE("         Adding link libraries for ${testcase}: ${CPPBOILERPLATE_LIBS}  ${CPPBOILERPLATE_COVERAGE_FLAGS} ")
-    target_link_libraries(${testcase} ${CPPBOILERPLATE_LIBS} ${CPPBOILERPLATE_COVERAGE_FLAGS})
+    MESSAGE("         Adding link libraries for ${testcase}: ${GNL_LIBS}  ${GNL_COVERAGE_FLAGS} ")
+    target_link_libraries(${testcase} ${GNL_LIBS} ${GNL_COVERAGE_FLAGS})
 
 
     add_test(NAME "${testcase}_default"
