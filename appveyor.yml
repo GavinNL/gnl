@@ -28,7 +28,7 @@ build_script:
 
     conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
 
-    conan install c:\projects\source --build
+    IF EXIST "C:\projects\source\conanfile.txt" sconan install c:\projects\source --build
 
     cmake c:\projects\source -G "%GENERATOR%" -DCMAKE_BUILD_TYPE:STRING=Release
 
