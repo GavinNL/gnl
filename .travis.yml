@@ -1,5 +1,9 @@
 language: cpp
 
+
+env:
+- USE_CONAN=FALSE
+
 matrix:
   include:
 
@@ -172,14 +176,14 @@ script:
   - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then export COVERAGE_FLAGS='-DCPPBOILERPLATE_ENABLE_COVERAGE:BOOL=TRUE'; fi
   - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then export TEST_FLAGS='-DCPPBOILERPLATE_BUILD_TESTS:BOOL=TRUE'; fi
 
-  - conan user
-  - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
+  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then conan user; fi
+  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan; fi
 
   - if [[ "${COMPILER_CXX}" != "" ]]; then export CXX=${COMPILER_CXX}; fi
   - if [[ "${COMPILER_CC}" != "" ]]; then export CC=${COMPILER_CC}; fi
 
   - mkdir build && cd build
-  - eval conan install .. --build  ${CONAN_SETTINGS_FLAG}
+  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then eval conan install .. --build  ${CONAN_SETTINGS_FLAG}; fi
   - eval cmake .. ${CMAKE_GENERATOR_FLAG} ${COVERAGE_FLAGS} ${TEST_FLAGS}
   - eval cmake --build . --config "${BUILD_CONFIG}"
   - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then ctest -C ${BUILD_CONFIG}; fi
