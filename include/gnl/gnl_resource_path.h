@@ -298,14 +298,14 @@ class gnl_resource_path
 
         static bool is_dir(path_type const & path_)
         {
+             auto path = format_path(path_);
 #if defined _WIN32
-              DWORD attribs = ::GetFileAttributesA(dirName.c_str());
+              DWORD attribs = ::GetFileAttributesA(path.c_str());
               if (attribs == INVALID_FILE_ATTRIBUTES) {
                 return false;
               }
               return (attribs & FILE_ATTRIBUTE_DIRECTORY);
 #else
-            auto path = format_path(path_);
             struct stat st;
             if( stat(path.c_str(), &st) != 0)
             {
@@ -326,22 +326,15 @@ class gnl_resource_path
          */
         static bool fexists(path_type const & path)
         {
-#if defined __linux__
+#if defined _WIN32
+
+             DWORD dwAttrib = GetFileAttributes(path.c_str());
+
+             return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+                    !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+#else
             struct stat buffer;
             return (stat(path.c_str(), &buffer) == 0);
-#elif defined _WIN32
-            int fileExists(TCHAR * file)
-            {
-               WIN32_FIND_DATA FindFileData;
-               HANDLE handle = FindFirstFile(file, &FindFileData) ;
-               int found = handle != INVALID_HANDLE_VALUE;
-               if(found)
-               {
-                   //FindClose(&handle); this will crash
-                   FindClose(handle);
-               }
-               return found;
-            }
 #endif
 
         }
