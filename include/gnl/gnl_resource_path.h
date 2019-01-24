@@ -57,7 +57,7 @@
 
 #if defined __linux__
 #include <unistd.h>
-#include<sys/stat.h>
+#include <sys/stat.h>
 #endif
 
 #if defined _WIN32
@@ -65,6 +65,11 @@
     #include <direct.h>
     #include <stdlib.h>
 
+#endif
+
+#if defined __APPLE__
+    #include <unistd.h>
+    #include <libproc.h>
 #endif
 
 namespace gnl
@@ -182,7 +187,24 @@ class gnl_resource_path
             auto i = GetModuleFileNameA( NULL, path, FILENAME_MAX);
             auto p = path_type( path );
             return join( get_cwd(), path);
+#elif defined __APPLE__
+
+            int ret;
+            pid_t pid;
+            char pathbuf[PROC_PIDPATHINFO_MAXSIZE];
+
+            pid = getpid();
+            ret = proc_pidpath (pid, pathbuf, sizeof(pathbuf));
+            if ( ret <= 0 ) {
+                return "";
+                fprintf(stderr, "PID %d: proc_pidpath ();\n", pid);
+                fprintf(stderr, "    %s\n", strerror(errno));
+            } else {
+                return pathbuf
+                //printf("proc %d: %s\n", pid, pathbuf);
+            }
 #endif
+            return "";
         }
 
         /**
@@ -193,18 +215,19 @@ class gnl_resource_path
          */
         static path_type get_cwd()
         {
-#if defined __linux__
-            char path[FILENAME_MAX];
-            getcwd(path, FILENAME_MAX);
 
-            return path_type(path);
-#elif defined _WIN32
+#if defined _WIN32
             char * cwd;
             if( (cwd = _getcwd( NULL, 0 )) != NULL )
             {
                 return path_type(cwd);
             }
             return "";
+#else
+            char path[FILENAME_MAX];
+            getcwd(path, FILENAME_MAX);
+
+            return path_type(path);
 #endif
         }
 
@@ -275,6 +298,13 @@ class gnl_resource_path
 
         static bool is_dir(path_type const & path_)
         {
+#if defined _WIN32
+              DWORD attribs = ::GetFileAttributesA(dirName);
+              if (attribs == INVALID_FILE_ATTRIBUTES) {
+                return false;
+              }
+              return (attribs & FILE_ATTRIBUTE_DIRECTORY);
+#else
             auto path = format_path(path_);
             struct stat st;
             if( stat(path.c_str(), &st) != 0)
@@ -283,6 +313,7 @@ class gnl_resource_path
             }
             bool isdir = S_ISDIR(st.st_mode);
             return isdir;
+#endif
         }
 
         /**
