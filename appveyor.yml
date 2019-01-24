@@ -35,7 +35,9 @@ build_script:
     cmake --build . --config "Release"
 
 test_script:
-- cmd: ctest -C Release
+- cmd: >-
+    set CTEST_OUTPUT_ON_FAILURE=1
+    ctest -C Release
 
 
 
