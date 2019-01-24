@@ -1,6 +1,6 @@
-#include <gnl/gnl_periodic.h>
-
 #include<catch2/catch.hpp>
+
+#include <gnl/gnl_periodic.h>
 #include <string>
 
 #include <iostream>
