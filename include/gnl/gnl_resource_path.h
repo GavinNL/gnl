@@ -112,7 +112,7 @@ class gnl_resource_path
             auto path = format_path(path_);
             if( path_exists(path) ) return false;
 
-            position = std::min( position, m_paths.size());
+            position = (std::min)( position, m_paths.size());
             m_paths.insert( std::begin(m_paths) + position, path);
 
             return true;
