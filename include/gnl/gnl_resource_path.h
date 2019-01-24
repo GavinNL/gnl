@@ -107,7 +107,7 @@ class gnl_resource_path
          * Add a path to the list of resources paths. Returns false if the path
          * already exists in the list.
          */
-        bool add_path(path_type const & path_, std::size_t position = std::numeric_limits<std::size_t>::max())
+        bool add_path(path_type const & path_, std::size_t position = (std::numeric_limits<std::size_t>::max)() )
         {
             auto path = format_path(path_);
             if( path_exists(path) ) return false;
