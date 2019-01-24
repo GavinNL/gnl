@@ -67,9 +67,6 @@
 
 #endif
 
-
-#include <GLFW/glfw3.h>
-
 namespace gnl
 {
 
