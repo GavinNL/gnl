@@ -165,6 +165,7 @@ install:
 
 script:
   - env
+  - export CTEST_OUTPUT_ON_FAILURE=1
   - if [ -f conanfile.txt ]; then export USE_CONAN=TRUE; fi
 
   # The path to conan does not get set properly because travis does not restart the shell
