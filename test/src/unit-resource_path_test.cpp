@@ -112,14 +112,6 @@ SCENARIO( "OS File exists" )
 
         }
     }
-    GIVEN("A a set of known folders on Linux")
-    {
-        THEN("is_dir() should be able to correctly identify them as folders")
-        {
-            REQUIRE(R.is_dir("/tmp")      == true);
-            REQUIRE(R.is_dir("/dev/null") == false);
-        }
-    }
 #endif
 }
 
