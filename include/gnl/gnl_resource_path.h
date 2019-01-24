@@ -200,7 +200,7 @@ class gnl_resource_path
                 fprintf(stderr, "PID %d: proc_pidpath ();\n", pid);
                 fprintf(stderr, "    %s\n", strerror(errno));
             } else {
-                return pathbuf
+                return pathbuf;
                 //printf("proc %d: %s\n", pid, pathbuf);
             }
 #endif
@@ -299,7 +299,7 @@ class gnl_resource_path
         static bool is_dir(path_type const & path_)
         {
 #if defined _WIN32
-              DWORD attribs = ::GetFileAttributesA(dirName);
+              DWORD attribs = ::GetFileAttributesA(dirName.c_str());
               if (attribs == INVALID_FILE_ATTRIBUTES) {
                 return false;
               }
