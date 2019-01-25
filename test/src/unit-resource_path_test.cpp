@@ -104,11 +104,14 @@ SCENARIO( "OS File exists" )
     {
         THEN("fexists() should be able to correctly identify whether they exist")
         {
-            REQUIRE(R.fexists("C:\Windows") == true);
+            REQUIRE(R.fexists("C:\\Windows") == true);
             REQUIRE(R.fexists("C:\\Windows\\system32") == true);
 
-            REQUIRE(R.is_dir("C:\Windows") == true);
-            REQUIRE(R.is_dir("C:\\Windows\\system32") == false);
+            REQUIRE(R.is_dir("C:\\Windows") == true);
+            REQUIRE(R.is_dir("C:\\Windows\\system32") == true);
+
+            REQUIRE(R.fexists("C:\\Windows\\notepad.exe") == true);
+            REQUIRE(R.is_dir("C:\\Windows\\notepad.exe") == false);
 
         }
     }
