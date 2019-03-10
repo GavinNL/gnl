@@ -154,13 +154,7 @@ matrix:
 
 # The pre-install script. On windows it will install conan via chocolatey
 install:
-  - |
-     if [[ "${TRAVIS_OS_NAME}" == "windows" ]]; then
-       choco install conan
-     else
-       pip install --user --upgrade pip
-       pip install --user conan --upgrade
-     fi
+  - echo "Install script"
 
 
 script:
@@ -170,22 +164,20 @@ script:
 
   # The path to conan does not get set properly because travis does not restart the shell
   # so we ahve to manually add the path it on Windows.
-  - if [[ "${TRAVIS_OS_NAME}" == "windows" ]]; then export PATH=$PATH:/c/Program\ Files/Conan/conan; fi
-  - if [[ "${TRAVIS_OS_NAME}" == "osx" ]]; then export PATH=$PATH:/Users/travis/Library/Python/2.7/bin; fi
+#  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then export COVERAGE_FLAGS='-DGNL_ENABLE_COVERAGE:BOOL=TRUE'; fi
+#  - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then export TEST_FLAGS='-DGNL_BUILD_TESTS:BOOL=TRUE'; fi
 
-  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then export COVERAGE_FLAGS='-DGNL_ENABLE_COVERAGE:BOOL=TRUE'; fi
-  - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then export TEST_FLAGS='-DGNL_BUILD_TESTS:BOOL=TRUE'; fi
-
-  - if [[ "${USE_CONAN}" == "TRUE" ]]; then conan user; fi
-  - if [[ "${USE_CONAN}" == "TRUE" ]]; then conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan; fi
+  #- if [[ "${USE_CONAN}" == "TRUE" ]]; then conan user; fi
+#  - if [[ "${USE_CONAN}" == "TRUE" ]]; then conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan; fi
 
   - if [[ "${COMPILER_CXX}" != "" ]]; then export CXX=${COMPILER_CXX}; fi
   - if [[ "${COMPILER_CC}" != "" ]]; then export CC=${COMPILER_CC}; fi
 
   - mkdir build && cd build
-  - if [[ "${USE_CONAN}" == "TRUE" ]]; then eval conan install .. --build  ${CONAN_SETTINGS_FLAG}; fi
+#  - if [[ "${USE_CONAN}" == "TRUE" ]]; then eval conan install .. --build  ${CONAN_SETTINGS_FLAG}; fi
 
-  - eval cmake .. ${CMAKE_GENERATOR_FLAG} ${COVERAGE_FLAGS} ${TEST_FLAGS}
+  - eval cmake .. ${CMAKE_GENERATOR_FLAG} -DGNL_ENABLE_COVERAGE:BOOL=${ENABLE_COVERAGE:-FALSE} -DGNL_BUILD_TESTS:BOOL=${ENABLE_TESTS:-TRUE}
+  #- eval cmake .. ${CMAKE_GENERATOR_FLAG} ${COVERAGE_FLAGS} ${TEST_FLAGS}
   - eval cmake --build . --config "${BUILD_CONFIG}"
   - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then ctest -C ${BUILD_CONFIG}; fi
 

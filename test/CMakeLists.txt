@@ -31,6 +31,7 @@ MESSAGE("=====================================================")
 MESSAGE("Collecting Test Cases                                ")
 MESSAGE("=====================================================")
 
+
 file(GLOB files "unit-*.cpp")
 foreach(file ${files})
     get_filename_component(file_basename ${file} NAME_WE)
@@ -39,8 +40,8 @@ foreach(file ${files})
     create_test( NAME ${testcase}
                  SOURCES ${file}
                  COMMAND ${testcase}
-                 PUBLIC_COMPILE_FEATURES  --coverage -g -O0 -fprofile-arcs -ftest-coverage
-                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl --coverage -g -O0 -fprofile-arcs -ftest-coverage)
+                 PUBLIC_COMPILE_FEATURES  ${COVERAGE_FLAGS}
+                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_FLAGS})
 
 endforeach()
 MESSAGE("=====================================================")

@@ -49,14 +49,15 @@ add_custom_target( other_files
 # If we hhave enabled coverage, make sure to add the
 # specific flags required to calculate the coverage
 #########################################################
+
+
+if(CMAKE_COMPILER_IS_GNUCC)
+    option(GNL_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" FALSE)
+endif()
+
 if(GNL_ENABLE_COVERAGE)
-
-  if(CMAKE_COMPILER_IS_GNUCC)
-    option(GNL_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" TRUE)
-
-    add_compile_options(--coverage -g -O0 -fprofile-arcs -ftest-coverage)
-  endif()
-
+    set(COVERAGE_FLAGS --coverage -g -O0 -fprofile-arcs -ftest-coverage)
+    #add_compile_options(--coverage -g -O0 -fprofile-arcs -ftest-coverage)
 endif()
 #########################################################
 
