@@ -1,5 +1,5 @@
 /*************************************************************************
- * gnl_resource_path - www.glfw.org
+ * resource_path - www.glfw.org
  *
  * Similar to how the OS PATH works, simple add a bunch of folders
  * to the object, and then use the .get( ) method to find the first
@@ -7,7 +7,7 @@
  *
  * Example:
  *
- *   gnl::gnl_resource_path R;
+ *   gnl::resource_path R;
  *   R.add_path("/bin");
  *   R.add_path("/usr/bin");
  *
@@ -43,8 +43,8 @@
  *************************************************************************/
 
 #pragma once
-#ifndef GNL_RESOURCE_PATH
-#define GNL_RESOURCE_PATH
+#ifndef GNL_RESOURCE_PATH_H
+#define GNL_RESOURCE_PATH_H
 
 
 #include <string>
@@ -76,12 +76,12 @@ namespace gnl
 {
 
 /**
- * @brief The gnl_resource_path class
+ * @brief The resource_path class
  *
  * The resource_path class is used search for external resources which may reside in multiple
  * locations on the file system.
  *
- * gnl_resource_path R;
+ * resource_path R;
  *
  * R.add_resource( "/path/to/images" );
  * R.add_resource( "/path/to/other_images" );
@@ -91,7 +91,7 @@ namespace gnl
  *                      // due to the order it was added in the resource list.
  *
  */
-class gnl_resource_path
+class resource_path
 {
     public:
         using path_type = std::string;
