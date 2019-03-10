@@ -20,34 +20,3 @@ create_example( tcp_client Threads::Threads)
 create_example( tcp_server_2 Threads::Threads)
 create_example( thread_pool Threads::Threads)
 create_example( udp_server Threads::Threads)
-#create_executable( NAME animate SOURCES animate.cpp PUBLIC_LINKED_TARGETS gnl::gnl)
-
-# SUBDIRLIST(SUBDIRS ${CMAKE_CURRENT_SOURCE_DIR})
-#
-# MESSAGE("\n\n")
-# MESSAGE("=====================================================")
-# MESSAGE(" Collecting Executables                              ")
-# MESSAGE("=====================================================")
-# FOREACH(subdir ${SUBDIRS})
-#
-#     if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${subdir}/CMakeLists.txt")
-#
-#         MESSAGE("Custom CMakeLists.txt file found for executable: ${subdir} ")
-#         add_subdirectory(${subdir})
-#
-#     else()
-#
-#         MESSAGE("Compiling Module ${subdir} into executable" )
-#
-#         include_directories( ${GNL_INCLUDE} )
-#
-#         FILE(GLOB_RECURSE  SRC_FILES  "${subdir}/*.cpp" )
-#
-#         add_executable(${subdir} ${SRC_FILES})
-#         target_link_libraries( ${subdir} ${GNL_LIBS} ${GNL_COVERAGE_FLAGS})
-#
-#     endif()
-#
-# ENDFOREACH()
-# MESSAGE("=====================================================")
-#

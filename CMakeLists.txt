@@ -1,24 +1,10 @@
-#
-# This CMake project is a boilerplate code for developing a C++ library
-#
-#
-#
-#
-#
-#
-#
-#
-#
-#
-
-
 cmake_minimum_required(VERSION 3.8)
 
 #########################################################
 project(gnl  VERSION 1.0.0)
+include(cmake/functions.cmake)
 #########################################################
 
-include(cmake/functions.cmake)
 
 #########################################################
 # Create an interface library so that we can link to
@@ -74,36 +60,11 @@ if(GNL_ENABLE_COVERAGE)
 endif()
 #########################################################
 
-# Maros
 
-
-
-
-
-#########################################################
-# Add the src sub directory. Each subdirectory within
-# the src folder will be compiled into its own library
-#
-# The Src folder contains 2 sub folders: bin and lib
-#
-# All subfolders within the lib folder will be compiled
-# into a library. Ideally each of these libraries
-# should be independent and should not depend on
-# each other.
-#
-# All subfolders within the bin folder will be compiled
-# into an executable and linked with each of the sub
-# folders in src/lib.
 #########################################################
 add_subdirectory(examples)
-#########################################################
 
-
-#########################################################
-# Add the test sub directory. This is where all unit tests
-# will be stored. Each unit test will be compiled and
-# linked with all the libraries in the src/ folder
-#########################################################
 enable_testing()
+
 add_subdirectory(test)
 #########################################################

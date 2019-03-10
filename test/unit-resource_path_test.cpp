@@ -8,7 +8,7 @@ using namespace gnl;
 
 SCENARIO( "Absolute and Relative Path tests" )
 {
-    gnl::gnl_resource_path R;
+    gnl::resource_path R;
 
 
     GIVEN("A set of absolute/relative paths")
@@ -26,7 +26,7 @@ SCENARIO( "Absolute and Relative Path tests" )
 
 SCENARIO("Format path tests")
 {
-    gnl::gnl_resource_path R;
+    gnl::resource_path R;
 
     GIVEN("A set of paths with varous number of repeated separators")
     {
@@ -45,7 +45,7 @@ SCENARIO("Format path tests")
 
 SCENARIO( "join() tests" ) {
 
-    gnl::gnl_resource_path R;
+    gnl::resource_path R;
 
     GIVEN("A Root path folder and a stem ")
     {
@@ -72,7 +72,7 @@ SCENARIO( "join() tests" ) {
 
 SCENARIO( "OS File exists" )
 {
-    gnl::gnl_resource_path R;
+    gnl::resource_path R;
 
 #if defined __linux__
     GIVEN("A a set of known files on Linux")
@@ -121,7 +121,7 @@ SCENARIO( "OS File exists" )
 
 SCENARIO( "Resource exists" )
 {
-    gnl::gnl_resource_path R;
+    gnl::resource_path R;
 
 #if defined __linux__
 
