@@ -12,7 +12,7 @@ cmake_minimum_required(VERSION 3.8)
 #############################################################################
 
 
-add_library(catch_main OBJECT
+add_library(catch_main STATIC
     "unit.cpp"
 )
 set_target_properties(catch_main PROPERTIES
