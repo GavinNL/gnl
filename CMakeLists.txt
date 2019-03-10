@@ -14,52 +14,49 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-project(gnl)
-
-#CPPBOILERPLATE
-set (CMAKE_CXX_STANDARD 11)
-
-
-option(BUILD_SHARED_LIBS "Enable compilation of shared libraries" OFF)
-
-option(GNL_ENABLE_COVERAGE "Enable Code Coverage flags" OFF)
-option(GNL_BUILD_TESTS "Build Tests" ON)
-
 #########################################################
-FILE(GLOB TEXT_FILES  "*.yml" )
-add_custom_target(ci_files    SOURCES ${TEXT_FILES} .travis/install.sh .travis/build.sh  )
-
-FILE(GLOB README_FILES  "*.md" )
-add_custom_target(readme    SOURCES ${README_FILES})
+project(gnl  VERSION 1.0.0)
 #########################################################
 
-# Link this 'library' to use the following warnings
-add_library(project_warnings INTERFACE)
+include(cmake/functions.cmake)
 
 #########################################################
-# Add the main include folder for our library
+# Create an interface library so that we can link to
+# The proper configurations.
+#
+# Any target that wants to use gnl should link to
+# gnl::gnl.  eg:
+#
+#  target_link_libraries(myexe gnl::gnl)
+#
 #########################################################
-set(GNL_INCLUDE ${PROJECT_SOURCE_DIR}/include)
+create_header_only_library( NAME gnl
+                            NAMESPACE gnl
+                            PUBLIC_INCLUDE_PATHS
+                                "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+                                "$<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/generated_headers>"
+                            PUBLIC_COMPILE_FEATURES
+                                cxx_std_11
+                            )
 #########################################################
 
 
-if(EXISTS ${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-    set(CONAN_SYSTEM_INCLUDES ON)
-    conan_basic_setup()
-    link_libraries(${CONAN_LIBS})
-else()
-    if(EXISTS ${CMAKE_SOURCE_DIR}/conanfile.txt)
-        message( FATAL_ERROR
-" A conanfile.txt file exists in the source directory\n"
-" indicating conan is used for dependences but a conanbuildinfo.cmake\n"
-" file does not exist. Make sure to execute:\n\n"
-" conan install ${CMAKE_SOURCE_DIR} --build=missing -if ${CMAKE_BINARY_DIR}" )
-    endif()
 
-endif()
+#########################################################
+# Other targets
+#########################################################
+add_custom_target( other_files
+                   SOURCES
+                   .travis/install.sh
+                   .travis/build.sh
+                   README.md
+                   LICENSE
+                   .gitlab-ci.yml
+                   .travis.yml
+                   appveyor.yml
+                )
+#########################################################
 
-set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 
 #########################################################
@@ -69,7 +66,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 if(GNL_ENABLE_COVERAGE)
 
   if(CMAKE_COMPILER_IS_GNUCC)
-    option(GNL_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" FALSE)
+    option(GNL_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" TRUE)
 
     add_compile_options(--coverage -g -O0 -fprofile-arcs -ftest-coverage)
   endif()
@@ -77,96 +74,11 @@ if(GNL_ENABLE_COVERAGE)
 endif()
 #########################################################
 
-if(MSVC)
-  target_compile_options(project_warnings INTERFACE /W4)
-else()
-    if (CMAKE_COMPILER_IS_GNUCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 7.1)
-        add_compile_options(
-                               -Wnon-virtual-dtor # warn the user if a class with virtual functions has a
-                                                  # non-virtual destructor. This helps catch hard to
-                                                  # track down memory errors
-                               -Wold-style-cast # warn for c-style casts
-                               -Wcast-align # warn for potential performance problem casts
-                               -Wunused # warn on anything being unused
-                               -Woverloaded-virtual # warn if you overload (not override) a virtual
-                                                    # function
-                               -Wpedantic # warn if non-standard C++ is used
-                               -Wconversion # warn on type conversions that may lose data
-                               -Wsign-conversion # warn on sign conversions
-                               -Wmisleading-indentation # warn if identation implies blocks where blocks
-                                                        # do not exist
-                               -Wduplicated-cond # warn if if / else chain has duplicated conditions
-                               -Wduplicated-branches # warn if if / else branches have duplicated code
-                               -Wlogical-op # warn about logical operations being used where bitwise were
-                                            # probably wanted
-                               -Wnull-dereference # warn if a null dereference is detected
-                               -Wuseless-cast # warn if you perform a cast to the same type
-                               -Wdouble-promotion # warn if float is implicit promoted to double
-                               -Wformat=2 # warn on security issues around functions that format output
-                                          # (ie printf)
-                               -Werror=return-type
-                               )
-    else()
-        add_compile_options(
-                               -Wnon-virtual-dtor # warn the user if a class with virtual functions has a
-                                                  # non-virtual destructor. This helps catch hard to
-                                                  # track down memory errors
-                               -Wold-style-cast # warn for c-style casts
-                               -Wcast-align # warn for potential performance problem casts
-                               -Wunused # warn on anything being unused
-                               -Woverloaded-virtual # warn if you overload (not override) a virtual
-                                                    # function
-                               -Wpedantic # warn if non-standard C++ is used
-                               -Wconversion # warn on type conversions that may lose data
-                               -Wsign-conversion # warn on sign conversions
-                               -Wformat=2 # warn on security issues around functions that format output
-                                          # (ie printf)
-                               -Werror=return-type
-                               )
-    endif()
-
-endif()
-
-
-
-
-
-
 # Maros
 
-#########################################################
-# Macro to find all sub directories within a folder
-#########################################################
-MACRO(SUBDIRLIST result curdir)
-  FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-  SET(dirlist "")
-  FOREACH(child ${children})
-    IF(IS_DIRECTORY ${curdir}/${child})
-      LIST(APPEND dirlist ${child})
-    ENDIF()
-  ENDFOREACH()
-  SET(${result} ${dirlist})
-ENDMACRO()
-#########################################################
 
 
 
-######################
-# Get a list of all the subdirectories in the src folder. Each of
-# these subdirectories is compiled into its own library
-# which will be linked with all unit tests
-SUBDIRLIST(GNL_LIBS ${CMAKE_CURRENT_SOURCE_DIR}/src/lib)
-
-
-if(GNL_ENABLE_COVERAGE)
-    set(GNL_COVERAGE_FLAGS "--coverage -g -O0 -fprofile-arcs -ftest-coverage")
-    MESSAGE("Setting Coverage flags: ${GNL_COVERAGE_FLAGS} ")
-endif()
-
-
-if( ${GNL_BUILD_TESTS})
-    enable_testing()
-endif()
 
 #########################################################
 # Add the src sub directory. Each subdirectory within
@@ -190,9 +102,8 @@ add_subdirectory(src)
 #########################################################
 # Add the test sub directory. This is where all unit tests
 # will be stored. Each unit test will be compiled and
-# linked with all the libraryes in the src/ folder
+# linked with all the libraries in the src/ folder
 #########################################################
-if( ${GNL_BUILD_TESTS})
-    add_subdirectory(test)
-endif()
+enable_testing()
+add_subdirectory(test)
 #########################################################
