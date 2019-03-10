@@ -95,7 +95,7 @@ endif()
 # into an executable and linked with each of the sub
 # folders in src/lib.
 #########################################################
-add_subdirectory(src)
+add_subdirectory(examples)
 #########################################################
 
 
