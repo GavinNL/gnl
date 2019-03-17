@@ -44,4 +44,6 @@ foreach(file ${files})
 
 endforeach()
 
+target_compile_features(test-vp_variant PUBLIC cxx_std_17)
+
 MESSAGE("=====================================================")
