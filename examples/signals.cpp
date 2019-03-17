@@ -1,5 +1,5 @@
 #include <iostream>
-#include <gnl/gnl_signals.h>
+#include <gnl/signals.h>
 #include <assert.h>
 #include <thread>
 #include <cstdlib>

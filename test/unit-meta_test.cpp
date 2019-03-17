@@ -1,4 +1,4 @@
-#include <gnl/gnl_meta.h>
+#include <gnl/meta.h>
 
 #include<catch2/catch.hpp>
 #include <string>

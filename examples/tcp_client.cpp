@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
-#include <gnl/gnl_socket.h>
+#include <gnl/socket.h>
 
 
 std::mutex m_Mutex;

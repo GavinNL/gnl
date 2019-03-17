@@ -1,5 +1,5 @@
 #include <iostream>
-#include <gnl/gnl_periodic.h>
+#include <gnl/periodic.h>
 
 using namespace std;
 

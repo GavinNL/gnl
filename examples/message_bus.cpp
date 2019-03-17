@@ -1,4 +1,4 @@
-#include <gnl/gnl_message_bus.h>
+#include <gnl/message_bus.h>
 #include <iostream>
 
 #include <functional>

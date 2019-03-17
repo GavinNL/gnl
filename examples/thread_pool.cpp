@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 
-#include <gnl/gnl_threadpool.h>
+#include <gnl/threadpool.h>
 
 
 void task(int count)

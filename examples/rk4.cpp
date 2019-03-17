@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <array>
 
-#include <gnl/gnl_rk4.h>
+#include <gnl/rk4.h>
 
 #include <iomanip>
 #define G  -9.81
