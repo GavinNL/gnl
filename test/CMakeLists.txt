@@ -40,8 +40,8 @@ foreach(file ${files})
     create_test( NAME ${testcase}
                  SOURCES ${file}
                  COMMAND ${testcase}
-                 PUBLIC_COMPILE_FEATURES  ${COVERAGE_FLAGS}
-                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_FLAGS})
+                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET})
 
 endforeach()
+
 MESSAGE("=====================================================")
