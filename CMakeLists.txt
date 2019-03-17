@@ -40,6 +40,10 @@ add_custom_target( other_files
                    .gitlab-ci.yml
                    .travis.yml
                    appveyor.yml
+                   cmake/functions.cmake
+                   cmake/coverage.cmake
+                   cmake/cppcheck.cmake
+                   cmake/warnings.cmake
                 )
 #########################################################
 
@@ -55,9 +59,11 @@ if(CMAKE_COMPILER_IS_GNUCC)
     option(GNL_ENABLE_COVERAGE "Enable coverage reporting for gcc/clang" FALSE)
 endif()
 
-if(GNL_ENABLE_COVERAGE)
-    set(COVERAGE_FLAGS --coverage -g -O0 -fprofile-arcs -ftest-coverage)
-    #add_compile_options(--coverage -g -O0 -fprofile-arcs -ftest-coverage)
+if(CMAKE_COMPILER_IS_GNUCC)
+
+    if(GNL_ENABLE_COVERAGE)
+        include(cmake/coverage.cmake)
+    endif()
 endif()
 #########################################################
 

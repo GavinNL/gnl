@@ -1,10 +1,10 @@
-#include <gnl/gnl_interp.h>
+#include <gnl/interp.h>
 #include <vector>
 
 #include<catch2/catch.hpp>
 #include <string>
 
-#include <gnl/gnl_arrayview.h>
+#include <gnl/arrayview.h>
 
 using namespace gnl;
 

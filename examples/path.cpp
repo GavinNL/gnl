@@ -1,5 +1,5 @@
 #include <iostream>
-#include <gnl/gnl_path.h>
+#include <gnl/path.h>
 #include <assert.h>
 #include <thread>
 

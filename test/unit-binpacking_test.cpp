@@ -1,4 +1,4 @@
-#include <gnl/gnl_binpacking.h>
+#include <gnl/binpacking.h>
 #include <iostream>
 #include <catch2/catch.hpp>
 

@@ -1,5 +1,5 @@
-#include <gnl/gnl_path.h>
-#include <gnl/gnl_variant.h>
+#include <gnl/path.h>
+#include <gnl/variant.h>
 
 #include<catch2/catch.hpp>
 

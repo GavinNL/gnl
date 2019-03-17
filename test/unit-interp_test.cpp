@@ -1,4 +1,4 @@
-#include <gnl/gnl_interp.h>
+#include <gnl/interp.h>
 #include <vector>
 
 #include<catch2/catch.hpp>

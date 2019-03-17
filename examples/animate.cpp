@@ -2,7 +2,7 @@
 #include <thread>
 #include <iostream>
 #include <string>
-#include <gnl/gnl_animate.h>
+#include <gnl/animate.h>
 
 
 int main(int argc, char ** argv)

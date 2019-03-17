@@ -1,4 +1,4 @@
-#include <gnl/gnl_threadpool.h>
+#include <gnl/threadpool.h>
 
 #include<catch2/catch.hpp>
 #include <string>

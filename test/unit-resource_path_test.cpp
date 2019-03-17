@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
 
-#include <gnl/gnl_resource_path.h>
+#include <gnl/resource_path.h>
 #include <stdio.h>
 #include <iostream>
 
