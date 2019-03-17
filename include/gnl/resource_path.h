@@ -1,5 +1,5 @@
 /*************************************************************************
- * resource_path - www.glfw.org
+ * resource_path
  *
  * Similar to how the OS PATH works, simple add a bunch of folders
  * to the object, and then use the .get( ) method to find the first
@@ -56,8 +56,8 @@
 #include <stdio.h>
 
 #if defined __linux__
-#include <unistd.h>
-#include <sys/stat.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
 #endif
 
 #if defined _WIN32
