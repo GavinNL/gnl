@@ -98,6 +98,7 @@ TEST_CASE("Linking a variant")
              {
                 REQUIRE( x == 3 );
                 REQUIRE( y == 10 );
+                REQUIRE( x != y );
              }
          }
      }
