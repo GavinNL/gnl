@@ -20,3 +20,6 @@ create_example( tcp_client Threads::Threads)
 create_example( tcp_server_2 Threads::Threads)
 create_example( thread_pool Threads::Threads)
 create_example( udp_server Threads::Threads)
+#create_example( reference_var "")
+target_compile_features(message_bus PUBLIC cxx_std_17)
+
