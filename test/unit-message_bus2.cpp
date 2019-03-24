@@ -73,6 +73,15 @@ TEST_CASE("Connect multiple static function to the message bus.")
 
             REQUIRE( s3.first == std::type_index(typeid(M2)) ) ;
             REQUIRE( s3.second == 0 ) ;
+
+            WHEN("S2 is removed")
+            {
+                MsgBus.disconnect(s1);
+
+                auto s4 = MsgBus.connect<M1>( static_function2 );
+                REQUIRE( s4.first == std::type_index(typeid(M1)) ) ;
+                REQUIRE( s4.second == 0 ) ;
+            }
         }
 
 
@@ -218,7 +227,7 @@ TEST_CASE("Connecting Class methods")
 }
 
 
-TEST_CASE("Using push/dispatch to prevent infinate loops")
+TEST_CASE("Using push/dispatch to delay execution")
 {
     GIVEN("A message bus and two slots, each sending a message to the other via push()")
     {
@@ -265,8 +274,6 @@ TEST_CASE("Using push/dispatch to prevent infinate loops")
                 MsgBus.dispatch();
                 REQUIRE( cx.slot2called == true);
             }
-
-
         }
 
     }

@@ -3,6 +3,7 @@
 #ifndef GNL_MESSAGE_BUS2_H
 #define GNL_MESSAGE_BUS2_H
 
+#include <iostream>
 #include <cstdint>
 #include <utility>
 #include <functional>
@@ -22,13 +23,7 @@
 namespace GNL_NAMESPACE
 {
 
-struct Foo {
-    void print_sum(int n1, int n2)
-    {
-       // std::cout << n1+n2 << '\n';
-    }
-    int data = 10;
-};
+
 
 struct msgBus
 {
@@ -102,8 +97,16 @@ public:
     void disconnect(slot_id index)
     {
         m_signals[index.first].m_functions[index.second].reset();
+        m_signals[index.first].m_free_indices.push_back(index.second);
     }
 
+    /**
+     * @brief send
+     * @param M
+     *
+     * Send a message to any listeners currently listening for
+     * Msg_t.
+     */
     template<typename Msg_t>
     void send(Msg_t const M) const
     {
@@ -153,6 +156,11 @@ public:
 
     }
 
+    size_t queue_size() const
+    {
+        return m_queue.size();
+    }
+
     struct SignalInfo
     {
         std::vector<std::any> m_functions;
@@ -163,9 +171,10 @@ public:
 
     // queue of messages to dispatch.
     std::list< std::function<void(void)> > m_queue;
-    //std::vector< std::function<void(void)> > m_queue;
 
 };
+
+using event_bus  = msgBus;
 
 }
 
