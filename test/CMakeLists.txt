@@ -46,5 +46,6 @@ endforeach()
 
 target_compile_features(test-vp_variant PUBLIC cxx_std_17)
 target_compile_features(test-message_bus2 PUBLIC cxx_std_17)
+target_compile_features(test-entity_component_system PUBLIC cxx_std_17)
 
 MESSAGE("=====================================================")
