@@ -1,5 +1,5 @@
 /*************************************************************************
- * resource_path - www.glfw.org
+ * resource_path
  *
  * Similar to how the OS PATH works, simple add a bunch of folders
  * to the object, and then use the .get( ) method to find the first
@@ -54,10 +54,11 @@
 #include <exception>
 #include <stdexcept>
 #include <stdio.h>
+#include <sstream>
 
 #if defined __linux__
-#include <unistd.h>
-#include <sys/stat.h>
+    #include <unistd.h>
+    #include <sys/stat.h>
 #endif
 
 #if defined _WIN32
@@ -118,6 +119,27 @@ class resource_path
             return true;
         }
 
+        /**
+         * @brief add_paths
+         * @param paths
+         * @param delimeter
+         * @return
+         *
+         *  Add paths using the standard linux way of listing paths:
+         *
+         *   paths="/home/user/path1:/home/path2:/usr/local/share/resources
+         */
+        void add_paths(path_type const & paths, char delimiter=':')
+        {
+           if(paths.size()==0) return;
+
+           std::string token;
+           std::istringstream tokenStream(paths);
+           while (std::getline(tokenStream, token, delimiter))
+           {
+              add_path(token);
+           }
+        }
         /**
          * @brief remove_path
          * @param path_

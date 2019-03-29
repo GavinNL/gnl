@@ -1,12 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
 
-# if(JSON_Valgrind)
-#     find_program(CMAKE_MEMORYCHECK_COMMAND valgrind)
-#     message(STATUS "Executing test suite with Valgrind (${CMAKE_MEMORYCHECK_COMMAND})")
-#     set(memcheck_command "${CMAKE_MEMORYCHECK_COMMAND} ${CMAKE_MEMORYCHECK_COMMAND_OPTIONS} --error-exitcode=1 --leak-check=full")
-#     separate_arguments(memcheck_command)
-# endif()
-
 #############################################################################
 # Catch library with the main function to speed up build
 #############################################################################
@@ -32,7 +25,11 @@ MESSAGE("Collecting Test Cases                                ")
 MESSAGE("=====================================================")
 
 
-file(GLOB files "unit-*.cpp")
+#############################################################################
+# C++11 tests
+#############################################################################
+file(GLOB files "cxx_11/unit-*.cpp")
+
 foreach(file ${files})
     get_filename_component(file_basename ${file} NAME_WE)
     string(REGEX REPLACE "unit-([^$]+)" "test-\\1" testcase ${file_basename})
@@ -43,5 +40,38 @@ foreach(file ${files})
                  PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET})
 
 endforeach()
+#############################################################################
+
+# Try compiling a C++17 program and see if it works.
+try_compile(IS_CXX17
+      ${CMAKE_CURRENT_BINARY_DIR}
+      ${CMAKE_CURRENT_LIST_DIR}/cxx17_check.cpp
+      CMAKE_FLAGS -DCMAKE_CXX_STANDARD=17
+      #OUTPUT_VARIABLE OUTPUT
+      )
+
+
+#############################################################################
+# C++17 tests
+#############################################################################
+if(IS_CXX17)
+
+    file(GLOB files "cxx_17/unit-*.cpp")
+
+    foreach(file ${files})
+        get_filename_component(file_basename ${file} NAME_WE)
+
+        string(REGEX REPLACE "unit-([^$]+)" "test-\\1" testcase ${file_basename})
+
+        create_test( NAME ${testcase}
+                     SOURCES ${file}
+                     COMMAND ${testcase}
+                     PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET})
+
+        target_compile_features(${testcase} PUBLIC cxx_std_17)
+    endforeach()
+endif()
+#############################################################################
+
 
 MESSAGE("=====================================================")

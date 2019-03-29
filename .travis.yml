@@ -163,10 +163,7 @@ script:
   - if [ -f conanfile.txt ]; then export USE_CONAN=TRUE; fi
 
   # The path to conan does not get set properly because travis does not restart the shell
-  # so we ahve to manually add the path it on Windows.
-#  - if [[ "${ENABLE_COVERAGE}" == "TRUE" ]]; then export COVERAGE_FLAGS='-DGNL_ENABLE_COVERAGE:BOOL=TRUE'; fi
-#  - if [[ "${ENABLE_TESTS}" == "TRUE" ]]; then export TEST_FLAGS='-DGNL_BUILD_TESTS:BOOL=TRUE'; fi
-
+  # so we have to manually add the path it on Windows.
   #- if [[ "${USE_CONAN}" == "TRUE" ]]; then conan user; fi
 #  - if [[ "${USE_CONAN}" == "TRUE" ]]; then conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan; fi
 

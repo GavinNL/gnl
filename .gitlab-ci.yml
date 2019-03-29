@@ -25,17 +25,17 @@ cppcheck:
     stage: test
     before_script:
       - sudo apt update
-      - sudo apt install gcovr
+      - sudo apt install python3 python3-pip -y
+      - pip3 install --user gcovr
+      - export PATH=$HOME/.local/bin:$PATH
       - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
     script:
       - mkdir -p build && cd build
-      #- conan install --build missing ..
       - if [ -f ../conanfile.txt ]; then conan install --build missing ..; fi
       - cmake -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
       - cmake --build .
       - ctest
-      - mkdir coverage
-      - gcovr . -r .. --html-details --html -o coverage/index.html -e ../test/third_party
+      - make coverage
     artifacts:
       paths:
         - build/coverage/
@@ -45,20 +45,23 @@ cppcheck:
 
 build-gcc5:
     extends: .build-gcc
-    image: conanio/conangcc5
+    image: conanio/gcc5
 
 build-gcc6:
     extends: .build-gcc
-    image: conanio/conangcc6
+    image: conanio/gcc6
 
 build-gcc7:
     extends: .build-gcc
-    image: conanio/conangcc7
+    image: conanio/gcc7
 
+build-gcc8:
+    extends: .build-gcc
+    image: conanio/gcc8
 
 
 .build-clang:
-    image: conanio/conanclang60
+    image: conanio/clang60
     stage: test
     before_script:
       - sudo apt update
@@ -72,23 +75,22 @@ build-gcc7:
       - cmake --build .
       - ctest
 
-build-clang38:
-    extends: .build-clang
-    image: conanio/conanclang38
+#build-clang38:
+#    extends: .build-clang
+#    image: conanio/clang38
 
 build-clang39:
     extends: .build-clang
-    image: conanio/conanclang39
+    image: conanio/clang39
 
 build-clang40:
     extends: .build-clang
-    image: conanio/conanclang40
+    image: conanio/clang40
 
 build-clang50:
     extends: .build-clang
-    image: conanio/conanclang50
+    image: conanio/clang50
 
 build-clang60:
     extends: .build-clang
-    image: conanio/conanclang60
-
+    image: conanio/clang60
