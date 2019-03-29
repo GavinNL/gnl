@@ -54,7 +54,7 @@ public:
 
 TEST_CASE("Connect multiple static function to the message bus.")
 {
-    gnl::msgBus MsgBus;
+    gnl::event_bus MsgBus;
 
 
     WHEN("We connect function1 function2 and function3 to the message bus")
@@ -65,22 +65,22 @@ TEST_CASE("Connect multiple static function to the message bus.")
 
         THEN("The Return type is a pair of < message type_index, index in vector >")
         {
-            REQUIRE( s1.first == std::type_index(typeid(M1)) ) ;
-            REQUIRE( s1.second == 0 ) ;
+            REQUIRE( s1->first == std::type_index(typeid(M1)) ) ;
+            REQUIRE( s1->second == 0 ) ;
 
-            REQUIRE( s2.first == std::type_index(typeid(M1)) ) ;
-            REQUIRE( s2.second == 1 ) ;
+            REQUIRE( s2->first == std::type_index(typeid(M1)) ) ;
+            REQUIRE( s2->second == 1 ) ;
 
-            REQUIRE( s3.first == std::type_index(typeid(M2)) ) ;
-            REQUIRE( s3.second == 0 ) ;
+            REQUIRE( s3->first == std::type_index(typeid(M2)) ) ;
+            REQUIRE( s3->second == 0 ) ;
 
             WHEN("S2 is removed")
             {
                 MsgBus.disconnect(s1);
 
                 auto s4 = MsgBus.connect<M1>( static_function2 );
-                REQUIRE( s4.first == std::type_index(typeid(M1)) ) ;
-                REQUIRE( s4.second == 0 ) ;
+                REQUIRE( s4->first == std::type_index(typeid(M1)) ) ;
+                REQUIRE( s4->second == 0 ) ;
             }
         }
 
@@ -131,32 +131,7 @@ TEST_CASE("Connect multiple static function to the message bus.")
                 REQUIRE( call_flags.static_function_3_called == true);
             }
         }
-        AND_WHEN("We push messages onto bus")
-        {
-            call_flags = CallFlags_t();
 
-            MsgBus.push( M1() );
-            MsgBus.push( M2() );
-
-            THEN("The messages aren't called.")
-            {
-                REQUIRE( call_flags.static_function_1_called == false);
-                REQUIRE( call_flags.static_function_2_called == false);
-                REQUIRE( call_flags.static_function_3_called == false);
-
-                WHEN("We call dispatch() ")
-                {
-                    MsgBus.dispatch();
-
-                    THEN("The messages are called")
-                    {
-                        REQUIRE( call_flags.static_function_1_called == true);
-                        REQUIRE( call_flags.static_function_2_called == true);
-                        REQUIRE( call_flags.static_function_3_called == true);
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -166,7 +141,7 @@ TEST_CASE("Connecting Lambdas")
 
     GIVEN("A message bus  ")
     {
-        gnl::msgBus MsgBus;
+        gnl::event_queue_bus MsgBus;
 
         THEN("We can connect lambda functions to it")
         {
@@ -192,7 +167,7 @@ TEST_CASE("Connecting Class methods")
 {
     GIVEN("A message bus and a class with a method")
     {
-        gnl::msgBus MsgBus;
+        gnl::event_bus MsgBus;
 
         struct CX
         {
@@ -227,18 +202,62 @@ TEST_CASE("Connecting Class methods")
 }
 
 
-TEST_CASE("Using push/dispatch to delay execution")
+
+
+
+
+TEST_CASE("event_queue")
 {
-    GIVEN("A message bus and two slots, each sending a message to the other via push()")
+    GIVEN("An event_queue")
     {
-        gnl::msgBus MsgBus;
+        gnl::event_queue MsgBus;
+
+        auto s1 = MsgBus.connect<M1>( static_function1 ); // static function increments the counter
+        auto s2 = MsgBus.connect<M1>( static_function2 ); // static function increments the counter
+        auto s3 = MsgBus.connect<M2>( static_function3 ); // static function increments the counter
+
+        WHEN("We send messages onto bus")
+        {
+            call_flags = CallFlags_t();
+
+            MsgBus.send( M1() );
+            MsgBus.send( M2() );
+
+            THEN("The messages aren't called.")
+            {
+                REQUIRE( call_flags.static_function_1_called == false);
+                REQUIRE( call_flags.static_function_2_called == false);
+                REQUIRE( call_flags.static_function_3_called == false);
+
+                WHEN("We call dispatch() ")
+                {
+                    MsgBus.dispatch();
+
+                    THEN("The messages are called")
+                    {
+                        REQUIRE( call_flags.static_function_1_called == true);
+                        REQUIRE( call_flags.static_function_2_called == true);
+                        REQUIRE( call_flags.static_function_3_called == true);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+TEST_CASE("event_queue::dispatch() only executes the number of functions that are currently in the queue. It does not always empty the queue")
+{
+    GIVEN("A message bus and two slots, each sending a message to the other ")
+    {
+        gnl::event_queue MsgBus;
 
         struct CX
         {
         public:
-            gnl::msgBus * bus;
+            gnl::event_queue * bus;
 
-            CX(gnl::msgBus & b) : bus(&b){}
+            CX(gnl::event_queue & b) : bus(&b){}
 
             bool slot1called = false;
             bool slot2called = false;
@@ -247,13 +266,13 @@ TEST_CASE("Using push/dispatch to delay execution")
             {
                 assert(&M);
                 slot1called = true;
-                bus->push( M2() );
+                bus->send( M2() );
             }
 
             void slot2(M2 const & M)
             {
                 slot2called = true;
-                bus->push( M1() );
+                bus->send( M1() );
             }
         };
 
@@ -262,20 +281,58 @@ TEST_CASE("Using push/dispatch to delay execution")
         MsgBus.connect<M1>( std::bind(&CX::slot1, &cx, std::placeholders::_1) );
         MsgBus.connect<M2>( std::bind(&CX::slot2, &cx, std::placeholders::_1) );
 
-        WHEN("When we push a message onto the bus")
+        WHEN("When we send a single message onto the bus")
         {
-            MsgBus.push( M1() );
+            MsgBus.send( M1() );
             THEN("Dispatching the message, will only call one of the functions")
             {
                 MsgBus.dispatch();
                 REQUIRE( cx.slot1called == true);
                 REQUIRE( cx.slot2called == false);
 
-                MsgBus.dispatch();
-                REQUIRE( cx.slot2called == true);
+                REQUIRE( MsgBus.queue_size() == 1);
+
+                AND_WHEN("We call dispatch again")
+                {
+                    MsgBus.dispatch();
+
+                    THEN("The other function gets called")
+                    {
+                        REQUIRE( cx.slot2called == true);
+                    }
+                }
             }
         }
-
     }
-
 }
+
+#if defined GNL_ALLOW_NON_CONST
+
+TEST_CASE("Testing const and ref qualifiers")
+{
+    gnl::event_queue MsgBus;
+
+    struct CX
+    {
+    public:
+
+        static void slot1(M1 const & M)
+        {
+            assert(&M);
+        }
+
+        static void slot2(M1 & M)
+        {
+        }
+
+        static void slot3(M1 M)
+        {
+        }
+    };
+
+    MsgBus.connect<M1>(CX::slot1);
+    MsgBus.connect<M1>(CX::slot2);
+    MsgBus.connect<M1>(CX::slot3);
+}
+
+#endif
