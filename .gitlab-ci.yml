@@ -55,7 +55,7 @@ build-gcc7:
     extends: .build-gcc
     image: conanio/gcc7
 
-build-gcc7:
+build-gcc8:
     extends: .build-gcc
     image: conanio/gcc8
 
