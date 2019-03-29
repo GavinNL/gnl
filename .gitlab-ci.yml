@@ -25,17 +25,16 @@ cppcheck:
     stage: test
     before_script:
       - sudo apt update
-      - sudo apt install gcovr -y
+      - sudo apt install python3 python3-pip -y
+      - pip3 install --user gcovr
       - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
     script:
       - mkdir -p build && cd build
-      #- conan install --build missing ..
       - if [ -f ../conanfile.txt ]; then conan install --build missing ..; fi
       - cmake -D GNL_ENABLE_COVERAGE:BOOL=TRUE -D GNL_BUILD_TESTS:BOOL=TRUE ..
       - cmake --build .
       - ctest
-      - mkdir coverage
-      - gcovr . -r .. --html-details --html -o coverage/index.html -e ../test/third_party
+      - make coverage
     artifacts:
       paths:
         - build/coverage/
