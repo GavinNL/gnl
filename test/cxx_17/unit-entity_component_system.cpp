@@ -24,9 +24,9 @@ struct Transform : ComponentBase<2>
 
 #if 1
 
-SCENARIO("Testing CompInfo<T>")
+SCENARIO("Testing ComponentAllocator<T>")
 {
-    CompInfo<Physics> C;
+    ComponentAllocator<Physics> C;
 
     REQUIRE( C.new_handle() == 0);
     REQUIRE( C.new_handle() == 1);
@@ -205,7 +205,8 @@ SCENARIO("Destroying Components [Public functions]")
 
             WHEN("We destroy the physics component using its handle")
             {
-                ECS.DestroyComponent<Physics>(i1);
+                e1.destroy<Physics>();
+                //ECS.DestroyComponent<Physics>(i1);
 
                 THEN("the physics component is destroyed and the entity no longer contains a physics component")
                 {
