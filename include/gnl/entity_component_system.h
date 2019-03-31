@@ -61,6 +61,8 @@ class handle
 
 };
 
+class EntitySystem;
+
 class Entity
 {
     protected:
@@ -71,6 +73,7 @@ class Entity
         using component_container_type = std::array<raw_handle_type, 4>;
 
         handle_type              m_handle;
+        EntitySystem            *m_parent= nullptr;
         component_container_type m_components;
 
         Entity()
@@ -99,6 +102,16 @@ class Entity
         {
             return m_handle == std::numeric_limits<raw_handle_type>::max();
         }
+
+        template<typename _Component>
+        _Component & create();
+
+        template<typename _Component>
+        _Component & get();
+
+        template<typename _Component>
+        void destroy();
+
     friend class EntitySystem;
 };
 
@@ -356,7 +369,9 @@ public:
      */
     handle_type NewEntity()
     {
-        return handle_type(m_entities.new_handle());
+        auto h = handle_type(m_entities.new_handle());
+        get_entity(h).m_parent = this;
+        return h;
     }
 
     /**
@@ -544,6 +559,26 @@ public:
 
 
 };
+
+
+template<typename _Component>
+_Component & Entity::create()
+{
+    auto h = m_parent->NewComponent<_Component>( handle() );
+    return m_parent->get_component<_Component>(h);
+}
+
+template<typename _Component>
+_Component & Entity::get()
+{
+    return m_parent->get_component<_Component>( component_handle<_Component>() );
+}
+
+template<typename _Component>
+void Entity::destroy()
+{
+    m_parent->DestroyComponent<_Component>( handle() );
+}
 
 #define COMPONENT_ID(N) enum id_enumtype : uint32_t { ID = N }; size_t m_parent_entity_handle=std::numeric_limits<size_t>::max(); size_t m_handle =std::numeric_limits<size_t>::max()
 
