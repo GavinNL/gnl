@@ -34,6 +34,12 @@ public:
 
 
 
+    template<typename Class_t,  typename Msg_t>
+    slot_id connect( void (Class_t::*x)(Msg_t const & m), Class_t * me )
+    {
+        return connect<Msg_t>( std::bind(x, me, std::placeholders::_1) );
+    }
+
     /**
      * @brief connect
      * @param f
@@ -138,9 +144,10 @@ protected:
      *
      * Processes all the messages that are currently in the queue.
      */
-    void _dispatch()
+    void _dispatch(size_t n)
     {
         auto s = m_queue.size();
+        s = std::min(s,n);
         while(s--)
         {
             m_queue.front()();
@@ -203,9 +210,9 @@ public:
         _push(M);
     }
 
-    void dispatch()
+    void dispatch(size_t n = std::numeric_limits<size_t>::max() )
     {
-        _dispatch();
+        _dispatch(n);
     }
 };
 
@@ -225,9 +232,9 @@ public:
         _push(M);
     }
 
-    void dispatch()
+    void dispatch(size_t n = std::numeric_limits<size_t>::max())
     {
-        _dispatch();
+        _dispatch(n);
     }
 };
 
