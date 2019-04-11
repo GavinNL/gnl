@@ -30,7 +30,7 @@
 #ifndef _GNL_SOCKET_SHELL_H_
 #define _GNL_SOCKET_SHELL_H_
 
-#if defined __linux__
+#if not defined WIN32
 
 #include <assert.h>
 #include <stdio.h>

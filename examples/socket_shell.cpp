@@ -1,3 +1,4 @@
+#if not defined WIN32
 /*
  * This is free and unencumbered software released into the public domain.
  *
@@ -78,12 +79,15 @@ void on_connect(gnl::shell_client  & client)
 {
     std::cout << "Client connected" << std::endl;
 
+    #define RED "\033[1;31m"
+    #define RESET "\033[0m"
+
     const char msg[] =
-                      "\033[1;31m"  "Welcome to the Shell!\n" "\033[0m"
-                      "\033[1;31m"  "- Any command you type will be echoed back.\n" "\033[0m"
-                      "\033[1;31m"  "- type 'exit' to disconnect\n" "\033[0m"
-                      "\033[1;31m"  "- use:  \'set VAR VALUE\' to set an environment variable\n" "\033[0m"
-                      "\033[1;31m"  "- use ${VAR} to reference the environment variable\n" "\033[0m";
+                      RED  "Welcome to the Shell!\n"                                    RESET
+                      RED  "- Any command you type will be echoed back.\n"              RESET
+                      RED  "- type 'exit' to disconnect\n"                              RESET
+                      RED  "- use:  \'set VAR VALUE\' to set an environment variable\n" RESET
+                      RED  "- use ${VAR} to reference the environment variable\n"       RESET;
 
     client.send(msg);
 }
@@ -122,3 +126,11 @@ int main()
     return 0;
 }
 
+#else
+
+int main(int arc, char ** argv)
+{
+    return 0;
+}
+
+#endif
