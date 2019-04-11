@@ -30,53 +30,65 @@
 #include <iostream>
 #include <gnl/socket_shell.h>
 
-std::string cmd_echo(gnl::client & client, std::vector<std::string> const & arg)
+std::string cmd_echo(gnl::shell_client & client, std::vector<std::string> const & arg)
 {
     std::string s;
-    for(int i=1; i < arg.size() ;i++)
+    for(size_t i=1; i < arg.size() ;i++)
     {
-        s += arg[i] + "\n";
+        s += arg[i] + " ";
     }
 
     return s;
 }
 
-std::string cmd_ls( gnl::client  & c, std::vector<std::string> const & arg)
+std::string cmd_env( gnl::shell_client  & c, std::vector<std::string> const & arg)
+{
+
+    std::string s;
+    for(auto & e : c.env() )
+    {
+        s += e.first + '=' + e.second + '\n';
+    }
+    return s;
+}
+
+std::string cmd_ls( gnl::shell_client  & c, std::vector<std::string> const & arg)
 {
     std::string s("file.txt\nhello.txt");
     return s;
 }
 
-std::string cmd_rand( gnl::client  & c, std::vector<std::string> const & arg)
+std::string cmd_rand( gnl::shell_client  & c, std::vector<std::string> const & arg)
 {
     return std::to_string( std::rand() );
 }
 
-std::string cmd_exit(gnl::client  & client, std::vector<std::string> const & arg)
+std::string cmd_exit(gnl::shell_client  & client, std::vector<std::string> const & arg)
 {
-    client.send("From Server: Good Bye!\n");
     client.close();
     return "From server: Good Bye!!\n";
 }
 
-std::string cmd_none( gnl::client  & client, std::vector<std::string> const & arg )
+std::string cmd_none( gnl::shell_client  & client, std::vector<std::string> const & arg )
 {
     return "invalid command";
 }
 
-void on_connect(gnl::client  & client)
+void on_connect(gnl::shell_client  & client)
 {
     std::cout << "Client connected" << std::endl;
 
-    const char msg[] = "\033[1;31mbold red text\033[0m\n"
+    const char msg[] =
                       "\033[1;31m"  "Welcome to the Shell!\n" "\033[0m"
                       "\033[1;31m"  "- Any command you type will be echoed back.\n" "\033[0m"
-                      "\033[1;31m"  "- type 'exit' to disconnect\n" "\033[0m";
+                      "\033[1;31m"  "- type 'exit' to disconnect\n" "\033[0m"
+                      "\033[1;31m"  "- use:  \'set VAR VALUE\' to set an environment variable\n" "\033[0m"
+                      "\033[1;31m"  "- use ${VAR} to reference the environment variable\n" "\033[0m";
 
     client.send(msg);
 }
 
-void on_disconnect( gnl::client  & c)
+void on_disconnect( gnl::shell_client  & c)
 {
     std::cout << "Client Disconnected" << std::endl;
 }
@@ -84,28 +96,29 @@ void on_disconnect( gnl::client  & c)
 int main()
 {
 
-    gnl::DomainShell S;
+    gnl::socket_shell S;
 
     S.add_command("exit", cmd_exit);
     S.add_command("ls",   cmd_ls);
     S.add_command("rand", cmd_rand);
     S.add_command("echo", cmd_echo);
+    S.add_command("env",  cmd_env);
 
-    S.AddOnConnect( on_connect );
-    S.AddDefaultCommand(cmd_none);
+    S.add_connect_function( on_connect );
+    S.add_default(cmd_none);
 
-    S.AddOnDisconnect( on_disconnect );
+    S.add_disconnect_function( on_disconnect );
 
-    S.Start(SOCKET_NAME);
+    S.start(SOCKET_NAME);
 
     std::cout << "Connect to the shell from your bash terminal using:" << std::endl << std::endl;
     std::cout << "socat - UNIX-CONNECT:" << SOCKET_NAME << std::endl << std::endl;
     std::cout << "   or " <<  std::endl << std::endl;
     std::cout << "netcat -U " << SOCKET_NAME << std::endl << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    std::this_thread::sleep_for(std::chrono::seconds(100));
 
-    S.Disconnect();
+    S.disconnect();
     return 0;
 }
 

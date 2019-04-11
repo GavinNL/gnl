@@ -59,33 +59,54 @@ namespace gnl
 {
 
 
-class DomainShell;
+class socket_shell;
 
-class client
+class shell_client
 {
 public:
     using socket_t = gnl::domain_stream_socket;
 
-    client(socket_t socket, DomainShell * parent) : m_socket(socket), m_parent(parent)
+    shell_client(socket_t socket, socket_shell * parent) : m_socket(socket), m_parent(parent)
     {
     }
 
-    void run();
-    void start();
+    shell_client(shell_client const & c) = delete;
+    shell_client& operator = (shell_client const & c) = delete;
+
+
+    size_t id() const
+    {
+        return m_id;
+    }
+    /**
+     * @brief send
+     * @param msg
+     *
+     * Send a message directly to the client. Using this inside a
+     * command callback function isn't advised since the output
+     * is not parsed by the shell ,therefore using ${} and $() will not work
+     *
+     */
     void send(std::string const & msg)
     {
         m_socket.send(msg.data(), msg.size());
     }
+
+    /**
+     * @brief close
+     * Disconnect the client
+     */
     void close();
 
-protected:
-    void        parse(const char * buffer, socket_t & client);
-    std::string call(std::string cmd);
-    std::string execute( std::vector< std::string > const & args );
-
+    /**
+     * @brief get_var
+     * @param name
+     * @return
+     *
+     * Get an env variable
+     */
     std::string get_var(std::string name)
     {
-        //std::cout << "getting var: " << name << std::endl;
         auto f = m_vars.find(name);
         if( f == m_vars.end())
         {
@@ -95,33 +116,64 @@ protected:
         }
     }
 
+    /**
+     * @brief set_var
+     * @param var
+     * @param value
+     *
+     * Set an env variable
+     */
+    void set_var(std::string const & var, std::string const & value)
+    {
+        m_vars[var] = value;
+    }
+
+    /**
+     * @brief env
+     * @return
+     *
+     * Returns the map of environment variables.
+     */
+    std::map<std::string, std::string> & env()
+    {
+        return m_vars;
+    }
+protected:
+    void        parse(const char * buffer, socket_t & client);
+    std::string execute( std::string cmd );
+    std::string execute( std::vector< std::string > const & args );
+    void        run();
+    void        start();
+
+
     socket_t      m_socket;
-    DomainShell * m_parent = nullptr;
+    socket_shell * m_parent = nullptr;
     std::map<std::string, std::string> m_vars;
     bool          m_exit = false;
     std::thread   m_thread;
-
-    friend class DomainShell;
+    size_t        m_id;
+    friend class socket_shell;
 };
 
-class DomainShell
+class socket_shell
 {
 public:
     using socket_t = gnl::domain_stream_socket;
+    using client_t = shell_client;
 
     socket_t m_Socket;
 
-    using cmdfunction_t        = std::function<std::string(client&, std::vector<std::string>)>;
-    using connectfunction_t    = std::function<void(client&)>;
-    using disconnectfunction_t = std::function<void(client&)>;
+    using cmdfunction_t        = std::function<std::string(client_t&, std::vector<std::string>)>;
+    using connectfunction_t    = std::function<void(client_t&)>;
+    using disconnectfunction_t = std::function<void(client_t&)>;
     using map_t                = std::map<std::string, cmdfunction_t >;
 
-    DomainShell()
+    socket_shell()
     {
-        add_command( "set", std::bind(&DomainShell::set_cmd, this ,std::placeholders::_1, std::placeholders::_2) );
+        add_command( "set", std::bind(&socket_shell::set_cmd, this ,std::placeholders::_1, std::placeholders::_2) );
     }
 
-    std::string set_cmd(client & c, std::vector<std::string> args)
+    std::string set_cmd(client_t & c, std::vector<std::string> args)
     {
         if( args.size() >= 3)
         {
@@ -130,10 +182,10 @@ public:
         //    set_var(args[1], args[2]);
         return "";
     }
-    ~DomainShell()
+    ~socket_shell()
     {
         __disconnect();
-        Unlink();
+        unlink();
     }
 
     /**
@@ -141,10 +193,9 @@ public:
      *
      * Unlinks the current socket name
      */
-    void Unlink()
+    void unlink()
     {
-        std::cout << "unlinking" << std::endl;
-        unlink(m_Name.c_str());
+        ::unlink(m_Name.c_str());
     }
 
     /**
@@ -154,15 +205,15 @@ public:
      * Starts the shell and creates a socket in the filesystem which can be
      * connected to via an external application.
      */
-    void Start( char const * name)
+    void start( char const * name)
     {
         m_Name = name;
-        unlink(m_Name.c_str());
+        ::unlink(m_Name.c_str());
         m_Socket.create();
         m_Socket.bind(m_Name.c_str());
 
 
-        std::thread t1(&DomainShell::__listen, this);
+        std::thread t1(&socket_shell::__listen, this);
 
         m_ListenThread = std::move(t1);
     }
@@ -177,7 +228,7 @@ public:
      *
      * void func_name(Unix_Socket & client)
      */
-    void AddOnConnect( connectfunction_t f)
+    void add_connect_function( connectfunction_t f)
     {
         m_onConnect = f;
     }
@@ -191,7 +242,7 @@ public:
      *
      * void func_name(Unix_Socket & client)
      */
-    void AddOnDisconnect( disconnectfunction_t f)
+    void add_disconnect_function( disconnectfunction_t f)
     {
         m_onDisconnect = f;
     }
@@ -227,7 +278,7 @@ public:
      * Adds a command that will be called if the client types in a command
      * that is not handled.
      */
-    void AddDefaultCommand(cmdfunction_t f)
+    void add_default(cmdfunction_t f)
     {
         m_Default = f;
     }
@@ -236,12 +287,25 @@ public:
      * @brief Disconnect
      * Disconnects all clients and destroy's the socket
      */
-    void Disconnect()
+    void disconnect()
     {
         __disconnect();
     }
 
-public:
+
+    std::string execute(client_t & c, std::vector<std::string> const & args)
+    {
+        auto f = m_cmds.find( args[0] );
+        if( f != m_cmds.end() )
+        {
+            auto ret = f->second( c, args  );
+            return ret;
+        } else {
+            return "Unknown command";
+        }
+    }
+
+protected:
 
     void __listen()
     {
@@ -257,7 +321,7 @@ public:
                 continue;
             }
 
-            auto c = std::make_shared<client>(client_socket, this);
+            auto c = std::make_shared<client_t>(client_socket, this);
             c->m_vars = this->m_vars;
             c->start();
 
@@ -301,18 +365,19 @@ public:
         if(m_ListenThread.joinable() )
             m_ListenThread.join();
 
-        Unlink();
+        unlink();
     }
 
 
-    std::thread          m_ListenThread;
-    std::string          m_Name;
-    bool                 m_exit = false;
-    std::mutex           m_Mutex;
+    std::thread                         m_ListenThread;
+    std::string                         m_Name;
+    bool                                m_exit = false;
+    std::mutex                          m_Mutex;
 
-    std::set< std::shared_ptr<client> > m_ClientPointers;
-    map_t                m_cmds;
-     std::map<std::string, std::string> m_vars;
+    std::map<std::string, std::string>  m_vars;           //<! environment variables
+    std::set< std::shared_ptr<client_t> > m_ClientPointers; //<! clients
+    map_t                               m_cmds;           //!< list of commands
+
 public:
     cmdfunction_t        m_Default;
     connectfunction_t    m_onConnect;
@@ -425,18 +490,23 @@ public:
 
 };
 
-inline void client::run()
+/**
+ * @brief shell_client::run
+ *
+ * The main thread command for the client.
+ */
+inline void shell_client::run()
 {
     auto & Client = m_socket;
 
-    char buffer[256];
+    char buffer[4096];
 
     if(m_parent->m_onConnect )
         m_parent->m_onConnect( *this);
 
     while( Client && !m_exit)
     {
-        auto ret = Client.recv(buffer, 255);
+        auto ret = Client.recv(buffer, 4096);
         if(ret == -1)
         {
             break;
@@ -452,19 +522,28 @@ inline void client::run()
     Client.close();
 }
 
-inline void client::parse(const char *buffer, client::socket_t &client)
+inline void shell_client::parse(const char *buffer, shell_client::socket_t &client)
 {
     std::string S(buffer);
     if(S.size()>0)
     {
-        auto printout = call( S );
+        auto printout = execute( S );
 
         client.send(printout.data(), printout.size());
         client.send("\nShell>> ", 9);
     }
 }
 
-inline std::string client::call(std::string cmd)
+/**
+ * @brief client::execute
+ * @param cmd
+ * @return
+ *
+ * Execute a command from a string. This will parse the commands
+ * like a bash command line recurively executing anything within $( )
+ * and replacing ${ } with environment variables
+ */
+inline std::string shell_client::execute(std::string cmd)
 {
 
     if( cmd.back() == '\n') cmd.pop_back();
@@ -478,18 +557,18 @@ inline std::string client::call(std::string cmd)
         {
             switch( cmd[k+1])
             {
-            case '(':
+            case '(': // execute the command within the $( )
             {
-                uint32_t s = DomainShell::find_closing_bracket( &cmd[k+2], '(', ')');
+                uint32_t s = socket_shell::find_closing_bracket( &cmd[k+2], '(', ')');
                 auto new_call = cmd.substr(k+2, s );
-                auto ret = call( new_call );
+                auto ret = execute( new_call );
                 cmd.erase(k, s+3);
                 cmd.insert(k, ret);
                 break;
             }
-            case '{':
+            case '{': // replace ${NAME} with the variable
             {
-                uint32_t s = DomainShell::find_closing_bracket( &cmd[k+2], '{', '}');
+                uint32_t s = socket_shell::find_closing_bracket( &cmd[k+2], '{', '}');
                 auto new_call = cmd.substr(k+2, s );
                 auto ret = get_var(new_call);
                 cmd.erase(k, s+3);
@@ -503,30 +582,39 @@ inline std::string client::call(std::string cmd)
         ++k;
     }
     std::cout << "calling: " << cmd << std::endl;
-    auto T = DomainShell::tokenize(cmd);
+    auto T = socket_shell::tokenize(cmd);
     return execute( T );
 }
 
-inline std::string client::execute(const std::vector<std::string> &args)
+/**
+ * @brief client::execute
+ * @param args
+ * @return
+ *
+ * Executes a command with a vector of strings. This does not
+ * recurively call commands, it is meant as a
+ */
+inline std::string shell_client::execute(const std::vector<std::string> &args)
 {
-    auto & m_cmds = m_parent->m_cmds;
-    auto f = m_cmds.find( args[0] );
-    if( f != m_cmds.end() )
-    {
-        auto ret = f->second( *this, args  );
-        return ret;
-    } else {
-        return "Unknown command";
-    }
+    return m_parent->execute(*this, args);
+    //auto & m_cmds = m_parent->m_cmds;
+    //auto f = m_cmds.find( args[0] );
+    //if( f != m_cmds.end() )
+    //{
+    //    auto ret = f->second( *this, args  );
+    //    return ret;
+    //} else {
+    //    return "Unknown command";
+    //}
 }
 
-inline void client::start()
+inline void shell_client::start()
 {
-    std::thread tc( &client::run, this);
+    std::thread tc( &shell_client::run, this);
     m_thread = std::move(tc);
 }
 
-void client::close()
+void shell_client::close()
 {
     m_exit = true;
 }
