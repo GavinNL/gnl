@@ -30,7 +30,7 @@
 #include <iostream>
 #include <gnl/socket_shell.h>
 
-std::string cmd_echo( std::vector<std::string> const & arg)
+std::string cmd_echo(gnl::client & client, std::vector<std::string> const & arg)
 {
     std::string s;
     for(int i=1; i < arg.size() ;i++)
@@ -41,28 +41,30 @@ std::string cmd_echo( std::vector<std::string> const & arg)
     return s;
 }
 
-std::string cmd_ls( std::vector<std::string> const & arg)
+std::string cmd_ls( gnl::client  & c, std::vector<std::string> const & arg)
 {
     std::string s("file.txt\nhello.txt");
     return s;
 }
 
-std::string cmd_rand( std::vector<std::string> const & arg)
+std::string cmd_rand( gnl::client  & c, std::vector<std::string> const & arg)
 {
     return std::to_string( std::rand() );
 }
 
-std::string cmd_exit( std::vector<std::string> const & arg)
+std::string cmd_exit(gnl::client  & client, std::vector<std::string> const & arg)
 {
+    client.send("From Server: Good Bye!\n");
+    client.close();
     return "From server: Good Bye!!\n";
 }
 
-std::string cmd_none( std::vector<std::string> const & arg )
+std::string cmd_none( gnl::client  & client, std::vector<std::string> const & arg )
 {
     return "invalid command";
 }
 
-void on_connect(DomainShell::socket_t & client)
+void on_connect(gnl::client  & client)
 {
     std::cout << "Client connected" << std::endl;
 
@@ -71,20 +73,18 @@ void on_connect(DomainShell::socket_t & client)
                       "\033[1;31m"  "- Any command you type will be echoed back.\n" "\033[0m"
                       "\033[1;31m"  "- type 'exit' to disconnect\n" "\033[0m";
 
-    client.send(msg, sizeof(msg));
+    client.send(msg);
 }
 
-void on_disconnect(DomainShell::socket_t & client)
+void on_disconnect( gnl::client  & c)
 {
     std::cout << "Client Disconnected" << std::endl;
-
-
 }
 
 int main()
 {
 
-    DomainShell S;
+    gnl::DomainShell S;
 
     S.add_command("exit", cmd_exit);
     S.add_command("ls",   cmd_ls);
@@ -103,8 +103,9 @@ int main()
     std::cout << "   or " <<  std::endl << std::endl;
     std::cout << "netcat -U " << SOCKET_NAME << std::endl << std::endl;
 
-    std::this_thread::sleep_for(std::chrono::seconds(10000));
+    std::this_thread::sleep_for(std::chrono::seconds(5));
 
     S.Disconnect();
     return 0;
 }
+
