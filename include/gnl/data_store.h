@@ -42,6 +42,18 @@ public:
     }
 
     template<typename T>
+    T & at(std::string const & name)
+    {
+        return std::any_cast<T&>( m_data.at(name) );
+    }
+
+    template<typename T>
+    T const & at(std::string const & name) const
+    {
+        return std::any_cast<T const&>( m_data.at(name) );
+    }
+
+    template<typename T>
     T & get(std::string const & name)
     {
         return std::any_cast<T&>( m_data.at(name) );
