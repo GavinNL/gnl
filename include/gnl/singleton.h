@@ -12,7 +12,7 @@ class singleton
 public:
     static T & get()
     {
-        auto t = std::make_shared<T>();
+        static auto t = std::make_shared<T>();
         return *t;
     }
 
