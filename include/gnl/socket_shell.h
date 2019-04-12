@@ -51,6 +51,7 @@
 #include <mutex>
 
 #include <iostream>
+#include <sstream>
 
 #include "socket.h"
 
@@ -200,7 +201,7 @@ public:
         {
             s += e.first + '=' + e.second + '\n';
         }
-        auto s =
+
         return s;
     }
 
@@ -361,7 +362,7 @@ protected:
     void __listen()
     {
         m_Socket.listen();
-
+        m_client_id_count = 0;
         while(!m_exit)
         {
             auto client_socket = m_Socket.accept();
@@ -374,6 +375,14 @@ protected:
 
             auto c = std::make_shared<client_t>(client_socket, this);
             c->m_vars = this->m_vars;
+            c->set_var("ID", std::to_string(m_client_id_count++));
+            c->set_var("SOCKET", m_Name);
+            std::ostringstream s;
+            s << std::this_thread::get_id();
+            c->set_var("THREAD_ID", s.str() );
+
+            std::this_thread::get_id();
+
             c->start();
 
             {
@@ -428,8 +437,8 @@ protected:
     std::map<std::string, std::string>  m_vars;           //<! environment variables
     std::set< std::shared_ptr<client_t> > m_ClientPointers; //<! clients
     map_t                               m_cmds;           //!< list of commands
+    size_t                              m_client_id_count;
 
-//public:
     cmdfunction_t        m_Default;
     connectfunction_t    m_onConnect;
     disconnectfunction_t m_onDisconnect;
@@ -640,7 +649,7 @@ inline std::string shell_client::execute(std::string cmd)
         }
         ++k;
     }
-    std::cout << "calling: " << cmd << std::endl;
+    //std::cout << "calling: " << cmd << std::endl;
     auto T = socket_shell::tokenize(cmd);
     return execute( T );
 }
