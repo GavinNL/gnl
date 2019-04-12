@@ -31,6 +31,10 @@
 #include <iostream>
 #include <gnl/socket_shell.h>
 
+#define RED "\033[1;31m"
+#define GREEN "\033[1;32m"
+#define RESET "\033[0m"
+
 std::string cmd_echo(gnl::shell_client & client, std::vector<std::string> const & arg)
 {
     std::string s;
@@ -39,17 +43,6 @@ std::string cmd_echo(gnl::shell_client & client, std::vector<std::string> const 
         s += arg[i] + " ";
     }
 
-    return s;
-}
-
-std::string cmd_env( gnl::shell_client  & c, std::vector<std::string> const & arg)
-{
-
-    std::string s;
-    for(auto & e : c.env() )
-    {
-        s += e.first + '=' + e.second + '\n';
-    }
     return s;
 }
 
@@ -75,19 +68,16 @@ std::string cmd_none( gnl::shell_client  & client, std::vector<std::string> cons
     return "invalid command";
 }
 
-void on_connect(gnl::shell_client  & client)
+void on_connect(gnl::shell_client & client)
 {
     std::cout << "Client connected" << std::endl;
 
-    #define RED "\033[1;31m"
-    #define RESET "\033[0m"
-
     const char msg[] =
                       RED  "Welcome to the Shell!\n"                                    RESET
-                      RED  "- Any command you type will be echoed back.\n"              RESET
-                      RED  "- type 'exit' to disconnect\n"                              RESET
-                      RED  "- use:  \'set VAR VALUE\' to set an environment variable\n" RESET
-                      RED  "- use ${VAR} to reference the environment variable\n"       RESET;
+
+                      RED  "- type " GREEN "exit" RED " to disconnect\n"                RESET
+                      RED  "- use: " GREEN "set VAR VALUE" RED " to set an environment variable\n" RESET
+                      RED  "- use " GREEN "${VAR}" RED " to reference the environment variable\n"       RESET;
 
     client.send(msg);
 }
@@ -106,12 +96,17 @@ int main()
     S.add_command("ls",   cmd_ls);
     S.add_command("rand", cmd_rand);
     S.add_command("echo", cmd_echo);
-    S.add_command("env",  cmd_env);
 
     S.add_connect_function( on_connect );
-    S.add_default(cmd_none);
+   // S.add_default(cmd_none);
 
     S.add_disconnect_function( on_disconnect );
+
+    // Set the PROMPT env variable. Each user
+    // This variable will be copied to each connected
+    // client's env variables.
+    S.set_var("PROMPT", RED "shell" GREEN " >> " RESET );
+
 
     S.start(SOCKET_NAME);
 

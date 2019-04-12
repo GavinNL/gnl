@@ -61,6 +61,14 @@ namespace gnl
 
 class socket_shell;
 
+
+/**
+ * @brief The shell_client class
+ *
+ * A shell_client is created for each client connected to the socket.
+ * Each shell_client contains its own env variables which are copied
+ * from the main shell's env
+ */
 class shell_client
 {
 public:
@@ -127,7 +135,12 @@ public:
     {
         m_vars[var] = value;
     }
-
+    void unset_var(std::string const & var)
+    {
+        auto f = m_vars.find(var);
+        if( f != m_vars.end() )
+            m_vars.erase(f);
+    }
     /**
      * @brief env
      * @return
@@ -170,18 +183,56 @@ public:
 
     socket_shell()
     {
-        add_command( "set", std::bind(&socket_shell::set_cmd, this ,std::placeholders::_1, std::placeholders::_2) );
+        add_command( "set"  , &socket_shell::cmd_set );
+        add_command( "unset", &socket_shell::cmd_undset );
+        add_command( "help" , &socket_shell::cmd_help );
+        add_command( "env"  , &socket_shell::cmd_env );
     }
 
-    std::string set_cmd(client_t & c, std::vector<std::string> args)
+    //===================================================================================
+    // Some default commands to behave similar to how bash works.
+    //===================================================================================
+    static std::string cmd_env( gnl::shell_client  & c, std::vector<std::string> const & arg)
+    {
+
+        std::string s;
+        for(auto & e : c.env() )
+        {
+            s += e.first + '=' + e.second + '\n';
+        }
+        auto s =
+        return s;
+    }
+
+    static std::string cmd_help(client_t & c, std::vector<std::string> args)
+    {
+        std::string out;
+        for(auto & x : c.m_parent->m_cmds)
+        {
+            out += x.first + '\n';
+        }
+        out.pop_back();
+        return out;
+    }
+
+    static std::string cmd_set(client_t & c, std::vector<std::string> args)
     {
         if( args.size() >= 3)
         {
-            c.m_vars[ args[1] ] = args[2];
+            c.set_var(args[1], args[2] );
         }
-        //    set_var(args[1], args[2]);
         return "";
     }
+    static std::string cmd_undset(client_t & c, std::vector<std::string> args)
+    {
+        if( args.size() >= 2)
+        {
+            c.unset_var( args[1] );
+        }
+        return "";
+    }
+    //===================================================================================
+
     ~socket_shell()
     {
         __disconnect();
@@ -378,11 +429,12 @@ protected:
     std::set< std::shared_ptr<client_t> > m_ClientPointers; //<! clients
     map_t                               m_cmds;           //!< list of commands
 
-public:
+//public:
     cmdfunction_t        m_Default;
     connectfunction_t    m_onConnect;
     disconnectfunction_t m_onDisconnect;
 
+    friend void shell_client::run();
 public:
 
     /**
@@ -421,7 +473,6 @@ public:
      */
     void set_var(std::string name, std::string value)
     {
-        //std::cout << "setting var: " << name << "= " << value << std::endl;
         m_vars[name] = value;
     }
     void unset_var(std::string name)
@@ -440,6 +491,13 @@ public:
         }
     }
 
+    /**
+     * @brief tokenize
+     * @param s
+     * @return
+     *
+     * This method could probably be more efficient
+     */
     static std::vector<std::string> tokenize( std::string const & s)
     {
         std::vector<std::string> tokens;
@@ -530,7 +588,8 @@ inline void shell_client::parse(const char *buffer, shell_client::socket_t &clie
         auto printout = execute( S );
 
         client.send(printout.data(), printout.size());
-        client.send("\nShell>> ", 9);
+        auto p = std::string("\n") + get_var("PROMPT");
+        client.send(p.c_str(), p.size());
     }
 }
 
