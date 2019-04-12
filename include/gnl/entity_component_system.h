@@ -511,7 +511,8 @@ public:
         using ComponentType = comp_t;
         using CompInfoType = ComponentAllocator<ComponentType>;
 
-        return std::any_cast<CompInfoType&>(m_CompInfo[ comp_t::ID ]).m_items;
+        return get_component_info<ComponentType>().m_items;
+        //return std::any_cast<CompInfoType&>(m_CompInfo[ comp_t::ID ]).m_items;
     }
 
     std::vector< std::any>      m_CompInfo; // a vector of CompInfo<T>
