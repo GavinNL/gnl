@@ -188,6 +188,8 @@ public:
         add_command( "unset", &socket_shell::cmd_undset );
         add_command( "help" , &socket_shell::cmd_help );
         add_command( "env"  , &socket_shell::cmd_env );
+
+        m_vars["PROMPT"] = "?>";
     }
 
     //===================================================================================
@@ -377,11 +379,6 @@ protected:
             c->m_vars = this->m_vars;
             c->set_var("ID", std::to_string(m_client_id_count++));
             c->set_var("SOCKET", m_Name);
-            std::ostringstream s;
-            s << std::this_thread::get_id();
-            c->set_var("THREAD_ID", s.str() );
-
-            std::this_thread::get_id();
 
             c->start();
 
@@ -569,7 +566,11 @@ inline void shell_client::run()
     char buffer[4096];
 
     if(m_parent->m_onConnect )
+    {
         m_parent->m_onConnect( *this);
+        auto p = std::string("\n") + get_var("PROMPT");
+        Client.send(p.c_str(), p.size());
+    }
 
     while( Client && !m_exit)
     {
