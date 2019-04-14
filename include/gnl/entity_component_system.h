@@ -469,6 +469,29 @@ public:
         return return_value;
     }
 
+
+    template <typename T> struct __helper { using type = T; };
+
+    template <typename ... Components>
+    void for_each(typename __helper<std::function<void(Entity &entity, Components&...)>>::type const & f)
+    {
+        auto cv = get_component_vectors<Components...>();
+
+        for(auto & c1 : std::get<0>(cv) )
+        {
+            auto entity_h = c1.parent_handle();
+
+            auto & E = get_entity(entity_h);
+
+            auto b = _has<Components...>(E);
+            if(b)
+            {
+                auto params = std::tuple_cat(std::tuple<Entity&>(E), _get_reference_to_components_as_tuple<Components...>(E) );
+                std::apply(f , params);
+            }
+        }
+    }
+
     /**
      * @brief find
      * @return returns a vector of tuples
@@ -482,9 +505,8 @@ public:
      *  {
      *  }
      */
-    //
     template<typename T1, typename... T2>
-    void for_all( std::function< void(Entity&, T1&, T2&...)> callable )
+    void for_all( std::function< void(Entity&, T1&, T2&...)> const callable )
     {
         auto cv = get_component_vectors<T1, T2...>();
 
