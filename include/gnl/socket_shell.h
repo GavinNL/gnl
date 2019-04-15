@@ -689,8 +689,41 @@ inline std::vector<std::string> extract_pipes( std::string cmd)
 }
 
 
-void replace_with_vars(std::string & c, std::map<std::string, std::string> const & V)
+inline std::string::iterator find_closing(std::string::iterator start, std::string::iterator end, std::string::value_type const * c )
 {
+    int count=0;
+    while(start != end)
+    {
+        if(*start == c[0]) count++;
+        if(*start == c[1]) count--;
+
+        start++;
+
+        if(count==0) break;
+    }
+    return start;
+}
+
+inline void replace_with_vars(std::string & c, std::map<std::string, std::string> const & V)
+{
+    auto s = std::begin(c);
+    auto start = s;
+
+    while(s != std::end(c)-1)
+    {
+        if(*s == '$' && *(s+1)=='{')
+        {
+            auto e = find_closing( s+1, std::end(c), "{}");
+            auto si  = std::distance(start, s);
+            auto sis = std::distance(s, e);
+
+            auto var_name = c.substr(si+2, sis-3);
+
+            auto f = V.find(var_name);
+            c.replace(si,sis, f==std::end(V) ? std::string("") : f->second  );
+        }
+        ++s;
+    }
 
 }
 /**
@@ -715,24 +748,44 @@ inline std::string shell_client::execute(std::string cmd)
     Proc_t process(*this);
     for(auto & c :  cmds)
     {
-        std::cout << "----CALLING-----------------\n";
-        std::cout << c << std::endl;
+       // std::cout << "----CALLING-----------------\n";
+       // std::cout << c << std::endl;
 
 
         // Replace all the ${NAME} with the appropriate variable name
         replace_with_vars(c, this->m_vars);
 
+        // Replace all the $( cmd ) with teh putput of that command
+        {
+            auto s = std::begin(c);
+            auto start = s;
+            while(s != std::end(c))
+            {
+                if(*s=='$' && *(s+1)=='(' )
+                {
+                    auto e = find_closing(s+1, std::end(c), "()");
+                    auto si  = std::distance(start, s);
+                    auto sis = std::distance(s, e);
+
+                    auto sub_cmd = c.substr(si+2, sis-3);
+                    //std::cout << "Executing sub command: " << sub_cmd << std::endl;
+                    auto output = execute(sub_cmd);
+                    //std::cout << "output of sub command: " << output << std::endl;
+                    c.replace(si,sis, output );
+                }
+                s++;
+            }
+
+        }
+        //std::cout << "Complete. New command: " << c << std::endl;
+
+        std::cout << "Executing: " << c << std::endl;
         process.args = socket_shell::tokenize(c);
 
         m_parent->execute(process);
 
         // copy the output string into the input string and call the next command
 
-        //std::cout << "----INPUT-----------------\n";
-        //std::cout << process.in.str();
-        //std::cout << "----OUTPUT----------------\n";
-        //std::cout << process.out.str();
-        //std::cout << "--------------------------\n\n\n";
         process.in = std::istringstream(process.out.str());
         process.out= std::ostringstream();
     }
