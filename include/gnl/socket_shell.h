@@ -196,7 +196,7 @@ public:
     socket_shell()
     {
         add_command( "env"  , &socket_shell::cmd_env );
-        add_command( "wc"  , &socket_shell::cmd_wc );
+        add_command( "wc"   , &socket_shell::cmd_wc );
         add_command( "set"  , &socket_shell::cmd_set );
         add_command( "unset", &socket_shell::cmd_undset );
         add_command( "help" , &socket_shell::cmd_help );
@@ -247,8 +247,6 @@ public:
 
     static int cmd_help( gnl::Proc_t  & c)
     {
-        std::string line;
-
         auto s = c.client.m_parent->m_cmds.size();
         for(auto & x : c.client.m_parent->m_cmds)
         {

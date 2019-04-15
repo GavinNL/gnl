@@ -38,39 +38,36 @@
 
 #define PROC_
 
-#if not defined PROC_
-std::string cmd_echo(gnl::shell_client & client, std::vector<std::string> const & arg)
+int cmd_echo( gnl::Proc_t  & c)
 {
-    std::string s;
-    for(size_t i=1; i < arg.size() ;i++)
+    auto count = c.args.size()-1;
+    for(size_t i=1; i < c.args.size() ;i++)
     {
-        s += arg[i] + " ";
+        c.out << c.args[i] + (--count == 0 ? "" : "\n");
     }
 
-    return s;
+    return 0;
 }
 
-std::string cmd_ls( gnl::shell_client  & c, std::vector<std::string> const & arg)
+
+int cmd_rand( gnl::Proc_t  & c)
 {
-    std::string s("file.txt\nhello.txt");
-    return s;
+    c.out << std::to_string( std::rand() );
+    return 0;
 }
 
-std::string cmd_rand( gnl::shell_client  & c, std::vector<std::string> const & arg)
+int cmd_exit(gnl::Proc_t  & c)
 {
-    return std::to_string( std::rand() );
+    c.client.close();
+    return 0;
 }
-
-std::string cmd_exit(gnl::shell_client  & client, std::vector<std::string> const & arg)
-{
-    client.close();
-    return "From server: Good Bye!!\n";
-}
+#if not defined PROC_
 
 std::string cmd_none( gnl::shell_client  & client, std::vector<std::string> const & arg )
 {
     return "invalid command";
 }
+#endif
 
 // Custom function called when a client connects
 // to the shell. Use this to set any initial variables
@@ -98,23 +95,6 @@ void on_disconnect( gnl::shell_client  & c)
 {
     std::cout << "Client Disconnected" << std::endl;
 }
-#endif
-
-
-std::string::iterator find_closing(std::string::iterator start, std::string::iterator end, std::string::value_type const * c )
-{
-    int count=0;
-    while(start != end)
-    {
-        if(*start == c[0]) count++;
-        if(*start == c[1]) count--;
-
-        start++;
-
-        if(count==0) break;
-    }
-    return start;
-}
 
 
 
@@ -123,9 +103,8 @@ int main()
 
     gnl::socket_shell S;
 
-#if not defined PROC_
+
     S.add_command("exit", cmd_exit);
-    S.add_command("ls",   cmd_ls);
     S.add_command("rand", cmd_rand);
     S.add_command("echo", cmd_echo);
 
@@ -133,7 +112,6 @@ int main()
    // S.add_default(cmd_none);
 
     S.add_disconnect_function( on_disconnect );
-#endif
     // Set the PROMPT env variable. Each user
     // This variable will be copied to each connected
     // client's env variables. The default is "?>"
