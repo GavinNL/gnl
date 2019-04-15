@@ -35,6 +35,10 @@
 #define GREEN "\033[1;32m"
 #define RESET "\033[0m"
 
+
+#define PROC_
+
+#if not defined PROC_
 std::string cmd_echo(gnl::shell_client & client, std::vector<std::string> const & arg)
 {
     std::string s;
@@ -68,30 +72,58 @@ std::string cmd_none( gnl::shell_client  & client, std::vector<std::string> cons
     return "invalid command";
 }
 
+// Custom function called when a client connects
+// to the shell. Use this to set any initial variables
+//
 void on_connect(gnl::shell_client & client)
 {
+    std::ostringstream s;
+    s << std::this_thread::get_id();
+    client.set_var("THREAD_ID", s.str() );
+
     std::cout << "Client connected" << std::endl;
 
-    const char msg[] =
-                      RED  "Welcome to the Shell!\n"                                    RESET
 
-                      RED  "- type " GREEN "exit" RED " to disconnect\n"                RESET
-                      RED  "- use: " GREEN "set VAR VALUE" RED " to set an environment variable\n" RESET
+    auto   msg  = std::string("") +
+                      RED  "Welcome to the Shell! You are client ID: " GREEN  + std::to_string(client.id()) + "\n" RESET
+                      RED  "- type " GREEN "exit" RED " to disconnect\n"                                RESET
+                      RED  "- use: " GREEN "set VAR VALUE" RED " to set an environment variable\n"      RESET
                       RED  "- use " GREEN "${VAR}" RED " to reference the environment variable\n"       RESET;
 
     client.send(msg);
 }
 
+
 void on_disconnect( gnl::shell_client  & c)
 {
     std::cout << "Client Disconnected" << std::endl;
 }
+#endif
+
+
+std::string::iterator find_closing(std::string::iterator start, std::string::iterator end, std::string::value_type const * c )
+{
+    int count=0;
+    while(start != end)
+    {
+        if(*start == c[0]) count++;
+        if(*start == c[1]) count--;
+
+        start++;
+
+        if(count==0) break;
+    }
+    return start;
+}
+
+
 
 int main()
 {
 
     gnl::socket_shell S;
 
+#if not defined PROC_
     S.add_command("exit", cmd_exit);
     S.add_command("ls",   cmd_ls);
     S.add_command("rand", cmd_rand);
@@ -101,12 +133,12 @@ int main()
    // S.add_default(cmd_none);
 
     S.add_disconnect_function( on_disconnect );
-
+#endif
     // Set the PROMPT env variable. Each user
     // This variable will be copied to each connected
-    // client's env variables.
+    // client's env variables. The default is "?>"
+    // and each client can set their own
     S.set_var("PROMPT", RED "shell" GREEN " >> " RESET );
-
 
     S.start(SOCKET_NAME);
 

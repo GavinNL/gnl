@@ -61,7 +61,18 @@ namespace gnl
 
 
 class socket_shell;
+class shell_client;
 
+class Proc_t
+{
+public:
+    Proc_t(shell_client & c ) : client(c){}
+
+    std::vector<std::string>  args;
+    std::istringstream        in;
+    std::ostringstream        out;
+    shell_client             &client;
+};
 
 /**
  * @brief The shell_client class
@@ -177,17 +188,18 @@ public:
 
     socket_t m_Socket;
 
-    using cmdfunction_t        = std::function<std::string(client_t&, std::vector<std::string>)>;
+    using cmdfunction_t        = std::function<int(Proc_t&)>;
     using connectfunction_t    = std::function<void(client_t&)>;
     using disconnectfunction_t = std::function<void(client_t&)>;
     using map_t                = std::map<std::string, cmdfunction_t >;
 
     socket_shell()
     {
+        add_command( "env"  , &socket_shell::cmd_env );
+        add_command( "wc"  , &socket_shell::cmd_wc );
         add_command( "set"  , &socket_shell::cmd_set );
         add_command( "unset", &socket_shell::cmd_undset );
         add_command( "help" , &socket_shell::cmd_help );
-        add_command( "env"  , &socket_shell::cmd_env );
 
         m_vars["PROMPT"] = "?>";
     }
@@ -195,44 +207,72 @@ public:
     //===================================================================================
     // Some default commands to behave similar to how bash works.
     //===================================================================================
-    static std::string cmd_env( gnl::shell_client  & c, std::vector<std::string> const & arg)
+    static int cmd_env( gnl::Proc_t  & c)
     {
+        auto i = 0u;
+        auto s = c.client.env().size();
 
-        std::string s;
-        for(auto & e : c.env() )
+        for(auto & e : c.client.env() )
         {
-            s += e.first + '=' + e.second + '\n';
+            c.out << e.first + '=' + e.second + (++i != s ? "\n" : "");
         }
+        return 0;
+    }
+    static int cmd_wc( gnl::Proc_t  & c)
+    {
+        std::string line;
 
-        return s;
+        int x=0;
+
+        bool line_count=false;
+        if( c.args.size() >= 2 && c.args[1] == "-l")
+            line_count = true;
+
+        while( std::getline( c.in, line) )
+        {
+            if(!line_count)
+            {
+                c.out << std::to_string(line.size()) ;
+                if( !c.in.eof() )
+                {
+                    c.out << '\n';
+                }
+            }
+            x++;
+
+        }
+        if(line_count) c.out << std::to_string(x);
+        return 0;
     }
 
-    static std::string cmd_help(client_t & c, std::vector<std::string> args)
+    static int cmd_help( gnl::Proc_t  & c)
     {
-        std::string out;
-        for(auto & x : c.m_parent->m_cmds)
+        std::string line;
+
+        auto s = c.client.m_parent->m_cmds.size();
+        for(auto & x : c.client.m_parent->m_cmds)
         {
-            out += x.first + '\n';
+            c.out << x.first + (--s == 0 ? "" : "\n");
         }
-        out.pop_back();
-        return out;
+        return 0;
     }
 
-    static std::string cmd_set(client_t & c, std::vector<std::string> args)
+
+    static int cmd_set(gnl::Proc_t  & c)
     {
-        if( args.size() >= 3)
+        if( c.args.size() >= 3)
         {
-            c.set_var(args[1], args[2] );
+            c.client.set_var(c.args[1], c.args[2] );
         }
-        return "";
+        return 0;
     }
-    static std::string cmd_undset(client_t & c, std::vector<std::string> args)
+    static int cmd_undset(gnl::Proc_t  & c)
     {
-        if( args.size() >= 2)
+        if( c.args.size() >= 2)
         {
-            c.unset_var( args[1] );
+            c.client.unset_var( c.args[1] );
         }
-        return "";
+        return 0;
     }
     //===================================================================================
 
@@ -347,15 +387,17 @@ public:
     }
 
 
-    std::string execute(client_t & c, std::vector<std::string> const & args)
+    int execute(Proc_t & c)
     {
-        auto f = m_cmds.find( args[0] );
+        auto f = m_cmds.find( c.args[0] );
         if( f != m_cmds.end() )
         {
-            auto ret = f->second( c, args  );
+            auto ret = f->second( c );
             return ret;
-        } else {
-            return "Unknown command";
+        }
+        else
+        {
+            return 1;
         }
     }
 
@@ -596,13 +638,61 @@ inline void shell_client::parse(const char *buffer, shell_client::socket_t &clie
     if(S.size()>0)
     {
         auto printout = execute( S );
-
-        client.send(printout.data(), printout.size());
+        client.send(printout.c_str(), printout.size());
         auto p = std::string("\n") + get_var("PROMPT");
         client.send(p.c_str(), p.size());
     }
 }
 
+/**
+ * @brief extract_pipes
+ * @param cmd
+ * @return
+ *
+ * Given a command such as:
+ *    cmd1 ${var1} | cmd2 $( cmd3 | cmd4 )
+ *
+ * It will return a vector of strings:
+ *
+ * cmd1 ${var1}
+ * cmd2 $( cmd3 | cmd4)
+ *
+ */
+inline std::vector<std::string> extract_pipes( std::string cmd)
+{
+    std::vector<std::string> out;
+
+    auto x = std::begin(cmd);
+
+    auto start = x;
+    int count=0;
+    while( x != std::end(cmd) )
+    {
+        if( *x == '{' || *x == '(') count++;
+        if( *x == '}' || *x == ')') count--;
+        if( count == 0 )
+        {
+            if( *x == '|')
+            {
+                auto s = std::distance(std::begin(cmd), start);
+                auto n = std::distance(start, x-1);
+                out.push_back( cmd.substr(s,n ) );
+                start = x+1;
+            }
+        }
+        x++;
+    }
+    auto s = std::distance(std::begin(cmd), start);
+    auto n = std::distance(start, x);
+    out.push_back( cmd.substr(s,n ) );
+    return out;
+}
+
+
+void replace_with_vars(std::string & c, std::map<std::string, std::string> const & V)
+{
+
+}
 /**
  * @brief client::execute
  * @param cmd
@@ -619,62 +709,35 @@ inline std::string shell_client::execute(std::string cmd)
     if( cmd.size() == 0)
         return "";
 
-    uint32_t k = 0;
-    while( k < cmd.size() )
-    {
-        if(cmd[k] == '$')
-        {
-            switch( cmd[k+1])
-            {
-            case '(': // execute the command within the $( )
-            {
-                uint32_t s = socket_shell::find_closing_bracket( &cmd[k+2], '(', ')');
-                auto new_call = cmd.substr(k+2, s );
-                auto ret = execute( new_call );
-                cmd.erase(k, s+3);
-                cmd.insert(k, ret);
-                break;
-            }
-            case '{': // replace ${NAME} with the variable
-            {
-                uint32_t s = socket_shell::find_closing_bracket( &cmd[k+2], '{', '}');
-                auto new_call = cmd.substr(k+2, s );
-                auto ret = get_var(new_call);
-                cmd.erase(k, s+3);
-                cmd.insert(k, ret);
-                break;
-            }
-            default:
-                break;
-            }
-        }
-        ++k;
-    }
-    //std::cout << "calling: " << cmd << std::endl;
-    auto T = socket_shell::tokenize(cmd);
-    return execute( T );
-}
 
-/**
- * @brief client::execute
- * @param args
- * @return
- *
- * Executes a command with a vector of strings. This does not
- * recurively call commands, it is meant as a
- */
-inline std::string shell_client::execute(const std::vector<std::string> &args)
-{
-    return m_parent->execute(*this, args);
-    //auto & m_cmds = m_parent->m_cmds;
-    //auto f = m_cmds.find( args[0] );
-    //if( f != m_cmds.end() )
-    //{
-    //    auto ret = f->second( *this, args  );
-    //    return ret;
-    //} else {
-    //    return "Unknown command";
-    //}
+    auto cmds = extract_pipes(cmd);
+
+    Proc_t process(*this);
+    for(auto & c :  cmds)
+    {
+        std::cout << "----CALLING-----------------\n";
+        std::cout << c << std::endl;
+
+
+        // Replace all the ${NAME} with the appropriate variable name
+        replace_with_vars(c, this->m_vars);
+
+        process.args = socket_shell::tokenize(c);
+
+        m_parent->execute(process);
+
+        // copy the output string into the input string and call the next command
+
+        //std::cout << "----INPUT-----------------\n";
+        //std::cout << process.in.str();
+        //std::cout << "----OUTPUT----------------\n";
+        //std::cout << process.out.str();
+        //std::cout << "--------------------------\n\n\n";
+        process.in = std::istringstream(process.out.str());
+        process.out= std::ostringstream();
+    }
+
+    return process.in.str();
 }
 
 inline void shell_client::start()
@@ -696,3 +759,4 @@ void shell_client::close()
 #endif
 
 #endif
+
