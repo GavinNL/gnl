@@ -31,10 +31,14 @@
 #include <iostream>
 #include <gnl/socket_shell.h>
 
+#include <chrono>
+#include <ctime>
+
 #define RED "\033[1;31m"
 #define GREEN "\033[1;32m"
 #define RESET "\033[0m"
 
+#include <pthread.h>
 
 #define PROC_
 
@@ -48,7 +52,6 @@ int cmd_echo( gnl::Proc_t  & c)
 
     return 0;
 }
-
 
 int cmd_rand( gnl::Proc_t  & c)
 {
@@ -80,6 +83,13 @@ void on_connect(gnl::shell_client & client)
 
     std::cout << "Client connected" << std::endl;
 
+    //=====================================================
+    // Add extra Env variables here if needed
+    //=====================================================
+    std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() );
+
+    client.set_var("CONNECTION_TIME",  std::ctime(&time)  );
+    //=====================================================
 
     auto   msg  = std::string("") +
                       RED  "Welcome to the Shell! You are client ID: " GREEN  + std::to_string(client.id()) + "\n" RESET
@@ -107,6 +117,7 @@ int main()
     S.add_command("exit", cmd_exit);
     S.add_command("rand", cmd_rand);
     S.add_command("echo", cmd_echo);
+    S.add_command("terminate", cmd_term);
 
     S.add_connect_function( on_connect );
    // S.add_default(cmd_none);

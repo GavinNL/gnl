@@ -49,6 +49,7 @@
 #include <thread>
 #include <functional>
 #include <mutex>
+#include <algorithm>
 
 #include <iostream>
 #include <sstream>
@@ -63,6 +64,12 @@ namespace gnl
 class socket_shell;
 class shell_client;
 
+/**
+ * @brief The Proc_t class
+ *
+ * The Proc class is a container of the input/output streams,
+ * and the shell client. A new process is
+ */
 class Proc_t
 {
 public:
@@ -169,7 +176,6 @@ protected:
     std::string execute( std::vector< std::string > const & args );
     void        run();
     void        start();
-
 
     socket_t      m_socket;
     socket_shell * m_parent = nullptr;
@@ -633,9 +639,12 @@ inline void shell_client::run()
 inline void shell_client::parse(const char *buffer, shell_client::socket_t &client)
 {
     std::string S(buffer);
-    if(S.size()>0)
+    if(S.back() == '\n') S.pop_back();
+
+    if( S.size() > 0 )
     {
         auto printout = execute( S );
+        m_vars["LAST_CMD"] = S;
         client.send(printout.c_str(), printout.size());
         auto p = std::string("\n") + get_var("PROMPT");
         client.send(p.c_str(), p.size());
@@ -673,8 +682,8 @@ inline std::vector<std::string> extract_pipes( std::string cmd)
             if( *x == '|')
             {
                 auto s = std::distance(std::begin(cmd), start);
-                auto n = std::distance(start, x-1);
-                out.push_back( cmd.substr(s,n ) );
+                auto n = std::distance(start, x);
+                out.push_back( std::string(start,x) );
                 start = x+1;
             }
         }
@@ -687,42 +696,58 @@ inline std::vector<std::string> extract_pipes( std::string cmd)
 }
 
 
-inline std::string::iterator find_closing(std::string::iterator start, std::string::iterator end, std::string::value_type const * c )
-{
-    int count=0;
-    while(start != end)
-    {
-        if(*start == c[0]) count++;
-        if(*start == c[1]) count--;
-
-        start++;
-
-        if(count==0) break;
-    }
-    return start;
-}
 
 inline void replace_with_vars(std::string & c, std::map<std::string, std::string> const & V)
 {
-    auto s = std::begin(c);
-    auto start = s;
+    auto start = std::begin(c);
 
-    while(s != std::end(c)-1)
+    while(true)
     {
-        if(*s == '$' && *(s+1)=='{')
+        // find the first occurance of ${
+        auto s1 = std::adjacent_find( start,
+                                      std::end(c),
+                                      [](const char & a, const char &b)
+                                      {
+                                          return a=='$' && b=='{';
+                                      });
+
+        if( s1 == std::end(c) ) // we didn't find anything. break out.
+            break;
+
         {
-            auto e = find_closing( s+1, std::end(c), "{}");
-            auto si  = std::distance(start, s);
-            auto sis = std::distance(s, e);
+            int bracket_count=0;
 
-            auto var_name = c.substr(si+2, sis-3);
+            // find the closing bracket. Making sure to keep track of any other
+            // opening brackets.
+            auto e1 = std::find_if( s1+1,
+                                    std::end(c),
+                                    [&bracket_count](char const & a)
+                                    {
+                                        if(a == '{') bracket_count++;
+                                        if(a == '}') bracket_count--;
+                                        return bracket_count==0;
+                                    }
+                          );
 
-            auto f = V.find(var_name);
-            c.replace(si,sis, f==std::end(V) ? std::string("") : f->second  );
+            if( e1 != std::end(c) )
+            {
+                // The expression ${VARIABLE_NAME} exists between iterators
+                // s1 and e1;
+                auto var = std::string( s1+2 , e1);
+                replace_with_vars(var,V);
+                auto f = V.find(var);
+
+                auto s = std::distance(std::begin(c),s1);
+                auto l = std::distance(s1,e1)+1u;
+                if( f != std::end(V))
+                    c.replace( s, l, f->second);
+
+                start = std::begin(c) + s;
+            }
         }
-        ++s;
     }
 
+    return;
 }
 /**
  * @brief client::execute
@@ -741,10 +766,10 @@ inline std::string shell_client::execute(std::string cmd)
         return "";
 
 
-    auto cmds = extract_pipes(cmd);
+    auto command_list = extract_pipes(cmd);
 
     Proc_t process(*this);
-    for(auto & c :  cmds)
+    for(auto & c :  command_list)
     {
        // std::cout << "----CALLING-----------------\n";
        // std::cout << c << std::endl;
@@ -755,25 +780,40 @@ inline std::string shell_client::execute(std::string cmd)
 
         // Replace all the $( cmd ) with teh putput of that command
         {
-            auto s = std::begin(c);
-            auto start = s;
-            while(s != std::end(c))
+            // find the first occurance of ${
+            auto s1 = std::adjacent_find( std::begin(c),
+                                          std::end(c),
+                                          [](const char & a, const char &b)
+                                          {
+                                              return a=='$' && b=='(';
+                                          });
+            if( s1 != std::end(c) )
             {
-                if(*s=='$' && *(s+1)=='(' )
+                int bracket_count=0;
+
+                // find the closing bracket. Making sure to keep track of any other
+                // opening brackets.
+                auto e1 = std::find_if( s1+1,
+                                        std::end(c),
+                                        [&bracket_count](char const & a)
+                                        {
+                                            if(a == '(') bracket_count++;
+                                            if(a == ')') bracket_count--;
+                                            return bracket_count==0;
+                                        }
+                              );
+
+                if( e1 != std::end(c) )
                 {
-                    auto e = find_closing(s+1, std::end(c), "()");
-                    auto si  = std::distance(start, s);
-                    auto sis = std::distance(s, e);
+                    auto s = std::distance(std::begin(c),s1);
+                    auto l = std::distance(s1,e1)+1u;
 
-                    auto sub_cmd = c.substr(si+2, sis-3);
-                    //std::cout << "Executing sub command: " << sub_cmd << std::endl;
+                    std::string sub_cmd( s1+2, e1);
                     auto output = execute(sub_cmd);
-                    //std::cout << "output of sub command: " << output << std::endl;
-                    c.replace(si,sis, output );
-                }
-                s++;
-            }
+                    c.replace(s, l, output);
 
+                }
+            }
         }
         //std::cout << "Complete. New command: " << c << std::endl;
 
