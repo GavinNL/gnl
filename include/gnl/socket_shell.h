@@ -57,6 +57,8 @@
 #include "socket.h"
 
 
+#define LOUT if(1) std::cout
+
 namespace gnl
 {
 
@@ -73,12 +75,12 @@ class shell_client;
 class Proc_t
 {
 public:
-    Proc_t(shell_client & c ) : client(c){}
+    Proc_t(shell_client & c ) : user(c){}
 
-    std::vector<std::string>  args;
-    std::istringstream        in;
-    std::ostringstream        out;
-    shell_client             &client;
+    std::vector<std::string>    args;    // input arguments to the process
+    std::istringstream          in;      // the input stream
+    std::ostringstream          out;     // the output stream.
+    shell_client              &user;     // the user's information.
 };
 
 /**
@@ -132,7 +134,7 @@ public:
      *
      * Get an env variable
      */
-    std::string get_var(std::string name)
+    std::string get_env(std::string name) const
     {
         auto f = m_vars.find(name);
         if( f == m_vars.end())
@@ -150,11 +152,11 @@ public:
      *
      * Set an env variable
      */
-    void set_var(std::string const & var, std::string const & value)
+    void set_env(std::string const & var, std::string const & value)
     {
         m_vars[var] = value;
     }
-    void unset_var(std::string const & var)
+    void unset_env(std::string const & var)
     {
         auto f = m_vars.find(var);
         if( f != m_vars.end() )
@@ -216,9 +218,9 @@ public:
     static int cmd_env( gnl::Proc_t  & c)
     {
         auto i = 0u;
-        auto s = c.client.env().size();
+        auto s = c.user.env().size();
 
-        for(auto & e : c.client.env() )
+        for(auto & e : c.user.env() )
         {
             c.out << e.first + '=' + e.second + (++i != s ? "\n" : "");
         }
@@ -253,8 +255,8 @@ public:
 
     static int cmd_help( gnl::Proc_t  & c)
     {
-        auto s = c.client.m_parent->m_cmds.size();
-        for(auto & x : c.client.m_parent->m_cmds)
+        auto s = c.user.m_parent->m_cmds.size();
+        for(auto & x : c.user.m_parent->m_cmds)
         {
             c.out << x.first + (--s == 0 ? "" : "\n");
         }
@@ -266,7 +268,7 @@ public:
     {
         if( c.args.size() >= 3)
         {
-            c.client.set_var(c.args[1], c.args[2] );
+            c.user.set_env(c.args[1], c.args[2] );
         }
         return 0;
     }
@@ -274,7 +276,7 @@ public:
     {
         if( c.args.size() >= 2)
         {
-            c.client.unset_var( c.args[1] );
+            c.user.unset_env( c.args[1] );
         }
         return 0;
     }
@@ -401,7 +403,36 @@ public:
         }
         else
         {
-            return 1;
+            if( m_Default)
+                m_Default(c);
+            return 127;
+        }
+    }
+
+    /**
+     * @brief set_var
+     * @param name
+     * @param value
+     *
+     * Sets the environment variable
+     */
+    void set_env(std::string name, std::string value)
+    {
+        m_vars[name] = value;
+    }
+    void unset_env(std::string name)
+    {
+        m_vars.erase(name);
+    }
+    std::string get_var(std::string name)
+    {
+        LOUT << "getting var: " << name << std::endl;
+        auto f = m_vars.find(name);
+        if( f == m_vars.end())
+        {
+            return "";
+        } else {
+            return f->second;
         }
     }
 
@@ -417,14 +448,14 @@ protected:
 
             if(!client_socket)
             {
-                //std::cout << "Client is bad" << std::endl;
+                LOUT << "Client is bad" << std::endl;
                 continue;
             }
 
             auto c = std::make_shared<client_t>(client_socket, this);
             c->m_vars = this->m_vars;
-            c->set_var("ID", std::to_string(m_client_id_count++));
-            c->set_var("SOCKET", m_Name);
+            c->set_env("ID", std::to_string(m_client_id_count++));
+            c->set_env("SOCKET", m_Name);
 
             c->start();
 
@@ -456,7 +487,7 @@ protected:
 
         for(auto & c : m_ClientPointers)
         {
-            //std::cout << "Disconnecting client " << i++ << std::endl;
+            LOUT << "Disconnecting client " << i++ << std::endl;
             c->close();
             c->m_socket.close();
         }
@@ -486,8 +517,13 @@ protected:
     connectfunction_t    m_onConnect;
     disconnectfunction_t m_onDisconnect;
 
-    friend void shell_client::run();
-public:
+
+    friend void        shell_client::parse(const char * buffer, socket_t & client);
+    friend std::string shell_client::execute( std::string cmd );
+    friend std::string shell_client::execute( std::vector< std::string > const & args );
+    friend void        shell_client::run();
+    friend void        shell_client::start();
+//public:
 
     /**
      * @brief find_closing_bracket
@@ -516,32 +552,7 @@ public:
         return 0;
     }
 
-    /**
-     * @brief set_var
-     * @param name
-     * @param value
-     *
-     * Sets the environment variable
-     */
-    void set_var(std::string name, std::string value)
-    {
-        m_vars[name] = value;
-    }
-    void unset_var(std::string name)
-    {
-        m_vars.erase(name);
-    }
-    std::string get_var(std::string name)
-    {
-        //std::cout << "getting var: " << name << std::endl;
-        auto f = m_vars.find(name);
-        if( f == m_vars.end())
-        {
-            return "";
-        } else {
-            return f->second;
-        }
-    }
+
 
     /**
      * @brief tokenize
@@ -614,7 +625,7 @@ inline void shell_client::run()
     if(m_parent->m_onConnect )
     {
         m_parent->m_onConnect( *this);
-        auto p = std::string("\n") + get_var("PROMPT");
+        auto p = std::string("\n") + get_env("PROMPT");
         Client.send(p.c_str(), p.size());
     }
 
@@ -639,16 +650,16 @@ inline void shell_client::run()
 inline void shell_client::parse(const char *buffer, shell_client::socket_t &client)
 {
     std::string S(buffer);
-    if(S.back() == '\n') S.pop_back();
+    if(S.back() == '\n' && S.size() ) S.pop_back();
 
     if( S.size() > 0 )
     {
         auto printout = execute( S );
         m_vars["LAST_CMD"] = S;
         client.send(printout.c_str(), printout.size());
-        auto p = std::string("\n") + get_var("PROMPT");
-        client.send(p.c_str(), p.size());
     }
+    auto p = std::string("\n") + get_env("PROMPT");
+    client.send(p.c_str(), p.size());
 }
 
 /**
@@ -739,8 +750,8 @@ inline void replace_with_vars(std::string & c, std::map<std::string, std::string
 
                 auto s = std::distance(std::begin(c),s1);
                 auto l = std::distance(s1,e1)+1u;
-                if( f != std::end(V))
-                    c.replace( s, l, f->second);
+
+                c.replace( s, l, f != std::end(V) ? f->second: "" );
 
                 start = std::begin(c) + s;
             }
@@ -765,15 +776,16 @@ inline std::string shell_client::execute(std::string cmd)
     if( cmd.size() == 0)
         return "";
 
-
+    // split the command into the separate commands
+    // eg:   cmd1 | cmd2 | cmd3
     auto command_list = extract_pipes(cmd);
 
+
     Proc_t process(*this);
+
+
     for(auto & c :  command_list)
     {
-       // std::cout << "----CALLING-----------------\n";
-       // std::cout << c << std::endl;
-
 
         // Replace all the ${NAME} with the appropriate variable name
         replace_with_vars(c, this->m_vars);
@@ -815,12 +827,11 @@ inline std::string shell_client::execute(std::string cmd)
                 }
             }
         }
-        //std::cout << "Complete. New command: " << c << std::endl;
 
-        std::cout << "Executing: " << c << std::endl;
+        LOUT << "Executing: " << c << std::endl;
         process.args = socket_shell::tokenize(c);
 
-        m_parent->execute(process);
+        auto exit_code = m_parent->execute(process);
 
         // copy the output string into the input string and call the next command
 

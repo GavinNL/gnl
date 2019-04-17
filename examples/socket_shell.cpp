@@ -36,6 +36,8 @@
 
 #define RED "\033[1;31m"
 #define GREEN "\033[1;32m"
+#define YELLOW "\033[1;33m"
+#define BLUE "\033[1;34m"
 #define RESET "\033[0m"
 
 #include <pthread.h>
@@ -61,16 +63,17 @@ int cmd_rand( gnl::Proc_t  & c)
 
 int cmd_exit(gnl::Proc_t  & c)
 {
-    c.client.close();
+    c.user.close();
     return 0;
 }
-#if not defined PROC_
 
-std::string cmd_none( gnl::shell_client  & client, std::vector<std::string> const & arg )
+
+int cmd_none(  gnl::Proc_t  & c )
 {
-    return "invalid command";
+    c.out << "Invalid command\n";
+    return 1;
 }
-#endif
+
 
 // Custom function called when a client connects
 // to the shell. Use this to set any initial variables
@@ -79,7 +82,7 @@ void on_connect(gnl::shell_client & client)
 {
     std::ostringstream s;
     s << std::this_thread::get_id();
-    client.set_var("THREAD_ID", s.str() );
+    client.set_env("THREAD_ID", s.str() );
 
     std::cout << "Client connected" << std::endl;
 
@@ -87,16 +90,19 @@ void on_connect(gnl::shell_client & client)
     // Add extra Env variables here if needed
     //=====================================================
     std::time_t time = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now() );
-
-    client.set_var("CONNECTION_TIME",  std::ctime(&time)  );
+    auto timestr = std::string(std::ctime(&time));
+    timestr.pop_back(); // remove the '\n';
+    client.set_env("CONNECTION_TIME",  timestr  );
     //=====================================================
 
     auto   msg  = std::string("") +
                       RED  "Welcome to the Shell! You are client ID: " GREEN  + std::to_string(client.id()) + "\n" RESET
                       RED  "- type " GREEN "exit" RED " to disconnect\n"                                RESET
                       RED  "- use: " GREEN "set VAR VALUE" RED " to set an environment variable\n"      RESET
-                      RED  "- use " GREEN "${VAR}" RED " to reference the environment variable\n"       RESET;
+                      RED  "- use " GREEN "${VAR}" RED " to reference the environment variable\n"       RESET
+                      RED  "- type " GREEN "help" RED " to get a list of commands\n"       RESET;
 
+    client.set_env("PROMPT", RED "user" BLUE "@" GREEN "local" BLUE ":~$ "  RESET );
     client.send(msg);
 }
 
@@ -117,17 +123,17 @@ int main()
     S.add_command("exit", cmd_exit);
     S.add_command("rand", cmd_rand);
     S.add_command("echo", cmd_echo);
-    S.add_command("terminate", cmd_term);
+
 
     S.add_connect_function( on_connect );
-   // S.add_default(cmd_none);
+    S.add_default(cmd_none);
 
     S.add_disconnect_function( on_disconnect );
     // Set the PROMPT env variable. Each user
     // This variable will be copied to each connected
     // client's env variables. The default is "?>"
     // and each client can set their own
-    S.set_var("PROMPT", RED "shell" GREEN " >> " RESET );
+    S.set_env("PROMPT", RED "shell" GREEN " >> " RESET );
 
     S.start(SOCKET_NAME);
 
