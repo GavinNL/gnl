@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include<array>
+#include <cmath>
 
 struct vec3
 {
@@ -40,7 +41,7 @@ TEST_CASE( "Alias a vector<uint32_t> into a vector of <vec3>" )
 
         THEN("We can alias it into a vector of 2 vec3s")
         {
-            gnl::array_alias< vec3 > X(int_vec);
+            gnl::aspan< vec3 > X(int_vec);
 
             REQUIRE( X.size() == 2);
 
@@ -58,7 +59,7 @@ TEST_CASE( "Alias a vector<uint32_t> into a vector of <vec3>" )
 
             THEN("We can only alias it into 2 vec3s since it is not aligned")
             {
-                gnl::array_alias< vec3 > X(int_vec);
+                gnl::aspan< vec3 > X(int_vec);
 
                 REQUIRE( X.size() == 2);
 
@@ -87,7 +88,7 @@ TEST_CASE( "Alias a vector<vec3> into a vector of <uint32>" )
 
         THEN("We can alias it into 6 vec<uint32_t>")
         {
-            gnl::array_alias< uint32_t > X(int_vec);
+            gnl::aspan< uint32_t > X(int_vec);
             REQUIRE( X.size() == 6);
 
             REQUIRE( X[0] == 1);
@@ -130,9 +131,9 @@ TEST_CASE( "Alias a vector<vec3> into a 3 aliased vectors" )
 
         THEN("We can create 3 aliased uint32_t vectors which are aligned to the individual memeber variables")
         {
-            gnl::array_alias< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
-            gnl::array_alias< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
-            gnl::array_alias< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
+            gnl::aspan< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
+            gnl::aspan< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
+            gnl::aspan< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
 
             REQUIRE( X.size() == 2);
             REQUIRE( Y.size() == 2);
@@ -162,9 +163,9 @@ TEST_CASE( "Testing iterators" )
 
         THEN("We can create 3 aliased uint32_t vectors which are aligned to the individual memeber variables")
         {
-            gnl::array_alias< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
-            gnl::array_alias< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
-            gnl::array_alias< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
+            gnl::aspan< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
+            gnl::aspan< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
+            gnl::aspan< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
 
             REQUIRE( X.size() == 2);
             REQUIRE( Y.size() == 2);
@@ -287,9 +288,9 @@ TEST_CASE( "Test Sorting" )
         int_vec.push_back({1,2,3});
         int_vec.push_back({4,5,6});
 
-        gnl::array_alias< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
-        gnl::array_alias< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
-        gnl::array_alias< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
+        gnl::aspan< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
+        gnl::aspan< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
+        gnl::aspan< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
 
 
         WHEN("We sort X")
@@ -361,7 +362,7 @@ TEST_CASE( "Test Reverse")
         int_vec.push_back(5);
         int_vec.push_back(6);
 
-        gnl::array_alias<uint32_t> R(int_vec);
+        gnl::aspan<uint32_t> R(int_vec);
 
         REQUIRE( R.size() == 6);
         REQUIRE( R[0] == 1);
@@ -404,7 +405,7 @@ TEST_CASE( "Test Reverse")
         }
         WHEN("We reverse")
         {
-            gnl::array_alias<vec3> rr(int_vec);
+            gnl::aspan<vec3> rr(int_vec);
 
             auto & RR = rr;
             RR.reverse();
@@ -428,9 +429,9 @@ TEST_CASE( "Test Reverse")
         int_vec.push_back({1,2,3});
         int_vec.push_back({4,5,6});
 
-        gnl::array_alias< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
-        gnl::array_alias< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
-        gnl::array_alias< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
+        gnl::aspan< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
+        gnl::aspan< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
+        gnl::aspan< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
 
         X.reverse();
         Y.reverse();
@@ -465,7 +466,7 @@ TEST_CASE( "Constructing with iterators")
 
         THEN("We can construct the view with the first and last iterators")
         {
-            gnl::array_alias<uint32_t> R( std::begin(int_vec), std::end(int_vec));
+            gnl::aspan<uint32_t> R( std::begin(int_vec), std::end(int_vec));
 
             REQUIRE(R.size() == 6);
             REQUIRE( R[0] == 1);
@@ -477,7 +478,7 @@ TEST_CASE( "Constructing with iterators")
         }
         THEN("We can construct the view with the first and last iterators")
         {
-            gnl::array_alias<uint32_t> R( std::begin(int_vec)+1, std::end(int_vec));
+            gnl::aspan<uint32_t> R( std::begin(int_vec)+1, std::end(int_vec));
 
             REQUIRE( R.size() == 5);
             REQUIRE( R[0] == 2);
@@ -489,7 +490,7 @@ TEST_CASE( "Constructing with iterators")
 
         THEN("We can construct the view with the last and first iterators")
         {
-            gnl::array_alias<uint32_t> R( std::end(int_vec)-1, std::begin(int_vec)-1);
+            gnl::aspan<uint32_t> R( std::end(int_vec)-1, std::begin(int_vec)-1);
 
             REQUIRE( R.size() == 6);
             REQUIRE( R[0] == 6);

@@ -13,11 +13,11 @@ namespace GNL_NAMESPACE
 {
 
 template<typename T>
-class array_alias
+class aspan
 {
     public:
         using value_type     = T;
-        using alias_type     = array_alias<T>;
+        using alias_type     = aspan<T>;
 
         class _iterator :  public std::iterator<std::random_access_iterator_tag, T>
         {
@@ -63,10 +63,10 @@ class array_alias
 
 protected:
         template<typename base_type>
-        array_alias(){}
+        aspan(){}
 public:
         template<typename base_type>
-        array_alias( std::vector<base_type> & v, size_t offset=0, size_t stride = sizeof(value_type) )
+        aspan( std::vector<base_type> & v, size_t offset=0, size_t stride = sizeof(value_type) )
         {
             static_assert ( sizeof(base_type) % sizeof(value_type) == 0
                             || sizeof(value_type) % sizeof(base_type) == 0, "Aliased type is miss-aligned");
@@ -77,7 +77,7 @@ public:
         }
 
         template<typename Iterator>
-        array_alias( Iterator first, Iterator end,
+        aspan( Iterator first, Iterator end,
                       size_t offset=0, size_t stride = sizeof(typename Iterator::value_type))
         {
             using category = typename std::iterator_traits<Iterator>::iterator_category;
@@ -115,7 +115,10 @@ public:
      //       return begin() + size();
      //   }
 
-        size_t size() const { return m_size; };
+        size_t size() const
+        {
+            return m_size;
+        }
 
         void reverse()
         {
