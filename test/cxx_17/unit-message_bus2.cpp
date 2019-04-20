@@ -185,7 +185,8 @@ TEST_CASE("Connecting Class methods")
         {
             CX cx;
 
-            MsgBus.connect<M1>( std::bind(&CX::slot, &cx, std::placeholders::_1));
+            //MsgBus.connect<M1>( std::bind(&CX::slot, &cx, std::placeholders::_1));
+            MsgBus.connect( &CX::slot, &cx);
 
             WHEN("We send a message to the message bus")
             {

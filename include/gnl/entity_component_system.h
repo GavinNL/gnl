@@ -14,6 +14,9 @@
 namespace gnl
 {
 
+#if 0
+// not needed
+
 template<typename T>
 class handle
 {
@@ -61,6 +64,10 @@ class handle
 
 };
 
+#endif
+
+class EntitySystem;
+
 class Entity
 {
     protected:
@@ -68,9 +75,10 @@ class Entity
 
     public:
         using handle_type = size_t;
-        using component_container_type = std::array<raw_handle_type, 4>;
+        using component_container_type = std::array<raw_handle_type, 16>;
 
         handle_type              m_handle;
+        EntitySystem            *m_parent= nullptr;
         component_container_type m_components;
 
         Entity()
@@ -99,6 +107,16 @@ class Entity
         {
             return m_handle == std::numeric_limits<raw_handle_type>::max();
         }
+
+        template<typename _Component>
+        _Component & create();
+
+        template<typename _Component>
+        _Component & get();
+
+        template<typename _Component>
+        void destroy();
+
     friend class EntitySystem;
 };
 
@@ -141,7 +159,7 @@ struct ComponentBase
 class HandleWrapper;
 
 template<typename T>
-struct CompInfo
+struct ComponentAllocator
 {
     using handle_type       = size_t;
     using component_id_type = size_t;
@@ -160,6 +178,24 @@ struct CompInfo
         return m_items.at(i);
     }
 
+    value_type & operator[]( handle_type i)
+    {
+        return m_items[i];
+    }
+    value_type const & operator[]( handle_type i) const
+    {
+        return m_items[i];
+    }
+
+    size_t size() const
+    {
+        return m_items.size();
+    }
+
+    void reserve(size_t s)
+    {
+        m_items.resize(s);
+    }
     handle_type new_handle()
     {
         if( m_free.size() )
@@ -199,7 +235,7 @@ public:
     template<typename ComponentType>
     handle_type NewComponent(handle_type entity_handle)
     {
-        using CompInfoType = CompInfo<ComponentType>;
+        using CompInfoType = ComponentAllocator<ComponentType>;
 
         CompInfoType & Comp = get_component_info<ComponentType>();
 
@@ -213,30 +249,10 @@ public:
         return component_handle;
     }
 
-    /**
-     * @brief DestroyComponent
-     * @param entity_handle
-     *
-     * Destroy the compoennt, ComponentType, of entity, entity_handle.
-     */
     template<typename ComponentType>
-    void DestroyComponent(handle_type entity_handle)
+    ComponentAllocator<ComponentType> & get_component_info()
     {
-        using CompInfoType = CompInfo<ComponentType>;
-
-        CompInfoType & Comp = get_component_info<ComponentType>();
-
-        auto & E = get_entity(entity_handle);
-
-        auto componentHandle = E.component_handle<ComponentType>();
-
-        _destroy_component_t<ComponentType>(componentHandle);
-    }
-
-    template<typename ComponentType>
-    CompInfo<ComponentType> & get_component_info()
-    {
-        using CompInfoType = CompInfo<ComponentType>;
+        using CompInfoType = ComponentAllocator<ComponentType>;
 
         if( !m_CompInfo[ComponentType::ID].has_value() )
         {
@@ -356,7 +372,17 @@ public:
      */
     handle_type NewEntity()
     {
-        return handle_type(m_entities.new_handle());
+        auto h = handle_type(m_entities.new_handle());
+        get_entity(h).m_parent = this;
+        return h;
+    }
+
+    Entity & new_entity()
+    {
+        auto h = handle_type(m_entities.new_handle());
+        auto & e = get_entity(h);
+        e.m_parent = this;
+        return e;
     }
 
     /**
@@ -386,6 +412,15 @@ public:
         }
         m_entities.destroy_handle(entity_handle);
     }
+
+    Entity const & operator[](handle_type entity_id) const
+    {
+        return m_entities[entity_id];
+    }
+    Entity & operator[](handle_type entity_id)
+    {
+        return m_entities[entity_id];
+    }
     Entity & get_entity(handle_type entity_id)
     {
 
@@ -394,7 +429,7 @@ public:
     template<typename Component_t>
     Component_t & get_component(handle_type componentHandle)
     {
-        using CompInfoType = CompInfo<Component_t>;
+        using CompInfoType = ComponentAllocator<Component_t>;
         return std::any_cast<CompInfoType&>( m_CompInfo[ Component_t::ID ] ).get(componentHandle);
     }
 
@@ -434,6 +469,29 @@ public:
         return return_value;
     }
 
+
+    template <typename T> struct __helper { using type = T; };
+
+    template <typename ... Components>
+    void for_each(typename __helper<std::function<void(Entity &entity, Components&...)>>::type const & f)
+    {
+        auto cv = get_component_vectors<Components...>();
+
+        for(auto & c1 : std::get<0>(cv) )
+        {
+            auto entity_h = c1.parent_handle();
+
+            auto & E = get_entity(entity_h);
+
+            auto b = _has<Components...>(E);
+            if(b)
+            {
+                auto params = std::tuple_cat(std::tuple<Entity&>(E), _get_reference_to_components_as_tuple<Components...>(E) );
+                std::apply(f , params);
+            }
+        }
+    }
+
     /**
      * @brief find
      * @return returns a vector of tuples
@@ -447,9 +505,8 @@ public:
      *  {
      *  }
      */
-    //
     template<typename T1, typename... T2>
-    void for_all( std::function< void(Entity&, T1&, T2&...)> callable )
+    void for_all( std::function< void(Entity&, T1&, T2&...)> const callable )
     {
         auto cv = get_component_vectors<T1, T2...>();
 
@@ -471,16 +528,17 @@ public:
     }
 
     template<typename comp_t>
-    typename CompInfo<comp_t>::container_type & get_component_vector()
+    typename ComponentAllocator<comp_t>::container_type & get_component_vector()
     {
         using ComponentType = comp_t;
-        using CompInfoType = CompInfo<ComponentType>;
+        using CompInfoType = ComponentAllocator<ComponentType>;
 
-        return std::any_cast<CompInfoType&>(m_CompInfo[ comp_t::ID ]).m_items;
+        return get_component_info<ComponentType>().m_items;
+        //return std::any_cast<CompInfoType&>(m_CompInfo[ comp_t::ID ]).m_items;
     }
 
     std::vector< std::any>      m_CompInfo; // a vector of CompInfo<T>
-    CompInfo<Entity>            m_entities;
+    ComponentAllocator<Entity>            m_entities;
 
     protected:
 
@@ -544,6 +602,26 @@ public:
 
 
 };
+
+
+template<typename _Component>
+_Component & Entity::create()
+{
+    auto h = m_parent->NewComponent<_Component>( handle() );
+    return m_parent->get_component<_Component>(h);
+}
+
+template<typename _Component>
+_Component & Entity::get()
+{
+    return m_parent->get_component<_Component>( component_handle<_Component>() );
+}
+
+template<typename _Component>
+void Entity::destroy()
+{
+    m_parent->_destroy_component_t<_Component>( component_handle<_Component>() );
+}
 
 #define COMPONENT_ID(N) enum id_enumtype : uint32_t { ID = N }; size_t m_parent_entity_handle=std::numeric_limits<size_t>::max(); size_t m_handle =std::numeric_limits<size_t>::max()
 

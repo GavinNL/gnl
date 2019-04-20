@@ -654,7 +654,7 @@ protected:
 };
 
 
-#if defined __linux__
+#if not defined WIN32
 
 /**
  * @brief The domain_stream_socket class
