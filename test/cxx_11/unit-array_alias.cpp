@@ -23,11 +23,9 @@ struct vec3
     }
 };
 
-
-TEST_CASE( "Alias a vector<uint32_t> into a vector of <vec3>" )
+TEST_CASE( "Constructing with iterators")
 {
     std::vector<uint32_t> int_vec;
-
 
     GIVEN("A vector of uint32_t with 6 elements")
     {
@@ -38,42 +36,180 @@ TEST_CASE( "Alias a vector<uint32_t> into a vector of <vec3>" )
         int_vec.push_back(5);
         int_vec.push_back(6);
 
-
-        THEN("We can alias it into a vector of 2 vec3s")
+        WHEN("We construct an aspan using vec3 as the aliased type")
         {
-            gnl::aspan< vec3 > X(int_vec);
+            gnl::aspan<vec3> R( std::begin(int_vec), std::end(int_vec) );
 
-            REQUIRE( X.size() == 2);
-
-            REQUIRE( X[0].x == 1);
-            REQUIRE( X[0].y == 2);
-            REQUIRE( X[0].z == 3);
-            REQUIRE( X[1].x == 4);
-            REQUIRE( X[1].y == 5);
-            REQUIRE( X[1].z == 6);
-        }
-        WHEN("We add another element")
-        {
-
-            int_vec.push_back(7);
-
-            THEN("We can only alias it into 2 vec3s since it is not aligned")
+            THEN("The size of the span is 2")
             {
-                gnl::aspan< vec3 > X(int_vec);
+                REQUIRE( R.size() == 2);
+            }
+            THEN("We can access access each 3-consecutive values as a vec3")
+            {
+                REQUIRE( R[0].x == 1);
+                REQUIRE( R[0].y == 2);
+                REQUIRE( R[0].z == 3);
 
-                REQUIRE( X.size() == 2);
+                REQUIRE( R[1].x == 4);
+                REQUIRE( R[1].y == 5);
+                REQUIRE( R[1].z == 6);
+            }
+            WHEN("We reverse the span.")
+            {
+                R.reverse();
+                THEN("The size remains at 2")
+                {
+                    REQUIRE( R.size() == 2);
+                }
+                THEN("The elements are reversed in the span")
+                {
+                    REQUIRE( R[0].x == 4);
+                    REQUIRE( R[0].y == 5);
+                    REQUIRE( R[0].z == 6);
 
-                REQUIRE( X[0].x == 1);
-                REQUIRE( X[0].y == 2);
-                REQUIRE( X[0].z == 3);
+                    REQUIRE( R[1].x == 1);
+                    REQUIRE( R[1].y == 2);
+                    REQUIRE( R[1].z == 3);
+                }
+            }
+        }
+        WHEN("We construct the reverse view using end-3 and begin-3 iterators")
+        {
+            // we need to subtract 3 from each iterator because
+            // vec3 contains 3 floats
+            gnl::aspan<vec3> R( std::end(int_vec)-3, std::begin(int_vec)-3);
 
-                REQUIRE( X[1].x == 4);
-                REQUIRE( X[1].y == 5);
-                REQUIRE( X[1].z == 6);
+            THEN("The size is 2")
+            {
+                REQUIRE(R.size() == 2);
+            }
+
+            THEN("The elements are reversed")
+            {
+                REQUIRE( R[0].x == 4);
+                REQUIRE( R[0].y == 5);
+                REQUIRE( R[0].z == 6);
+
+                REQUIRE( R[1].x == 1);
+                REQUIRE( R[1].y == 2);
+                REQUIRE( R[1].z == 3);
+            }
+        }
+
+        WHEN("We construct the aspan with the begin+1 and end iterators")
+        {
+            gnl::aspan<vec3> R( std::begin(int_vec)+1, std::end(int_vec));
+
+            THEN("The size is only 1 because the iterators are not aligned properly")
+            {
+                REQUIRE( R.size() == 1);
+            }
+
+            THEN("The the x value of the first element is acutally the second element in the original data")
+            {
+                REQUIRE( R[0].x == 2);
+                REQUIRE( R[0].y == 3);
+                REQUIRE( R[0].z == 4);
             }
         }
     }
 }
+
+TEST_CASE( "Constructing with const containers")
+{
+    std::vector<uint32_t> int_vec1;
+
+    int_vec1.push_back(1);
+    int_vec1.push_back(2);
+    int_vec1.push_back(3);
+    int_vec1.push_back(4);
+    int_vec1.push_back(5);
+    int_vec1.push_back(6);
+
+    GIVEN("A const vector of uint32_t with 6 elements")
+    {
+        auto const & int_vec = int_vec1;
+
+        WHEN("We construct an aspan using vec3 as the aliased type")
+        {
+            gnl::aspan<const vec3> R( std::begin(int_vec), std::end(int_vec) );
+
+            THEN("The size of the span is 2")
+            {
+                REQUIRE( R.size() == 2);
+            }
+            THEN("We can access access each 3-consecutive values as a vec3")
+            {
+                REQUIRE( R[0].x == 1);
+                REQUIRE( R[0].y == 2);
+                REQUIRE( R[0].z == 3);
+
+                REQUIRE( R[1].x == 4);
+                REQUIRE( R[1].y == 5);
+                REQUIRE( R[1].z == 6);
+            }
+            WHEN("We reverse the span.")
+            {
+                R.reverse();
+                THEN("The size remains at 2")
+                {
+                    REQUIRE( R.size() == 2);
+                }
+                THEN("The elements are reversed in the span")
+                {
+                    REQUIRE( R[0].x == 4);
+                    REQUIRE( R[0].y == 5);
+                    REQUIRE( R[0].z == 6);
+
+                    REQUIRE( R[1].x == 1);
+                    REQUIRE( R[1].y == 2);
+                    REQUIRE( R[1].z == 3);
+                }
+            }
+        }
+        WHEN("We construct the reverse view using end-3 and begin-3 iterators")
+        {
+            // we need to subtract 3 from each iterator because
+            // vec3 contains 3 floats
+            gnl::aspan<const vec3> R( std::end(int_vec)-3, std::begin(int_vec)-3);
+
+            THEN("The size is 2")
+            {
+                REQUIRE(R.size() == 2);
+            }
+
+            THEN("The elements are reversed")
+            {
+                REQUIRE( R[0].x == 4);
+                REQUIRE( R[0].y == 5);
+                REQUIRE( R[0].z == 6);
+
+                REQUIRE( R[1].x == 1);
+                REQUIRE( R[1].y == 2);
+                REQUIRE( R[1].z == 3);
+            }
+        }
+
+        WHEN("We construct the aspan with the begin+1 and end iterators")
+        {
+            gnl::aspan<const vec3> R( std::begin(int_vec)+1, std::end(int_vec));
+
+            THEN("The size is only 1 because the iterators are not aligned properly")
+            {
+                REQUIRE( R.size() == 1);
+            }
+
+            THEN("The the x value of the first element is acutally the second element in the original data")
+            {
+                REQUIRE( R[0].x == 2);
+                REQUIRE( R[0].y == 3);
+                REQUIRE( R[0].z == 4);
+            }
+        }
+    }
+}
+
+#if 1
 
 
 TEST_CASE( "Alias a vector<vec3> into a vector of <uint32>" )
@@ -88,7 +224,7 @@ TEST_CASE( "Alias a vector<vec3> into a vector of <uint32>" )
 
         THEN("We can alias it into 6 vec<uint32_t>")
         {
-            gnl::aspan< uint32_t > X(int_vec);
+            gnl::aspan< uint32_t > X( std::begin(int_vec), std::end(int_vec));
             REQUIRE( X.size() == 6);
 
             REQUIRE( X[0] == 1);
@@ -129,11 +265,11 @@ TEST_CASE( "Alias a vector<vec3> into a 3 aliased vectors" )
         int_vec.push_back({1,2,3});
         int_vec.push_back({4,5,6});
 
-        THEN("We can create 3 aliased uint32_t vectors which are aligned to the individual memeber variables")
+        THEN("We can create 3 aliased uint32_t spans which are aligned to the individual memeber variables")
         {
-            gnl::aspan< uint32_t > X(int_vec, offsetof(vec3, x) , sizeof(vec3));
-            gnl::aspan< uint32_t > Y(int_vec, offsetof(vec3, y) , sizeof(vec3));
-            gnl::aspan< uint32_t > Z(int_vec, offsetof(vec3, z) , sizeof(vec3));
+            gnl::aspan< uint32_t > X(std::begin(int_vec), std::end(int_vec), offsetof(vec3, x) , sizeof(vec3));
+            gnl::aspan< uint32_t > Y(std::begin(int_vec), std::end(int_vec), offsetof(vec3, y) , sizeof(vec3));
+            gnl::aspan< uint32_t > Z(std::begin(int_vec), std::end(int_vec), offsetof(vec3, z) , sizeof(vec3));
 
             REQUIRE( X.size() == 2);
             REQUIRE( Y.size() == 2);
@@ -190,6 +326,9 @@ TEST_CASE( "Testing iterators" )
                     auto diff = e-b;
 
                     REQUIRE(diff == 2);
+
+                    REQUIRE(std::distance(b,e) == 2);
+                    REQUIRE(std::distance(e,b) == -2);
                 }
 
                 WHEN("We preincrement")
@@ -451,54 +590,4 @@ TEST_CASE( "Test Reverse")
 }
 
 
-TEST_CASE( "Constructing with iterators")
-{
-    std::vector<uint32_t> int_vec;
-
-    GIVEN("A vector of uint32_t with 6 elements")
-    {
-        int_vec.push_back(1);
-        int_vec.push_back(2);
-        int_vec.push_back(3);
-        int_vec.push_back(4);
-        int_vec.push_back(5);
-        int_vec.push_back(6);
-
-        THEN("We can construct the view with the first and last iterators")
-        {
-            gnl::aspan<uint32_t> R( std::begin(int_vec), std::end(int_vec));
-
-            REQUIRE(R.size() == 6);
-            REQUIRE( R[0] == 1);
-            REQUIRE( R[1] == 2);
-            REQUIRE( R[2] == 3);
-            REQUIRE( R[3] == 4);
-            REQUIRE( R[4] == 5);
-            REQUIRE( R[5] == 6);
-        }
-        THEN("We can construct the view with the first and last iterators")
-        {
-            gnl::aspan<uint32_t> R( std::begin(int_vec)+1, std::end(int_vec));
-
-            REQUIRE( R.size() == 5);
-            REQUIRE( R[0] == 2);
-            REQUIRE( R[1] == 3);
-            REQUIRE( R[2] == 4);
-            REQUIRE( R[3] == 5);
-            REQUIRE( R[4] == 6);
-        }
-
-        THEN("We can construct the view with the last and first iterators")
-        {
-            gnl::aspan<uint32_t> R( std::end(int_vec)-1, std::begin(int_vec)-1);
-
-            REQUIRE( R.size() == 6);
-            REQUIRE( R[0] == 6);
-            REQUIRE( R[1] == 5);
-            REQUIRE( R[2] == 4);
-            REQUIRE( R[3] == 3);
-            REQUIRE( R[4] == 2);
-            REQUIRE( R[5] == 1);
-        }
-    }
-}
+#endif

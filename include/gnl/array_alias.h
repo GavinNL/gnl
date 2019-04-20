@@ -12,6 +12,47 @@
 namespace GNL_NAMESPACE
 {
 
+/**
+ * @brief The aspan class
+ *
+ * aspan is a wrapper around a randomaccess container (vector/array) but allows
+ * the underlying element type to be alised as a different type. For example,
+ * A vector<float> of 27 elements could be aliased as a aspan<mat3x3> with
+ * 3 elements, where each group of 9 floats would be aliased as a 3x3 matrix
+ * (assuming the matrix's underlying storage is contiguious)
+ *
+ * eg:
+ *
+ * std::vector<float> raw(27);
+ * gnl::aspan<mat3x3> matrix( std::begin(raw), std::end(raw));
+ *
+ * access matrix[0], matrix[1], matrix[2].
+ *
+ *
+ * Example 2: Create a span by skipping every other element in the underlying container.
+ * You can create a span by skipping values in the underlying container.
+ * Two additional arguments are added, the first being the byte offset from the start
+ * and the second being the byte-stride; the number of bytes to skip to get to the next
+ * value in the container.
+ *
+ * gnl::aspan<mat3x3> matrix_even( std::begin(raw), std::end(raw), 0,  sizeof(mat3x3)*2 );
+ *
+ *
+ * Example 3: Create two spans which alias the x and y components of a vector of 2d algebra
+ * vectors
+ *
+ * struct vec2
+ * {
+ *  float x;
+ *  float y;
+ * }
+ * std::vector<vec2> xy_vectors(100);
+ *
+ * gnl::span<float> X( std::begin(xy_vectors), std::end(xy_vectors), 0);
+ * gnl::span<float> Y( std::begin(xy_vectors), std::end(xy_vectors), offsetof(vec2,x) );
+ *
+ * X and Y can now be accessed like it was a single array of floats.
+ */
 template<typename T>
 class aspan
 {
@@ -19,13 +60,16 @@ class aspan
         using value_type     = T;
         using alias_type     = aspan<T>;
 
+        using char_type = typename std::conditional< std::is_const<T>::value, const unsigned char, unsigned char>::type;
+        using void_pointer_type = typename std::conditional< std::is_const<T>::value, const void*, void*>::type;
+
         class _iterator :  public std::iterator<std::random_access_iterator_tag, T>
         {
-                unsigned char * p;
+                char_type * p;
                 std::ptrdiff_t stride;
               public:
 
-                _iterator(unsigned char* x, std::ptrdiff_t _stride) : p(x), stride(_stride) {}
+                _iterator(char_type* x, std::ptrdiff_t _stride) : p(x), stride(_stride) {}
                 _iterator(const _iterator& mit) : p(mit.p), stride(mit.stride) {}
 
                 // return the number of elements between two iterators
@@ -66,35 +110,51 @@ protected:
         aspan(){}
 public:
         template<typename base_type>
-        aspan( std::vector<base_type> & v, size_t offset=0, size_t stride = sizeof(value_type) )
+        aspan( std::vector<base_type> & v, size_t offset=0, size_t stride = sizeof(value_type) ) : aspan( std::begin(v), std::end(v), offset, stride)
         {
-            static_assert ( sizeof(base_type) % sizeof(value_type) == 0
-                            || sizeof(value_type) % sizeof(base_type) == 0, "Aliased type is miss-aligned");
-
-            m_size   = (sizeof(base_type) * v.size()) / stride;
-            m_data   = static_cast<unsigned char*>(static_cast<void*>(v.data() )) + offset;
-            m_stride = stride;
+           // static_assert ( sizeof(base_type) % sizeof(value_type) == 0
+           //                 || sizeof(value_type) % sizeof(base_type) == 0, "Aliased type is miss-aligned");
+           //
+           // m_size   = (sizeof(base_type) * v.size()) / stride;
+           // m_data   = static_cast<unsigned char*>(static_cast<void*>(v.data() )) + offset;
+           // m_stride = stride;
         }
 
         template<typename Iterator>
         aspan( Iterator first, Iterator end,
-                      size_t offset=0, size_t stride = sizeof(typename Iterator::value_type))
+                      size_t offset=0, size_t stride = sizeof(value_type))
         {
             using category = typename std::iterator_traits<Iterator>::iterator_category;
-            static_assert( std::is_same<category, std::random_access_iterator_tag>::value, "Iterator must be randomaccess" );
+            static_assert( std::is_same<category, std::random_access_iterator_tag>::value, "Iterator must be random-access" );
 
-            auto x = end-first;
-            m_size = x;
-            if( x < 0) m_size = -x;
-            void * a = &(*first);
-            m_data   = static_cast<unsigned char*>(a);
+            using base_type = typename Iterator::value_type;
+            static_assert ( sizeof(base_type) % sizeof(value_type) == 0
+                            || sizeof(value_type) % sizeof(base_type) == 0, "Aliased type is miss-aligned");
+
+            auto bytes = sizeof(base_type) * std::distance(first, end);//end-first;
             m_stride = stride;
-            if( x < 0 ) m_stride *= -1;
+            if( end < first )
+            {
+                bytes = sizeof(base_type) * std::distance(end, first);//end-first;
+                m_stride = -stride;
+            }
+            m_size = bytes / stride;
+
+            void_pointer_type a = &(*first);
+            m_data   = static_cast<char_type*>(a)+offset;
+
         }
 
+        /**
+         * @brief operator []
+         * @param i
+         * @return
+         *
+         * Access a value in the span
+         */
         T const & operator[](size_t i)
         {
-            return *static_cast<T*>(static_cast<void*>(m_data + m_stride*i));
+            return *static_cast<T*>(static_cast<void_pointer_type>(m_data + m_stride*i));
         }
 
         iterator begin()
@@ -127,6 +187,12 @@ public:
             m_stride = -m_stride;
         }
 
+        /**
+         * @brief reverse
+         * @return
+         * Reverse the span such that the last element becomes the first element
+         * and vice-versa
+         */
         alias_type reverse() const
         {
             alias_type r = *this;
@@ -135,7 +201,9 @@ public:
             r.m_size   = m_size;
             return r;
         }
-        unsigned char    * m_data;
+
+
+        char_type        * m_data;
         size_t             m_size;
         std::ptrdiff_t     m_stride;
 };
