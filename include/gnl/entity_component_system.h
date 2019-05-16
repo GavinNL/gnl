@@ -457,6 +457,8 @@ public:
         for(auto & c1 : std::get<0>(cv) )
         {
             auto entity_h = c1.parent_handle();
+            if( entity_h == std::numeric_limits<handle_type>::max() )
+                continue;
 
             auto & E = get_entity(entity_h);
 
@@ -480,6 +482,9 @@ public:
         for(auto & c1 : std::get<0>(cv) )
         {
             auto entity_h = c1.parent_handle();
+
+            if( entity_h == std::numeric_limits<handle_type>::max() )
+                continue;
 
             auto & E = get_entity(entity_h);
 
@@ -515,6 +520,9 @@ public:
         for(auto & c1 : std::get<0>(cv) )
         {
             auto entity_h = c1.parent_handle();
+
+            if( entity_h == std::numeric_limits<handle_type>::max() )
+                continue;
 
             auto & E = get_entity(entity_h);
 
