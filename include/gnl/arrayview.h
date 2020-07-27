@@ -2,6 +2,7 @@
 #define GNL_ARRAYVIEW_H
 
 #include <cstdlib>
+#include <stdexcept>
 
 namespace gnl
 {
@@ -41,7 +42,7 @@ public:
 
 
     reference_type       operator[](int64_t i) { return *(m_first+i*m_skip); }
-    const reference_type operator[](int64_t i) const { return *(m_first+i*m_skip); }
+    const_reference_type operator[](int64_t i) const { return *(m_first+i*m_skip); }
 
     reference_type       at(int64_t i)
     {
@@ -50,7 +51,7 @@ public:
         return *(m_first+i*m_skip);
 
     }
-    const reference_type       at(int64_t i) const
+    const_reference_type       at(int64_t i) const
     {
         if( i>=size() )
             throw std::out_of_range( std::string("Attempting to access element") + std::to_string(i) + std::string(". Last index: ") + std::to_string(size()-1) );
@@ -69,7 +70,7 @@ public:
      * if A = {0,1,2,3,4,5}
      * then A.slice(5,0,2) = {5,3,1}
      */
-    array_view_type subarray( int64_t first_index, int64_t offset_from_first_index, size_t _skip=1 ) const
+    array_view_type subarray( int64_t first_index, int64_t offset_from_first_index, size_t _skip=1 )
     {
         auto & t = *this;
         auto total_items_in_raw_array = &t[first_index + offset_from_first_index] - &t[first_index];
@@ -86,16 +87,24 @@ public:
      *
      * Returns a reference to the front of the view
      */
-    reference_type front() const {
+    reference_type front()  {
         return *m_first;
     }
+
+    const_reference_type front() const {
+        return *m_first;
+    }
+
     /**
      * @brief back
      * @return
      *
      * Returns a reference to the back of the view
      */
-    reference_type back() const {
+    const_reference_type back() const {
+        return (*this)[ size()-1 ];
+    }
+    reference_type back()  {
         return (*this)[ size()-1 ];
     }
 
