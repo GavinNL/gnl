@@ -1146,7 +1146,7 @@ inline std::map<std::string, json> json::parseObject(std::istringstream &S)
 
 }
 
-inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json & p, std::string & spaces)
+inline std::ostream & _FormatOutput(std::ostream &os, const GNL_NAMESPACE::json & p, std::string & spaces)
 {
     switch( p._type )
     {
@@ -1161,7 +1161,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json
             {
                 if(a._type == GNL_NAMESPACE::json::OBJECT)
                 {
-                    __FormatOutput(os, a, spaces);
+                    _FormatOutput(os, a, spaces);
                 } else {
                    os << a;
                 }
@@ -1185,7 +1185,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json
             for(auto & a : *p._jsons._object)
             {
                 os << spaces << '"' << a.first << '"' <<  std::string( maxsize-a.first.size(), ' ') << " : " ;
-                __FormatOutput(os, a.second, spaces);
+                _FormatOutput(os, a.second, spaces);
                 s++;
                 if( s < (int)p.size() ) os << ",";
                 os << std::endl;
@@ -1205,7 +1205,7 @@ inline std::ostream & __FormatOutput(std::ostream &os, const GNL_NAMESPACE::json
 inline std::ostream & operator << (std::ostream &os, GNL_NAMESPACE::json const & p)
 {
     std::string spaces;
-    __FormatOutput(os, p, spaces);
+    _FormatOutput(os, p, spaces);
     return os;
 }
 

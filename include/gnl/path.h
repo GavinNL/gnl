@@ -448,10 +448,10 @@ namespace GNL_NAMESPACE
             {
                 if( P.empty() ) return false;
 
-                if( !__mkdir( P.to_string(), chmod ) )
+                if( !_mkdir( P.to_string(), chmod ) )
                 {
                      mkdir( P.parent_path(), chmod);
-                     return __mkdir( P.to_string(), chmod);
+                     return _mkdir( P.to_string(), chmod);
                 }
                 return true;
 
@@ -528,7 +528,7 @@ namespace GNL_NAMESPACE
 
 
 
-            static bool __mkdir(string_type const & p, std::int32_t chmod=0766)
+            static bool _mkdir(string_type const & p, std::int32_t chmod=0766)
             {
 #if defined(_WIN32)
                 std::string s(p.begin(), p.end());

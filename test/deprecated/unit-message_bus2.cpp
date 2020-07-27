@@ -48,6 +48,7 @@ public:
 
     void method(M1 const & m)
     {
+        (void)m;
         counter++;
     }
 };
@@ -272,6 +273,7 @@ TEST_CASE("event_queue::dispatch() only executes the number of functions that ar
 
             void slot2(M2 const & M)
             {
+                (void)M;
                 slot2called = true;
                 bus->send( M1() );
             }

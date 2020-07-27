@@ -131,12 +131,12 @@ struct linear_spline
 
         if( time > t1 )
         {
-            __UpdateInterpolant(i+1);
+            _UpdateInterpolant(i+1);
             return (*this)(time);
         }
         else if( time < t0 )
         {
-            __UpdateInterpolant(i-1);
+            _UpdateInterpolant(i-1);
             return (*this)(time);
         }
 
@@ -149,7 +149,7 @@ struct linear_spline
         return p0 * ( static_cast<FloatingType>(1.0) - time) + p1*time;
     }
 
-    void __UpdateInterpolant(int j)
+    void _UpdateInterpolant(int j)
     {
         assert( j < (int)size - 1 );
         i = j;
@@ -249,7 +249,7 @@ struct cubic_spline
         //for(auto P : p) points.push_back(P);
         //for(auto T : t) times.push_back(T);
         i = 0;
-        __UpdateInterpolant(i);
+        _UpdateInterpolant(i);
     }
 
 
@@ -257,19 +257,19 @@ struct cubic_spline
     {
         if( s > t1 )
         {
-            __UpdateInterpolant(i+1);
+            _UpdateInterpolant(i+1);
             return (*this)(s);
         }
         else if( s < t0 )
         {
-            __UpdateInterpolant(i-1);
+            _UpdateInterpolant(i-1);
             return (*this)(s);
         }
 
         return interp( (s-t0) * invT );
     }
 
-    _T __der(int j)
+    _T _der(int j)
     {
         if( j == 0)
         {
@@ -282,14 +282,14 @@ struct cubic_spline
         return (points[j+1]-points[j-1])/(times[j+1]-times[j-1]);
     }
 
-    void __UpdateInterpolant(int j)
+    void _UpdateInterpolant(int j)
     {
         assert( j < times.size() - 1);
 
         i = j;
 
-        interp.m0 = __der(i);
-        interp.m1 = __der(i+1);
+        interp.m0 = _der(i);
+        interp.m1 = _der(i+1);
 
         interp.p0 = points[i];
         interp.p1 = points[i+1];

@@ -37,7 +37,7 @@ foreach(file ${files})
     create_test( NAME ${testcase}
                  SOURCES ${file}
                  COMMAND ${testcase}
-                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET})
+                 PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET} gnl_warning::all gnl_warning::error)
 
 endforeach()
 #############################################################################
@@ -66,7 +66,7 @@ if(IS_CXX17)
         create_test( NAME ${testcase}
                      SOURCES ${file}
                      COMMAND ${testcase}
-                     PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET})
+                     PUBLIC_LINKED_TARGETS catch_main gnl::gnl ${COVERAGE_TARGET} gnl_warning::all gnl_warning::error)
 
         target_compile_features(${testcase} PUBLIC cxx_std_17)
     endforeach()

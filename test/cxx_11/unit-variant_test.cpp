@@ -19,21 +19,25 @@ class Test
 
         Test(const Test &T )
         {
+            (void)T;
             std::cout << "TEST Copy Constructor" << std::endl;
         }
         Test( Test && T )
         {
+            (void)T;
             std::cout << "TEST Move Constructor" << std::endl;
         }
 
         Test& operator=( const Test & T )
         {
+            (void)T;
             std::cout << "TEST Copy Operator" << std::endl;
             return *this;
         }
 
         Test& operator=( Test && T )
         {
+            (void)T;
             std::cout << "TEST move Operator" << std::endl;
             return *this;
         }
@@ -92,9 +96,9 @@ TEST_CASE( "Variant Test" )
     {
         D = TestThrow();
     }
-    catch (std::exception e)
+    catch (std::exception & e)
     {
-
+        (void)e;
     }
 
     REQUIRE(D.as<int>() ==3);

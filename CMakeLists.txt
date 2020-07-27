@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.8)
 #########################################################
 project(gnl  VERSION 1.0.0)
 include(cmake/functions.cmake)
+include(cmake/warnings.cmake)
 #########################################################
 
 

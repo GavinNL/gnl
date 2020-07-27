@@ -284,7 +284,7 @@ public:
 
     ~socket_shell()
     {
-        __disconnect();
+        _disconnect();
         unlink();
     }
 
@@ -313,7 +313,7 @@ public:
         m_Socket.bind(m_Name.c_str());
 
 
-        std::thread t1(&socket_shell::__listen, this);
+        std::thread t1(&socket_shell::_listen, this);
 
         m_ListenThread = std::move(t1);
     }
@@ -389,7 +389,7 @@ public:
      */
     void disconnect()
     {
-        __disconnect();
+        _disconnect();
     }
 
 
@@ -438,7 +438,7 @@ public:
 
 protected:
 
-    void __listen()
+    void _listen()
     {
         m_Socket.listen();
         m_client_id_count = 0;
@@ -479,7 +479,7 @@ protected:
         }
     }
 
-    void __disconnect()
+    void _disconnect()
     {
         m_exit = true;
 
@@ -696,6 +696,9 @@ inline std::vector<std::string> extract_pipes( std::string cmd)
                 auto n = std::distance(start, x);
                 out.push_back( std::string(start,x) );
                 start = x+1;
+
+                (void)s;
+                (void)n;
             }
         }
         x++;
@@ -832,7 +835,7 @@ inline std::string shell_client::execute(std::string cmd)
         process.args = socket_shell::tokenize(c);
 
         auto exit_code = m_parent->execute(process);
-
+        (void)exit_code;
         // copy the output string into the input string and call the next command
 
         process.in = std::istringstream(process.out.str());

@@ -39,7 +39,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <cstdint>
-#include <string.h>
+#include <cstring>
 
 #if defined _MSC_VER
 
@@ -267,7 +267,7 @@ public:
         return *this;
     }
 
-    bool create(int __domain, int __type, int __protocol)
+    bool create(int _domain, int _type, int _protocol)
     {
     #ifdef _MSC_VER
         WSADATA wsa;
@@ -277,7 +277,7 @@ public:
             return false;
         }
     #endif
-        if ( (m_fd=socket(__domain, __type, __protocol)) == invalid_socket)
+        if ( (m_fd=socket(_domain, _type, _protocol)) == invalid_socket)
         {
             #ifdef _MSC_VER
           //  printf("Create failed with error code : %d\n" , WSAGetLastError() );
@@ -446,13 +446,13 @@ public:
         m_fd       = other.m_fd;
         m_address  = other.m_address;
         other.m_fd = invalid_socket;
-        memset(&other.m_address,0,sizeof(other.m_address));
+        other.m_address = socket_address();
     }
 
     tcp_socket( const tcp_socket & other) : socket_base( other)
     {
         m_fd = other.m_fd;
-        memcpy(&m_address, &other.m_address, sizeof(m_address) );
+        std::memcpy(&m_address, &other.m_address, sizeof(m_address) );
     }
 
     tcp_socket& operator=( tcp_socket const & other)
@@ -471,7 +471,7 @@ public:
         {
             m_fd      = other.m_fd;
             m_address = other.m_address;
-            memset(&other.m_address,0,sizeof(other.m_address));
+            other.m_address = socket_address();
             other.m_fd = invalid_socket;
         }
         return *this;

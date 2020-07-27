@@ -472,10 +472,10 @@ public:
     }
 
 
-    template <typename T> struct __helper { using type = T; };
+    template <typename T> struct _helper { using type = T; };
 
     template <typename ... Components>
-    void for_each(typename __helper<std::function<void(Entity &entity, Components&...)>>::type const & f)
+    void for_each(typename _helper<std::function<void(Entity &entity, Components&...)>>::type const & f)
     {
         auto cv = get_component_vectors<Components...>();
 

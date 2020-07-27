@@ -270,7 +270,7 @@ class resource_path
                 throw std::runtime_error("The stem path must be relative");
             }
             path_type N = format_path(root_folder + '/') + format_path(stem);
-            __erase_duplicate_separators(N);
+            _erase_duplicate_separators(N);
             return N;
         }
 
@@ -312,7 +312,7 @@ class resource_path
             // replace any \ with /
             std::replace(p.begin(), p.end(), '\\', '/');
 
-            __erase_duplicate_separators(p);
+            _erase_duplicate_separators(p);
             return p;
         }
 
@@ -362,12 +362,12 @@ class resource_path
 
 
         /**
-         * @brief __erase_duplicate_separators
+         * @brief _erase_duplicate_separators
          * @param path
          *
          * Erases any duplicate separators in the string.
          */
-        static void __erase_duplicate_separators(path_type & path)
+        static void _erase_duplicate_separators(path_type & path)
         {
                 auto it =
                 std::unique( std::begin(path),

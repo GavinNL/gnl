@@ -9,7 +9,6 @@ find_package(Threads)
 
 create_example( animate "")
 create_example( domain_stream_socket Threads::Threads)
-create_example( json "")
 create_example( multiclient_tcp_server Threads::Threads)
 create_example( path "")
 create_example( periodic Threads::Threads)

@@ -67,11 +67,11 @@ public:
         construct(other.type());
         switch(type())
         {
-            case BOOLEAN: __as<boolean>() = other.__as<boolean> (); return;
-            case NUMBER:  __as<number >() = other.__as<number > (); return;
-            case ARRAY:   __as<array  >() = other.__as<array  > (); return;
-            case OBJECT:  __as<object >() = other.__as<object > (); return;
-            case STRING:  __as<string >() = other.__as<string > (); return;
+            case BOOLEAN: _as<boolean>() = other._as<boolean> (); return;
+            case NUMBER:  _as<number >() = other._as<number > (); return;
+            case ARRAY:   _as<array  >() = other._as<array  > (); return;
+            case OBJECT:  _as<object >() = other._as<object > (); return;
+            case STRING:  _as<string >() = other._as<string > (); return;
             case null:
             break;
             default:
@@ -86,9 +86,9 @@ public:
 
         if( std::is_same<T,object>::value  ) { construct<object>(); *reinterpret_cast<object *>(m_data) = *reinterpret_cast<object const*>(&other);  return;}
         if( std::is_same<T,array>::value   ) { construct<array>();  *reinterpret_cast<array  *>(m_data) = *reinterpret_cast<array const*>(&other);   return;}
-        if( STRING_CONV(T)  ) { construct<string>(); __set<string,T>(other);  return;}
+        if( STRING_CONV(T)  ) { construct<string>(); _set<string,T>(other);  return;}
         if( std::is_same<T,boolean>::value ) { construct<boolean>();*reinterpret_cast<boolean*>(m_data) = *reinterpret_cast<boolean const*>(&other); return;}
-        if( NUMERIC(T)  )                    { construct<number>(); __set<number,T>(other); return ;}
+        if( NUMERIC(T)  )                    { construct<number>(); _set<number,T>(other); return ;}
 
     }
 
@@ -116,11 +116,11 @@ public:
 
             switch(type())
             {
-                case BOOLEAN: __as<boolean>() = other.__as<boolean> (); return *this;
-                case NUMBER:  __as<number >() = other.__as<number > (); return *this;
-                case ARRAY:   __as<array  >() = other.__as<array  > (); return *this;
-                case OBJECT:  __as<object >() = other.__as<object > (); return *this;
-                case STRING:  __as<string >() = other.__as<string > (); return *this;
+                case BOOLEAN: _as<boolean>() = other._as<boolean> (); return *this;
+                case NUMBER:  _as<number >() = other._as<number > (); return *this;
+                case ARRAY:   _as<array  >() = other._as<array  > (); return *this;
+                case OBJECT:  _as<object >() = other._as<object > (); return *this;
+                case STRING:  _as<string >() = other._as<string > (); return *this;
                 case null:
                     break;
                 default:
@@ -254,7 +254,7 @@ public:
         {
             using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
 
-            return static_cast<T>( __as<proper_json_type>() );
+            return static_cast<T>( _as<proper_json_type>() );
         }
 
         return T();
@@ -274,7 +274,7 @@ public:
         switch(m_type)
         {
             case ARRAY:
-                return __as<array>().at(i);
+                return _as<array>().at(i);
             default:
                 throw std::runtime_error("Not an array");
         }
@@ -284,7 +284,7 @@ public:
         switch(m_type)
         {
             case ARRAY:
-                return __as<array>().at(i);
+                return _as<array>().at(i);
             default:
                 throw std::runtime_error("Not an array");
         }
@@ -304,17 +304,17 @@ public:
         if(m_type!=ARRAY)
             construct<array>();
 
-        if( i >= __as<array>().size() )
-            __as<array>().resize(i+1);
+        if( i >= _as<array>().size() )
+            _as<array>().resize(i+1);
 
-        return __as<array>()[i];
+        return _as<array>()[i];
     }
     json const & operator[] (int i) const
     {
         if(m_type!=ARRAY)
             throw std::runtime_error("Not an array");
 
-        return __as<array>()[i];
+        return _as<array>()[i];
     }
 
     /**
@@ -335,13 +335,13 @@ public:
             return default_value;
         }
 
-        if( i < __as<array>().size() )
+        if( i < _as<array>().size() )
         {
-            if( type_from_template<T>() == __as<array>()[i].type() )
+            if( type_from_template<T>() == _as<array>()[i].type() )
             {
                 using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
 
-                return static_cast<T>( __as<array>()[i].__as<proper_json_type>() );//  *reinterpret_cast<proper_json_type const*>( __as<array>()[i].m_data) );
+                return static_cast<T>( _as<array>()[i]._as<proper_json_type>() );//  *reinterpret_cast<proper_json_type const*>( _as<array>()[i].m_data) );
             }
         }
 
@@ -365,7 +365,7 @@ public:
         switch(m_type)
         {
             case OBJECT:
-                return __as<object>().at(i);
+                return _as<object>().at(i);
             default:
                 throw std::runtime_error("Not an object");
         }
@@ -375,7 +375,7 @@ public:
         switch(m_type)
         {
             case OBJECT:
-                return __as<object>().at(i);
+                return _as<object>().at(i);
             default:
                 throw std::runtime_error("Not an OBJECT");
         }
@@ -403,14 +403,14 @@ public:
     {
         if(m_type!=OBJECT)
             construct<object>();
-        return __as<object>()[i];
+        return _as<object>()[i];
     }
     json const & operator[] (string const & i) const
     {
         if(m_type!=OBJECT)
             throw std::runtime_error("Not an OBJECT");
 
-        return __as<object>().at(i);
+        return _as<object>().at(i);
     }
 
     template<typename T>
@@ -420,16 +420,16 @@ public:
         {
             return default_value;
         }
-        auto f = __as<object>().find(key);
+        auto f = _as<object>().find(key);
 
-        if( f == __as<object>().end() )
+        if( f == _as<object>().end() )
             return default_value;
 
         if( type_from_template<T>() == f->second.type())
         {
             using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
 
-            return static_cast<T>( f->second.__as<proper_json_type>() );//*reinterpret_cast<proper_json_type const*>(f->second.m_data));
+            return static_cast<T>( f->second._as<proper_json_type>() );//*reinterpret_cast<proper_json_type const*>(f->second.m_data));
         }
 
         return default_value;
@@ -440,11 +440,11 @@ public:
         switch( m_type)
         {
             case OBJECT:
-                return __as<object>().size();
+                return _as<object>().size();
             case ARRAY:
-                return __as<array>().size();
+                return _as<array>().size();
             case STRING:
-                return __as<string>().size();
+                return _as<string>().size();
             default:
                 return 0;
         }
@@ -463,7 +463,7 @@ public:
 
         if( type() == type_from_template<proper_json_type>() )
         {
-            return __as<proper_json_type>() == other;
+            return _as<proper_json_type>() == other;
         }
 
         throw std::runtime_error("JSON item is not the proper type.");
@@ -477,7 +477,7 @@ public:
 
         if( type() == type_from_template<proper_json_type>() )
         {
-            return __as<proper_json_type>() != other;
+            return _as<proper_json_type>() != other;
         }
         throw std::runtime_error("JSON item is not the proper type.");
         return false;
@@ -490,7 +490,7 @@ public:
         using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) ); \
         if( type() == type_from_template<proper_json_type>() ) \
         { \
-            return __as<proper_json_type>() op other; \
+            return _as<proper_json_type>() op other; \
         } \
         throw std::runtime_error("JSON item is not the proper type.");\
     }
@@ -508,7 +508,7 @@ public:
 
         using proper_json_type = CONDITIONAL_TYPE(  NUMERIC(T), number, CONDITIONAL_TYPE(  STRING_CONV(T), string, T) );
 
-        return static_cast<T>( __as<proper_json_type>() );
+        return static_cast<T>( _as<proper_json_type>() );
     }
 
 private:
@@ -537,13 +537,13 @@ private:
 
     template<typename T, typename T2>
     typename std::enable_if< std::is_same<T,number>::value && NUMERIC(T2) , void>::type
-    __set(T2 const & other)
+    _set(T2 const & other)
     {
         *reinterpret_cast<number*>(m_data) = other;
     }
     template<typename T, typename T2>
     typename std::enable_if< std::is_same<T,number>::value && !NUMERIC(T2) , void>::type
-    __set(T2 const & other)
+    _set(T2 const & other)
     {
       //  *reinterpret_cast<number*>(m_data) = other;
     }
@@ -551,25 +551,25 @@ private:
 
     template<typename T, typename T2>
     typename std::enable_if< std::is_same<T,string>::value && STRING_CONV(T2), void>::type
-    __set(T2 const & other)
+    _set(T2 const & other)
     {
         *reinterpret_cast<string*>(m_data) = other;
     }
     template<typename T, typename T2>
     typename std::enable_if< std::is_same<T,string>::value && !STRING_CONV(T2), void>::type
-    __set(T2 const & other)
+    _set(T2 const & other)
     {
        // *reinterpret_cast<string*>(m_data) = other;
     }
 
     template<typename T>
-    T & __as()
+    T & _as()
     {
         return *reinterpret_cast<T*>(m_data);
     }
 
     template<typename T>
-    T const & __as() const
+    T const & _as() const
     {
         return *reinterpret_cast<T const*>(m_data);
     }
@@ -642,9 +642,9 @@ public:
     {
         switch( J.type() )
         {
-            case BOOLEAN: std::cout << J.__as<boolean>(); break;
-            case NUMBER:  std::cout << J.__as<number>();  break;
-            case STRING:  std::cout << J.__as<string>().c_str();  break;
+            case BOOLEAN: std::cout << J._as<boolean>(); break;
+            case NUMBER:  std::cout << J._as<number>();  break;
+            case STRING:  std::cout << J._as<string>().c_str();  break;
             case ARRAY:   break;//std::cout << destroy<array> (); break;
             case OBJECT:  break;//std::cout << destroy<object>(); break;
             default: break;
