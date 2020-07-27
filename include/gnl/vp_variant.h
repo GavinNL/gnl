@@ -59,7 +59,8 @@ class vp_variant
               return *b;
             }
             value_type& operator()(const_pointer_type const& b) {
-                throw std::runtime_error("asdf");
+                (void)b;
+                throw std::runtime_error("Not implemented yet.");
               //return *b;
             }
         };
