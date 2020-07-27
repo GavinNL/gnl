@@ -44,7 +44,13 @@
 
 #define PROC_
 
-int cmd_echo( gnl::Proc_t  & c)
+using socket_type  = gnl::domain_stream_socket;
+using shell_type   = gnl::socket_shell< socket_type >;
+using process_type = shell_type::process_type;
+using client_type  = shell_type::client_type;
+
+
+int cmd_echo( process_type  & c)
 {
     auto count = c.args.size()-1;
     for(size_t i=1; i < c.args.size() ;i++)
@@ -55,20 +61,20 @@ int cmd_echo( gnl::Proc_t  & c)
     return 0;
 }
 
-int cmd_rand( gnl::Proc_t  & c)
+int cmd_rand( process_type  & c)
 {
     c.out << std::to_string( std::rand() );
     return 0;
 }
 
-int cmd_exit(gnl::Proc_t  & c)
+int cmd_exit(process_type  & c)
 {
     c.user.close();
     return 0;
 }
 
 
-int cmd_none(  gnl::Proc_t  & c )
+int cmd_none(  process_type  & c )
 {
     c.out << "Invalid command\n";
     return 1;
@@ -78,7 +84,7 @@ int cmd_none(  gnl::Proc_t  & c )
 // Custom function called when a client connects
 // to the shell. Use this to set any initial variables
 //
-void on_connect(gnl::shell_client & client)
+void on_connect(client_type & client)
 {
     std::ostringstream s;
     s << std::this_thread::get_id();
@@ -107,7 +113,7 @@ void on_connect(gnl::shell_client & client)
 }
 
 
-void on_disconnect( gnl::shell_client  & c)
+void on_disconnect( client_type  & c)
 {
     std::cout << "Client Disconnected" << std::endl;
 }
@@ -117,7 +123,7 @@ void on_disconnect( gnl::shell_client  & c)
 int main()
 {
 
-    gnl::socket_shell S;
+    shell_type S;
 
 
     S.add_command("exit", cmd_exit);
