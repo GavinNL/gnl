@@ -280,9 +280,9 @@ public:
         if ( (m_fd=socket(_domain, _type, _protocol)) == invalid_socket)
         {
             #ifdef _MSC_VER
-          //  printf("Create failed with error code : %d\n" , WSAGetLastError() );
+            //printf("Create failed with error code : %d\n" , WSAGetLastError() );
             #else
-            printf("Create failed with error code : %d : %s\n" , errno,  strerror(errno) );
+            //printf("Create failed with error code : %d : %s\n" , errno,  strerror(errno) );
             #endif
             return false;
         }
