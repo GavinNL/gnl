@@ -20,5 +20,6 @@ create_example( thread_pool Threads::Threads)
 create_example( udp_server Threads::Threads)
 
 create_example( socket_shell Threads::Threads)
+create_example( socket_server Threads::Threads)
 
 
