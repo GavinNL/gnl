@@ -44,15 +44,7 @@
 //#define USE_UNIX_SOCKET
 
 
-#if defined USE_UNIX_SOCKET
-#define SOCKET_NAME "mysocket.socket"
-using socket_type  = gnl::domain_stream_socket;
-#else
-#define SOCKET_PORT 6773
-using socket_type = gnl::tcp_socket;
-#endif
-
-using shell_type   = gnl::socket_shell< socket_type >;
+using shell_type   = gnl::socket_shell;
 using process_type = shell_type::process_type;
 using client_type  = shell_type::client_type;
 
@@ -83,7 +75,9 @@ int cmd_exit(process_type  & c)
 
 int cmd_none(  process_type  & c )
 {
-    c.out << "Invalid command\n";
+
+    c.out << "Invalid command: \n";
+    c.out << c.in.str() << "\n";
     return 1;
 }
 
@@ -130,23 +124,17 @@ void on_disconnect( client_type  & c)
 int main(int argc, char ** argv)
 {
 
-    socket_type socket;
-
-    uint16_t port = SOCKET_PORT;
-
-#if defined USE_UNIX_SOCKET
-    socket.unlink(SOCKET_NAME);
-    socket.create();
-    socket.bind(SOCKET_NAME);
-#else
-    socket.create();
-    if( !socket.bind(port) )
+    if( argc != 2)
     {
-        std::cout << "Failed to bind socket on port: " << port << std::endl;
-        exit(1);
-    }
-#endif
+        std::cout << "Execute the shell by: " << std::endl << std::endl;
 
+        std::cout << "./socket_shell localhost:PORT " << std::endl;
+        std::cout << "or" << std::endl;
+        std::cout << "./socket_shell PATH" << std::endl;
+
+
+        return 1;
+    }
 
     shell_type S;
 
@@ -166,18 +154,15 @@ int main(int argc, char ** argv)
     // and each client can set their own
     S.set_env("PROMPT", RED "shell" GREEN " >> " RESET );
 
-    S.start( std::move(socket));
+    S.start( argv[1] );
    // S.start(SOCKET_NAME);
 
-#if defined USE_UNIX_SOCKET
+
     std::cout << "Connect to the shell from your bash terminal using:" << std::endl << std::endl;
-    std::cout << "socat - UNIX-CONNECT:" << SOCKET_NAME << std::endl << std::endl;
-    std::cout << "   or " <<  std::endl << std::endl;
-    std::cout << "netcat -U " << SOCKET_NAME << std::endl << std::endl;
-#else
-    std::cout << "Connect to the shell from your bash terminal using:" << std::endl << std::endl;
-    std::cout << "netcat localhost " << port << std::endl << std::endl;
-#endif
+    std::cout << "\n";
+    std::cout << "netcat localhost PORT " << std::endl << std::endl;
+    std::cout << "\n";
+    std::cout << "netcat -U PATH" << std::endl << std::endl;
 
 
     std::this_thread::sleep_for(std::chrono::seconds(50));

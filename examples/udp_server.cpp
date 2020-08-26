@@ -1,7 +1,7 @@
 #include <iostream>
 #include <thread>
 
-#include <gnl/socket.h>
+#include <gnl/socket_old.h>
 
 #define PORT 30001
 #define BUFLEN 256

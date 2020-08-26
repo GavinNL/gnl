@@ -62,10 +62,7 @@
 namespace gnl
 {
 
-template<typename T>
 class socket_shell;
-
-template<typename T>
 class shell_client;
 
 /**
@@ -74,16 +71,15 @@ class shell_client;
  * The Proc class is a container of the input/output streams,
  * and the shell client. A new process is
  */
-template<typename T>
 class Proc_t
 {
 public:
-    Proc_t(shell_client<T> & c ) : user(c){}
+    Proc_t(shell_client & c ) : user(c){}
 
     std::vector<std::string>    args;    // input arguments to the process
     std::istringstream          in;      // the input stream
     std::ostringstream          out;     // the output stream.
-    shell_client<T>             &user;     // the user's information.
+    shell_client                &user;     // the user's information.
 };
 
 /**
@@ -93,13 +89,12 @@ public:
  * Each shell_client contains its own env variables which are copied
  * from the main shell's env
  */
-template<typename T>
 class shell_client
 {
 public:
-    using socket_type  = T;
-    using process_type = Proc_t<socket_type>;
-    using shell_type   = socket_shell<socket_type>;
+    using socket_type  = gnl::socket;
+    using process_type = Proc_t;
+    using shell_type   = socket_shell;
 
     shell_client(socket_type socket, shell_type * parent) : m_socket(socket), m_parent(parent)
     {
@@ -180,7 +175,13 @@ public:
     {
         return m_vars;
     }
+
+    void setCustomParse( std::function< void(const char*, socket_type&)> p )
+    {
+        _parse = p;
+    }
 protected:
+    std::function< void(const char*, socket_type&)> _parse;
     void        parse(const char * buffer, socket_type & client);
     std::string execute( std::string cmd );
     std::string execute( std::vector< std::string > const & args );
@@ -189,7 +190,7 @@ protected:
 
     void start()
     {
-        std::thread tc( &shell_client<socket_type>::run, this);
+        std::thread tc( &shell_client::run, this);
         m_thread = std::move(tc);
     }
 
@@ -201,16 +202,16 @@ protected:
     bool          m_exit = false;
     std::thread   m_thread;
     size_t        m_id;
-    friend class socket_shell<socket_type>;
+    friend class socket_shell;
 };
 
-template<typename T>
+
 class socket_shell
 {
 public:
-    using socket_type  = T;
-    using client_type  = shell_client<socket_type>;
-    using process_type = Proc_t<socket_type>;
+    using socket_type  = gnl::socket;
+    using client_type  = shell_client;
+    using process_type = Proc_t;
 
     socket_type m_Socket;
 
@@ -329,6 +330,24 @@ public:
         m_ListenThread = std::move(t1);
     }
 
+    /**
+     * @brief start
+     * @param endpoint
+     *
+     * endpoint should be either a filepath, or a ipaddress:port
+     */
+    void start(const std::string endpoint)
+    {
+        socket_type sock;
+
+        if( sock.bind(endpoint) )
+        {
+            start( std::move(sock) );
+            return;
+        }
+        throw std::runtime_error("Failed to bind");
+    }
+
     socket_type& getSocket()
     {
         return m_Socket;
@@ -395,6 +414,11 @@ public:
     void add_default(cmdfunction_t f)
     {
         m_Default = f;
+    }
+
+    void setCustomParse( std::function< void(const char*, socket_type&)> p)
+    {
+        _customParse = p;
     }
 
     /**
@@ -473,6 +497,10 @@ protected:
             c->set_env("ID", std::to_string(m_client_id_count++));
             c->set_env("SOCKET", m_Name);
 
+            if( _customParse )
+            {
+                c->setCustomParse(_customParse);
+            }
             c->start();
 
             {
@@ -535,11 +563,13 @@ protected:
     disconnectfunction_t m_onDisconnect;
 
 
-    friend void        shell_client<socket_type>::parse(const char * buffer, socket_type & client);
-    friend std::string shell_client<socket_type>::execute( std::string cmd );
-    friend std::string shell_client<socket_type>::execute( std::vector< std::string > const & args );
-    friend void        shell_client<socket_type>::run();
-    friend void        shell_client<socket_type>::start();
+    friend void        shell_client::parse(const char * buffer, socket_type & client);
+    friend std::string shell_client::execute( std::string cmd );
+    friend std::string shell_client::execute( std::vector< std::string > const & args );
+    friend void        shell_client::run();
+    friend void        shell_client::start();
+
+    std::function< void(const char*, socket_type&)> _customParse;
 //public:
 
     /**
@@ -638,13 +668,12 @@ protected:
  *
  * The main thread command for the client.
  */
-template<typename sock_t>
-inline void shell_client<sock_t>::run()
+inline void shell_client::run()
 {
     auto & Client = m_socket;
 
     #define BUFFER_SIZE 4096
-    char buffer[4096];
+    char buffer[BUFFER_SIZE];
 
     if(m_parent->m_onConnect )
     {
@@ -655,13 +684,14 @@ inline void shell_client<sock_t>::run()
 
     while( Client && !m_exit)
     {
-        auto ret = Client.recv(buffer, 4096, false);
+        auto ret = Client.recv(buffer, BUFFER_SIZE, false);
         if(ret == -1)
         {
             break;
         }
 
         buffer[ret] = 0;
+
         parse(buffer, Client);
     }
 
@@ -671,9 +701,14 @@ inline void shell_client<sock_t>::run()
     Client.close();
 }
 
-template<typename sock_t>
-inline void shell_client<sock_t>::parse(const char *buffer, shell_client::socket_type &client)
+
+inline void shell_client::parse(const char *buffer, shell_client::socket_type &client)
 {
+    if( _parse )
+    {
+        _parse(buffer, client);
+        return;
+    }
     std::string S(buffer);
     if(S.back() == '\n' && S.size() ) S.pop_back();
 
@@ -797,8 +832,7 @@ inline void replace_with_vars(std::string & c, std::map<std::string, std::string
  * like a bash command line recurively executing anything within $( )
  * and replacing ${ } with environment variables
  */
-template<typename sock_t>
-inline std::string shell_client<sock_t>::execute(std::string cmd)
+inline std::string shell_client::execute(std::string cmd)
 {
 
     if( cmd.back() == '\n') cmd.pop_back();
@@ -858,7 +892,7 @@ inline std::string shell_client<sock_t>::execute(std::string cmd)
         }
 
         LOUT << c.size() << " Executing: " << c << " - " << static_cast<int32_t>(c.back()) << std::endl;
-        process.args = socket_shell<sock_t>::tokenize(c);
+        process.args = socket_shell::tokenize(c);
 
         auto exit_code = m_parent->execute(process);
         (void)exit_code;
