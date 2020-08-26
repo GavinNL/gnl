@@ -128,8 +128,7 @@ public:
     }
 
     /**
-     * @brief close
-     * Disconnect the client
+     * @brief close * Disconnect the client
      */
     void close()
     {
@@ -318,21 +317,15 @@ public:
     }
 
     /**
-     * @brief Start
-     * @param name - the path of the socket to create in the filesystem
+     * @brief start
+     * @param socket_already_bound
      *
-     * Starts the shell and creates a socket in the filesystem which can be
-     * connected to via an external application.
+     * Start the shell using an already bound socket.
      */
-    void start( char const * name)
+    void start( socket_type && socket_already_bound)
     {
-        m_Name = name;
-        m_Socket.unlink(m_Name.c_str());
-        m_Socket.create();
-        m_Socket.bind(m_Name.c_str());
-
+        m_Socket = std::move(socket_already_bound);
         std::thread t1(&socket_shell::_listen, this);
-
         m_ListenThread = std::move(t1);
     }
 
@@ -461,18 +454,20 @@ protected:
 
     void _listen()
     {
-        m_Socket.listen();
+        m_Socket.listen(10);
         m_client_id_count = 0;
         while(!m_exit)
         {
+            m_Socket.set_recv_timeout( std::chrono::seconds(1));
             auto client_socket = m_Socket.accept();
 
             if(!client_socket)
             {
-                LOUT << "Client is bad" << std::endl;
+                //LOUT << "Client is bad" << std::endl;
                 continue;
             }
 
+            client_socket.set_recv_timeout( std::chrono::seconds(100000));
             auto c = std::make_shared<client_type>(client_socket, this);
             c->m_vars = this->m_vars;
             c->set_env("ID", std::to_string(m_client_id_count++));
@@ -486,6 +481,19 @@ protected:
                 m_ClientPointers.insert(c);
             }
         }
+
+        int i=0;
+        for(auto & c : m_ClientPointers)
+        {
+            LOUT << "Disconnecting client " << i++ << std::endl;
+            c->close();
+            c->m_socket.close();
+        }
+
+        clean_clients();
+        m_ClientPointers.clear();
+
+        m_Socket.close();
 
     }
 
@@ -504,23 +512,11 @@ protected:
     {
         m_exit = true;
 
-        int i=0;
-
-        for(auto & c : m_ClientPointers)
-        {
-            LOUT << "Disconnecting client " << i++ << std::endl;
-            c->close();
-            c->m_socket.close();
-        }
-
-        clean_clients();
-        m_ClientPointers.clear();
-
-        m_Socket.close();
+        //m_Socket.close();
         if(m_ListenThread.joinable() )
             m_ListenThread.join();
-
-        unlink();
+        //m_Socket.close();
+      //  unlink();
     }
 
 
@@ -574,6 +570,10 @@ protected:
     }
 
 
+    static std::string removeNewlineChars(std::string input)
+    {
+        return input.erase(input.find_last_not_of(" \n\r\t")+1);
+    }
 
     /**
      * @brief tokenize
@@ -582,8 +582,9 @@ protected:
      *
      * This method could probably be more efficient
      */
-    static std::vector<std::string> tokenize( std::string const & s)
+    static std::vector<std::string> tokenize( std::string const & input)
     {
+        auto s = removeNewlineChars(input);
         std::vector<std::string> tokens;
 
         std::string token;
@@ -642,6 +643,7 @@ inline void shell_client<sock_t>::run()
 {
     auto & Client = m_socket;
 
+    #define BUFFER_SIZE 4096
     char buffer[4096];
 
     if(m_parent->m_onConnect )
@@ -653,7 +655,7 @@ inline void shell_client<sock_t>::run()
 
     while( Client && !m_exit)
     {
-        auto ret = Client.recv(buffer, 10);
+        auto ret = Client.recv(buffer, 4096, false);
         if(ret == -1)
         {
             break;
@@ -855,7 +857,7 @@ inline std::string shell_client<sock_t>::execute(std::string cmd)
             }
         }
 
-        LOUT << "Executing: " << c << std::endl;
+        LOUT << c.size() << " Executing: " << c << " - " << static_cast<int32_t>(c.back()) << std::endl;
         process.args = socket_shell<sock_t>::tokenize(c);
 
         auto exit_code = m_parent->execute(process);
