@@ -40,6 +40,7 @@
 #include <errno.h>
 #include <cstdint>
 #include <cstring>
+#include <chrono>
 
 #if defined _MSC_VER
 
@@ -331,6 +332,56 @@ public:
     socket_t native_handle() const
     {
         return m_fd;
+    }
+
+
+    bool set_recv_timeout(std::chrono::microseconds ms)
+    {
+        #ifdef _MSC_VER
+        // WINDOWS
+        DWORD timeout = ms.count() / 1000;
+        if( setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout) != 0)
+        {
+            return false;
+        }
+        #else
+        struct timeval timeout;
+        timeout.tv_sec  = static_cast< decltype(timeout.tv_usec) >( ms.count() / 1000000u );
+        timeout.tv_usec = static_cast< decltype(timeout.tv_usec) >( ms.count() % 1000000u );
+
+        if (setsockopt (m_fd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+        {
+            return false;
+            //error("setsockopt failed\n");
+        }
+        #endif
+
+        return true;
+    }
+
+
+    bool set_send_timeout(std::chrono::microseconds ms)
+    {
+        #ifdef _MSC_VER
+        // WINDOWS
+        DWORD timeout = ms.count() / 1000;
+        if( setsockopt(socket, SOL_SOCKET, SO_SNDTIMEO, (const char*)&timeout, sizeof timeout) != 0)
+        {
+            return false;
+        }
+        #else
+        struct timeval timeout;
+        timeout.tv_sec  = static_cast< decltype(timeout.tv_usec) >( ms.count() / 1000000u );
+        timeout.tv_usec = static_cast< decltype(timeout.tv_usec) >( ms.count() % 1000000u );
+
+        if (setsockopt (m_fd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout)) < 0)
+        {
+            return false;
+            //error("setsockopt failed\n");
+        }
+        #endif
+
+        return true;
     }
 
     protected:
