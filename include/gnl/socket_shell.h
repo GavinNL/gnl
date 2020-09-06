@@ -588,7 +588,7 @@ protected:
         while( *c != 0 )
         {
             if( *c == close && b==0)
-                return c-s;
+                return static_cast<uint32_t>(c-s);
 
             if(*c == open)  ++b;
             if(*c == close) --b;
@@ -765,7 +765,7 @@ inline std::vector<std::string> extract_pipes( std::string cmd)
     }
     auto s = std::distance(std::begin(cmd), start);
     auto n = std::distance(start, x);
-    out.push_back( cmd.substr(s,n ) );
+    out.push_back( cmd.substr( static_cast<size_t>(s) , static_cast<size_t>(n) ) );
     return out;
 }
 
@@ -814,7 +814,7 @@ inline void replace_with_vars(std::string & c, std::map<std::string, std::string
                 auto s = std::distance(std::begin(c),s1);
                 auto l = std::distance(s1,e1)+1u;
 
-                c.replace( s, l, f != std::end(V) ? f->second: "" );
+                c.replace( static_cast<size_t>(s), static_cast<size_t>(l), f != std::end(V) ? f->second: "" );
 
                 start = std::begin(c) + s;
             }
@@ -885,7 +885,7 @@ inline std::string shell_client::execute(std::string cmd)
 
                     std::string sub_cmd( s1+2, e1);
                     auto output = execute(sub_cmd);
-                    c.replace(s, l, output);
+                    c.replace( static_cast<size_t>(s), static_cast<size_t>(l), output);
 
                 }
             }

@@ -305,7 +305,7 @@ public:
             std::string address = endpoint.substr(0, separator);
 
             //Read from string as unsigned
-            const auto port = strtoul(endpoint.substr(separator + 1).c_str(), nullptr, 10);
+            const auto port = static_cast<uint16_t>( strtoul(endpoint.substr(separator + 1).c_str(), nullptr, 10) );
 
             if( !create(socket_domain::NET, socket_type::STREAM) )
             {
