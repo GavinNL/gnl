@@ -264,6 +264,64 @@ public:
         return false;
     }
 
+    bool connect(const std::string endpoint)
+    {
+        const auto separator = endpoint.find_last_of(':');
+
+        //Check if input wasn't missformed
+        if (separator == std::string::npos)
+        {
+            // possibly domain socket
+            //throw std::runtime_error("string is not of address:port form");
+
+            if( !create(socket_domain::UNIX, socket_type::STREAM) )
+            {
+                return false;
+            }
+
+
+            struct sockaddr_un d_name;
+            memset(&d_name, 0 ,sizeof(struct sockaddr_un) );
+            d_name.sun_family = AF_UNIX;
+            strcpy(d_name.sun_path, endpoint.c_str());
+
+            int ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&d_name), sizeof( d_name));
+
+            if( ret == bind_error)
+                return false;
+
+            return true;
+        }
+        else
+        {
+            if (separator == endpoint.size() - 1)
+            {
+                return false;
+                //throw std::runtime_error("string has ':' as last character. Expected port number here");
+            }
+
+            //Isolate address
+            std::string address = endpoint.substr(0, separator);
+
+            //Read from string as unsigned
+            const auto port = strtoul(endpoint.substr(separator + 1).c_str(), nullptr, 10);
+
+            if( !create(socket_domain::NET, socket_type::STREAM) )
+            {
+                return false;
+            }
+            socket_address addr(address.c_str(), static_cast<uint16_t>(port) );
+
+
+            decltype(socket_error) ret = ::connect( m_fd, reinterpret_cast<struct sockaddr*>(&addr.native_address()), sizeof( addr.native_address()));
+
+            if( ret == socket_error)
+                return false;
+
+            return true;
+        }
+    }
+
     bool bind(const std::string endpoint)
     {
         const auto separator = endpoint.find_last_of(':');

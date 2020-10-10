@@ -3,14 +3,58 @@
 
 #include <gnl/socket_old.h>
 
+#undef GNL_NAMESPACE
+#define GNL_NAMESPACE gnl2
+#include <gnl/socket.h>
+#undef GNL_NAMESPACE
+
 #define PORT 30001
 #define BUFLEN 256
 #define SERVER "127.0.0.1"
 
-
+#define ENDPOINT "127.0.0.1:3001"
 
 
 int client(void)
+{
+    gnl2::socket     S;                           // The socket
+
+
+
+    std::cout << "[Client] connecting" << std::endl;
+
+    if( !S.connect( ENDPOINT ) )
+    {
+        std::cout << "[Client] Error connecting" << std::endl;
+        return 0;
+    }
+    //std::cout << "[Client] CONNECTED to " << S.get_address().ip()  << std::endl;
+
+
+
+    char message[10] = "XHello";
+    auto size  = 6;
+    message[0] = 5;
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    int i=10;
+    while( i-- )
+    {
+        if( S.send(message, size) == gnl::udp_socket::error)
+        {
+            std::cout << "[Client] Could not send data! Closing Socket" << std::endl;
+            break;
+        }   //
+
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    std::cout << "[Client] Closing socket" << std::endl;
+    S.close();
+    return 0;
+}
+
+int client2(void)
 {
     gnl::tcp_socket     S;                           // The socket
 
@@ -50,7 +94,6 @@ int client(void)
     S.close();
     return 0;
 }
-
 
 
 
