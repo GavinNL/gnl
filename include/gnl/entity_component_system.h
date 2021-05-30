@@ -91,16 +91,16 @@ class Entity
             return m_handle;
         }
 
-        template<typename _Component>
+        template<typename C_>
         bool has() const
         {
-            return m_components[ _Component::ID ] != std::numeric_limits<handle_type>::max();
+            return m_components[ C_::ID ] != std::numeric_limits<handle_type>::max();
         }
 
-        template<typename _Component>
+        template<typename C_>
         handle_type component_handle() const
         {
-            return m_components[ _Component::ID ];
+            return m_components[ C_::ID ];
         }
 
         bool is_destroyed() const
@@ -108,13 +108,13 @@ class Entity
             return m_handle == std::numeric_limits<raw_handle_type>::max();
         }
 
-        template<typename _Component>
-        _Component & create();
+        template<typename C_>
+        C_ & create();
 
-        template<typename _Component>
-        _Component & get();
+        template<typename C_>
+        C_ & get();
 
-        template<typename _Component>
+        template<typename C_>
         void destroy();
 
     friend class EntitySystem;
@@ -233,7 +233,7 @@ public:
     }
 
     template<typename ComponentType>
-    handle_type NewComponent(handle_type entity_handle)
+    handle_type CNew(handle_type entity_handle)
     {
         using CompInfoType = ComponentAllocator<ComponentType>;
 
@@ -333,7 +333,7 @@ public:
         return comp.parent_handle() == E.handle();
     }
     /**
-     * @brief DestroyComponent<T>
+     * @brief CDestroy<T>
      * @param entity_id
      *
      * Destroyes the Component, T, for entity id returning its id to be used for something else
@@ -612,23 +612,23 @@ public:
 };
 
 
-template<typename _Component>
-_Component & Entity::create()
+template<typename C_>
+C_ & Entity::create()
 {
-    auto h = m_parent->NewComponent<_Component>( handle() );
-    return m_parent->get_component<_Component>(h);
+    auto h = m_parent->CNew<C_>( handle() );
+    return m_parent->get_component<C_>(h);
 }
 
-template<typename _Component>
-_Component & Entity::get()
+template<typename C_>
+C_ & Entity::get()
 {
-    return m_parent->get_component<_Component>( component_handle<_Component>() );
+    return m_parent->get_component<C_>( component_handle<C_>() );
 }
 
-template<typename _Component>
+template<typename C_>
 void Entity::destroy()
 {
-    m_parent->_destroy_component_t<_Component>( component_handle<_Component>() );
+    m_parent->_destroy_component_t<C_>( component_handle<C_>() );
 }
 
 #define COMPONENT_ID(N) enum id_enumtype : uint32_t { ID = N }; size_t m_parent_entity_handle=std::numeric_limits<size_t>::max(); size_t m_handle =std::numeric_limits<size_t>::max()

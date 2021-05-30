@@ -53,7 +53,7 @@ class thread_pool
          *
          * Returns the number of tasks still in the queue
          */
-        std::size_t num_tasks() { return m_tasks.size(); }
+        std::size_t num_tasks() const { return m_tasks.size(); }
 
         /**
          * @brief num_workers
@@ -61,7 +61,7 @@ class thread_pool
          *
          * Returns the number of workers in this thread pool
          */
-        std::size_t num_workers() { return m_worker_count; }
+        std::size_t num_workers() const { return m_worker_count; }
 
 
 
